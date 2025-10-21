@@ -1,4 +1,3 @@
-// home-base-backend/scripts/makeAdmin.js
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const dotenv = require('dotenv');
@@ -13,11 +12,10 @@ async function makeAdmin(userId) {
     
     console.log(`Looking for user with ID: ${userId}`);
     
-    // Find the user and update their role to admin
     const user = await User.findOneAndUpdate(
       { userId: userId },
       { role: 'admin' },
-      { new: true, upsert: false } // Don't create new user, only update existing
+      { new: true, upsert: false }
     );
     
     if (user) {
@@ -38,7 +36,6 @@ async function makeAdmin(userId) {
   }
 }
 
-// Get user ID from command line argument
 const userId = process.argv[2];
 if (!userId) {
   console.log('❌ Usage: node scripts/makeAdmin.js <firebase-user-id>');

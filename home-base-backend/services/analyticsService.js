@@ -73,7 +73,6 @@ class AnalyticsService {
         }
     }
 
-    // Analytics queries
     static async getReceiptStats(paymentId) {
         try {
             const stats = await Analytics.aggregate([

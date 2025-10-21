@@ -22,7 +22,6 @@ class PDFService {
                 doc.on('end', () => resolve(Buffer.concat(chunks)));
                 doc.on('error', reject);
 
-                // Choose template based on type
                 switch(template) {
                     case 'minimal':
                         this.addMinimalReceiptContent(doc, paymentData);
@@ -47,7 +46,6 @@ class PDFService {
     static addStandardReceiptContent(doc, data) {
         const { payment, company } = data;
         
-        // Header with styling
         doc.rect(0, 0, doc.page.width, 100)
            .fill('#f8f9fa');
         
@@ -59,7 +57,6 @@ class PDFService {
            .fillColor('#666')
            .text('Accommodation Booking Platform', 50, 70, { align: 'center' });
         
-        // Receipt Title
         doc.fontSize(18).font('Helvetica-Bold')
            .fillColor('#000')
            .text('OFFICIAL RECEIPT', 50, 130, { align: 'center' });
@@ -68,7 +65,6 @@ class PDFService {
            .fillColor('#666')
            .text(`Receipt #: ${data.receiptId}`, 50, 155, { align: 'center' });
         
-        // Date and Reference
         const paidDate = new Date(payment.paidAt || payment.createdAt);
         doc.fontSize(10)
            .text(`Date: ${paidDate.toLocaleDateString('en-NG')}`, 50, 180)
@@ -76,7 +72,6 @@ class PDFService {
            .text(`Reference: ${payment.paymentReference}`, 300, 180, { align: 'right' })
            .text(`Status: ${payment.status.toUpperCase()}`, 300, 195, { align: 'right' });
         
-        // Bill To section
         doc.fontSize(12).font('Helvetica-Bold')
            .text('BILL TO:', 50, 230);
         
@@ -87,24 +82,20 @@ class PDFService {
             doc.text(`User ID: ${payment.userId}`, 50, 265);
         }
         
-        // Service Details
         doc.fontSize(12).font('Helvetica-Bold')
            .text('SERVICE DETAILS:', 50, 300);
         
-        // Table Header
         const tableTop = 320;
         doc.fontSize(10).font('Helvetica-Bold')
            .text('Description', 50, tableTop)
            .text('Amount', 450, tableTop, { align: 'right' });
         
-        // Table line
         doc.moveTo(50, tableTop + 15)
            .lineTo(550, tableTop + 15)
            .lineWidth(1)
            .strokeColor('#ddd')
            .stroke();
         
-        // Service Item
         const itemTop = tableTop + 25;
         doc.fontSize(10).font('Helvetica')
            .text(payment.listingId?.name || 'Accommodation Booking', 50, itemTop, {
@@ -126,7 +117,6 @@ class PDFService {
                .text(`Type: ${payment.listingId.type}`, 50, itemTop + 30);
         }
         
-        // Total section
         const totalTop = itemTop + 60;
         doc.moveTo(50, totalTop)
            .lineTo(550, totalTop)
@@ -141,7 +131,6 @@ class PDFService {
                align: 'right'
            });
         
-        // Payment Method
         doc.fontSize(10).font('Helvetica')
            .fillColor('#000')
            .text('Payment Method:', 50, totalTop + 45)
@@ -152,7 +141,6 @@ class PDFService {
                .text(payment.receiptData.channel.toUpperCase(), 150, totalTop + 60);
         }
         
-        // Footer
         const footerTop = 700;
         doc.rect(0, footerTop, doc.page.width, doc.page.height - footerTop)
            .fill('#f8f9fa');
@@ -163,12 +151,10 @@ class PDFService {
            .text('This is an official receipt for your records.', 50, footerTop + 35, { align: 'center' })
            .text('Please keep this receipt for your accounting purposes.', 50, footerTop + 50, { align: 'center' });
         
-        // Company Info
         doc.fontSize(8)
            .text(`For inquiries: ${company.email} | ${company.phone}`, 50, footerTop + 70, { align: 'center' })
            .text(company.address, 50, footerTop + 82, { align: 'center' });
         
-        // Page number
         doc.text(`Page 1 of 1`, 50, footerTop + 100, { align: 'center' });
     }
 
@@ -176,20 +162,17 @@ class PDFService {
         const { payment, company } = data;
         const paidDate = new Date(payment.paidAt || payment.createdAt);
 
-        // Simple header
         doc.fontSize(16).font('Helvetica-Bold')
            .text('HOME BASE', 50, 50)
            .fontSize(10)
            .text('Payment Receipt', 50, 70);
 
-        // Basic info in two columns
         doc.fontSize(9)
            .text(`Receipt: ${data.receiptId}`, 50, 100)
            .text(`Date: ${paidDate.toLocaleDateString()}`, 300, 100, { align: 'right' })
            .text(`Reference: ${payment.paymentReference}`, 50, 115)
            .text(`Amount: ${this.formatCurrency(payment.amount, payment.currency)}`, 300, 115, { align: 'right' });
 
-        // Simple line items
         doc.moveTo(50, 140).lineTo(550, 140).stroke();
         
         doc.fontSize(10)
@@ -201,13 +184,11 @@ class PDFService {
         doc.text(payment.listingId?.name || 'Accommodation Booking', 50, 175, { width: 350 })
            .text(this.formatCurrency(payment.amount, payment.currency), 450, 175, { align: 'right' });
 
-        // Total
         doc.moveTo(50, 220).lineTo(550, 220).stroke();
         doc.fontSize(12).font('Helvetica-Bold')
            .text('TOTAL', 50, 230)
            .text(this.formatCurrency(payment.amount, payment.currency), 450, 230, { align: 'right' });
 
-        // Footer
         doc.fontSize(8)
            .text('Thank you for your business!', 50, 280, { align: 'center' });
     }
@@ -216,7 +197,6 @@ class PDFService {
         const { payment, company } = data;
         const paidDate = new Date(payment.paidAt || payment.createdAt);
 
-        // Corporate header with logo space
         doc.rect(0, 0, doc.page.width, 120)
            .fill('#1e3a8a');
         
@@ -226,13 +206,11 @@ class PDFService {
            .fontSize(12)
            .text('CORPORATE RECEIPT', 50, 85, { align: 'center' });
 
-        // Company details
         doc.fillColor('black')
            .fontSize(8)
            .text(company.address, 50, 140, { align: 'center' })
            .text(`${company.phone} | ${company.email}`, 50, 152, { align: 'center' });
 
-        // Detailed receipt information
         const infoTop = 180;
         doc.fontSize(9)
            .text('BILL TO:', 50, infoTop)
@@ -244,22 +222,18 @@ class PDFService {
            .text(`Date: ${paidDate.toLocaleDateString()}`, 300, infoTop + 30)
            .text(`Time: ${paidDate.toLocaleTimeString()}`, 300, infoTop + 45);
 
-        // Professional table
         const tableTop = 250;
         this.addCorporateTable(doc, payment, tableTop);
 
-        // Terms and conditions
         doc.fontSize(7)
            .text('TERMS & CONDITIONS: Payment is due upon receipt. Late payments may be subject to fees.', 50, 500, { align: 'center' })
            .text('This is an official tax invoice.', 50, 510, { align: 'center' });
 
-        // Authorized signature line
         doc.moveTo(400, 550).lineTo(550, 550).stroke();
         doc.text('Authorized Signature', 400, 555, { align: 'center' });
     }
 
     static addCorporateTable(doc, payment, startY) {
-        // Table header
         doc.rect(50, startY, 500, 20).fill('#e5e7eb');
         doc.fontSize(9).font('Helvetica-Bold').fillColor('black')
            .text('Description', 60, startY + 7)
@@ -267,7 +241,6 @@ class PDFService {
            .text('Unit Price', 420, startY + 7)
            .text('Amount', 490, startY + 7, { align: 'right' });
 
-        // Table row
         doc.rect(50, startY + 20, 500, 25).fill('#f8f9fa');
         doc.fontSize(9).font('Helvetica')
            .text(payment.listingId?.name || 'Accommodation Booking', 60, startY + 28, { width: 250 })
@@ -280,7 +253,6 @@ class PDFService {
                .text(`Location: ${payment.listingId.location}`, 60, startY + 40);
         }
 
-        // Total
         const totalY = startY + 60;
         doc.rect(50, totalY, 500, 25).fill('#1e3a8a');
         doc.fontSize(11).font('Helvetica-Bold').fillColor('white')
@@ -292,11 +264,9 @@ class PDFService {
         const { payment, company } = data;
         const paidDate = new Date(payment.paidAt || payment.createdAt);
 
-        // Detailed header
         doc.fontSize(20).font('Helvetica-Bold')
            .text('DETAILED PAYMENT RECEIPT', 50, 50, { align: 'center' });
 
-        // Multiple sections
         this.addCustomerSection(doc, payment, 90);
         this.addPaymentDetailsSection(doc, payment, data.receiptId, paidDate, 160);
         this.addServiceBreakdownSection(doc, payment, 240);
@@ -371,11 +341,10 @@ class PDFService {
            .text('This receipt is computer generated and does not require a physical signature.', 50, startY + 40, { align: 'center' });
     }
 
-    // Template selection helper
     static getTemplateForPayment(payment) {
-        if (payment.amount > 100000) return 'corporate'; // High value payments
-        if (payment.amount < 10000) return 'minimal';    // Low value payments
-        return 'standard';                               // Regular payments
+        if (payment.amount > 100000) return 'corporate';
+        if (payment.amount < 10000) return 'minimal';
+        return 'standard';
     }
 
     static formatCurrency(amount, currency = 'NGN') {
@@ -385,7 +354,6 @@ class PDFService {
         }).format(amount);
     }
 
-    // Generate receipt for email (smaller file size)
     static generateReceiptForEmail(paymentData) {
         return new Promise((resolve, reject) => {
             try {
@@ -400,7 +368,6 @@ class PDFService {
                 doc.on('end', () => resolve(Buffer.concat(chunks)));
                 doc.on('error', reject);
 
-                // Simplified content for email
                 this.addEmailReceiptContent(doc, paymentData);
                 
                 doc.end();
@@ -413,7 +380,6 @@ class PDFService {
     static addEmailReceiptContent(doc, data) {
         const { payment, company } = data;
         
-        // Simplified header
         doc.fontSize(20).font('Helvetica-Bold')
            .fillColor('#2c5aa0')
            .text('HOME BASE', 50, 50, { align: 'center' });
@@ -422,20 +388,17 @@ class PDFService {
            .fillColor('#000')
            .text('PAYMENT RECEIPT', 50, 80, { align: 'center' });
         
-        // Basic info
         doc.fontSize(10)
            .text(`Receipt #: ${data.receiptId}`, 50, 120)
            .text(`Date: ${new Date(payment.paidAt || payment.createdAt).toLocaleDateString()}`, 50, 135)
            .text(`Amount: ${this.formatCurrency(payment.amount, payment.currency)}`, 50, 150);
         
-        // Service info
         doc.text(`Service: ${payment.listingId?.name || 'Accommodation Booking'}`, 50, 170);
         
         if (payment.listingId?.location) {
             doc.text(`Location: ${payment.listingId.location}`, 50, 185);
         }
         
-        // Footer
         doc.text('Thank you for your business!', 50, 220, { align: 'center' });
     }
 }

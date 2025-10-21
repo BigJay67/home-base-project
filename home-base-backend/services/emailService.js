@@ -2,21 +2,19 @@ const nodemailer = require('nodemailer');
 
 class EmailService {
     constructor() {
-        // Check if email is configured
         this.isConfigured = !!(process.env.SMTP_USER && process.env.SMTP_PASS);
         
         if (this.isConfigured) {
             this.transporter = nodemailer.createTransport({
                 host: process.env.SMTP_HOST || 'smtp.gmail.com',
                 port: parseInt(process.env.SMTP_PORT) || 587,
-                secure: false, // true for 465, false for other ports
+                secure: false,
                 auth: {
                     user: process.env.SMTP_USER,
                     pass: process.env.SMTP_PASS
                 },
-                // Better error handling
                 logger: true,
-                debug: true // include SMTP traffic in the logs
+                debug: true
             });
         } else {
             console.warn('⚠️ Email service not configured - SMTP_USER and SMTP_PASS required');
@@ -24,7 +22,6 @@ class EmailService {
     }
 
     async sendReceiptEmail(userEmail, paymentData, pdfBuffer) {
-        // Check if email is configured
         if (!this.isConfigured) {
             throw new Error('Email service not configured. Please set SMTP_USER and SMTP_PASS environment variables.');
         }
@@ -42,7 +39,6 @@ class EmailService {
                         contentType: 'application/pdf'
                     }
                 ],
-                // Add headers for better email client compatibility
                 headers: {
                     'X-Priority': '1',
                     'X-MSMail-Priority': 'High',
@@ -67,7 +63,6 @@ class EmailService {
                 receiptId: paymentData.receiptId
             });
             
-            // Provide more helpful error messages
             if (error.code === 'EAUTH') {
                 throw new Error('Email authentication failed. Check your SMTP credentials and app password.');
             } else if (error.code === 'ECONNECTION') {
@@ -78,7 +73,6 @@ class EmailService {
         }
     }
 
-    // Test email configuration
     async testEmailConfig() {
         if (!this.isConfigured) {
             console.log('❌ Email not configured - missing SMTP_USER or SMTP_PASS');
@@ -92,7 +86,6 @@ class EmailService {
         } catch (error) {
             console.error('❌ Email server configuration error:', error.message);
             
-            // Detailed error analysis
             if (error.code === 'EAUTH') {
                 console.log('💡 Tip: For Gmail, make sure:');
                 console.log('   1. 2-factor authentication is enabled');
