@@ -1,0 +1,214 @@
+/* Mobile-specific styles */
+@media (max-width: 576px) {
+  /* Improve touch targets */
+  .btn {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Better table readability */
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+  
+  /* Card improvements */
+  .listing-card {
+    border: none;
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 0;
+  }
+  
+  .listing-card .card-body {
+    padding: 1rem 0.5rem;
+  }
+  
+  /* Form improvements */
+  .form-control, .form-select {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  /* Navigation improvements */
+  .navbar-brand {
+    font-size: 1.1rem;
+  }
+  
+  /* Modal improvements */
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+  
+  /* Carousel improvements */
+  .carousel-control-prev,
+  .carousel-control-next {
+    width: 15%;
+  }
+}
+
+/* Tablet optimizations */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  
+  /* Improve button spacing */
+  .btn-group .btn {
+    margin: 2px;
+  }
+}
+
+/* Prevent horizontal scroll */
+body {
+  overflow-x: hidden;
+}
+
+/* Better text wrapping */
+.text-truncate-multiline {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-clamp: 2; /* Standard property */
+  box-orient: vertical;
+}
+
+/* Loading states */
+.loading-spinner {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* Custom badge sizes */
+.badge-sm {
+  font-size: 0.7em;
+  padding: 0.3em 0.6em;
+}
+
+/* Additional mobile optimizations */
+@media (max-width: 576px) {
+  /* Improve form elements */
+  input, select, textarea {
+    border-radius: 8px;
+  }
+  
+  /* Better button spacing */
+  .btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  /* Improve card layouts */
+  .card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  
+  /* Better list spacing */
+  .list-group-item {
+    padding: 12px 16px;
+  }
+  
+  /* Improve modal on mobile */
+  .modal-content {
+    border-radius: 16px;
+    margin: 20px 10px;
+  }
+  
+  /* Better alert spacing */
+  .alert {
+    padding: 12px 16px;
+    border-radius: 12px;
+  }
+}
+
+/* High-resolution device optimizations */
+@media (max-width: 576px) and (min-resolution: 2dppx) {
+  .btn {
+    font-weight: 500;
+  }
+  
+  .card-title {
+    font-weight: 600;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .listing-card {
+    background-color: #1a1a1a;
+    border-color: #333;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .carousel-item {
+    transition-duration: 0.01ms;
+  }
+  
+  .btn {
+    transition: none;
+  }
+}
+
+/* Very small screens (iPhone SE, etc) */
+@media (max-width: 375px) {
+  .container {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  
+  .h1, .h2, .h3 {
+    font-size: calc(1rem + 0.5vw);
+  }
+  
+  /* Even smaller buttons */
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Landscape mode optimizations */
+@media (max-width: 576px) and (orientation: landscape) {
+  .navbar {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+  
+  .modal-dialog {
+    margin: 0.25rem;
+  }
+  
+  .carousel {
+    max-height: 200px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .navbar, .btn, .carousel-control, .modal {
+    display: none !important;
+  }
+  
+  .container {
+    max-width: none;
+  }
+}
+/* Booking card hover effects */
+.booking-card {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.booking-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Make entire card clickable */
+.booking-card .card-body {
+  cursor: pointer;
+}
