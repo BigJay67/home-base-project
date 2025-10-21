@@ -9,14 +9,25 @@ const requiredEnvVars = [
 const allowedOrigins = [
   'http://localhost:3000',
   'http://192.168.0.192:3000',
-  'https://your-app-name.vercel.app' 
+  'https://your-app-name.netlify.app'
 ];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+}));
 
 const getCallbackUrl = () => {
   if (process.env.NODE_ENV === 'production') {
-    return 'https://yourapp.com/payment-callback';
-  }
-  if (process.env.FRONTEND_URL) {
     return `${process.env.FRONTEND_URL}/payment-callback`;
   }
   return 'http://localhost:3000/payment-callback';
