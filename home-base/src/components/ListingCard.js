@@ -215,7 +215,7 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
                     variant="primary" 
                     size="sm" 
                     className="flex-fill"
-                    onClick={() => handlePayment(listing)}
+                    onClick={() => handlePayment(listing._id, parsePrice(listing.price))}
                   >
                     Book Now
                   </Button>

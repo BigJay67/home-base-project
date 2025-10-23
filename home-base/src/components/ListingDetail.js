@@ -389,7 +389,8 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
                       <Button 
                         variant="primary" 
                         size="lg"
-                        onClick={() => handlePayment(listing)}
+                        onClick={() => handlePayment(listing._id, parsePrice(listing.price))}
+
                       >
                         Book Now
                       </Button>
