@@ -10,9 +10,11 @@ function Notifications({ user }) {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !user) return;
 
     const handleMessageNotification = (data) => {
+      
+      setUnreadCount(prev => prev + 1);
       
       fetchAllData();
     };
@@ -22,19 +24,18 @@ function Notifications({ user }) {
     return () => {
       socket.off('message_notification', handleMessageNotification);
     };
-  }, [socket]);
+  }, [socket, user]);
 
   useEffect(() => {
     if (user) {
       fetchAllData();
-      const interval = setInterval(fetchAllData, 15000);
+      const interval = setInterval(fetchAllData, 5000); 
       return () => clearInterval(interval);
     }
   }, [user]);
 
   const fetchAllData = async () => {
-    await fetchNotifications();
-    await fetchUnreadMessageCount();
+    await Promise.all([fetchNotifications(), fetchUnreadMessageCount()]);
   };
 
   const fetchNotifications = async () => {
@@ -49,13 +50,11 @@ function Notifications({ user }) {
       if (response.ok) {
         const data = await response.json();
         setNotifications(data.notifications || []);
-        
-        
         const notificationUnread = (data.notifications || []).filter(n => !n.isRead).length;
         setUnreadCount(prev => {
          
-          const messageCount = prev - (prev - notificationUnread);
-          return notificationUnread + messageCount;
+          const messageCount = prev - (data.notifications || []).filter(n => !n.isRead && n.type !== 'new_message').length;
+          return notificationUnread + Math.max(0, messageCount);
         });
       }
     } catch (err) {
@@ -75,71 +74,63 @@ function Notifications({ user }) {
       if (response.ok) {
         const data = await response.json();
         const messageCount = data.unreadCount || 0;
-        
-        
-        const notificationUnread = notifications.filter(n => !n.isRead).length;
-        setUnreadCount(notificationUnread + messageCount);
-        
+        setUnreadCount(prev => {
+         
+          const notificationUnread = notifications.filter(n => !n.isRead && n.type !== 'new_message').length;
+          return notificationUnread + messageCount;
+        });
         
         if (messageCount > 0) {
           createMessageNotification(messageCount);
         }
       }
     } catch (err) {
-      console.error('Error fetching unread count:', err);
+      console.error('Error fetching unread message count:', err);
     }
   };
 
-  const createMessageNotification = (messageCount) => {
-    const existingMessageNotification = notifications.find(
-      n => n.type === 'new_message' && !n.isRead
-    );
+  const createMessageNotification = async (count) => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${backendUrl}/api/notifications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': user.uid
+        },
+        body: JSON.stringify({
+          type: 'new_message',
+          title: 'New Message',
+          message: `You have ${count} new message${count > 1 ? 's' : ''}`,
+          priority: 'medium'
+        })
+      });
 
-    if (!existingMessageNotification) {
-      const messageNotification = {
-        _id: 'message-' + Date.now(),
-        type: 'new_message',
-        title: 'New Messages',
-        message: `You have ${messageCount} unread message${messageCount > 1 ? 's' : ''}`,
-        isRead: false,
-        priority: 'medium',
-        createdAt: new Date()
-      };
-      
-      setNotifications(prev => [messageNotification, ...prev]);
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(prev => [...prev, data.notification].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+      }
+    } catch (err) {
+      console.error('Error creating message notification:', err);
     }
   };
 
   const markAsRead = async (notificationId) => {
     try {
-      
-      const notification = notifications.find(n => n._id === notificationId);
-      if (notification && notification.type === 'new_message') {
-        window.location.href = '/conversations';
-        return;
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${backendUrl}/api/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': user.uid
+        }
+      });
+
+      if (response.ok) {
+        setNotifications(prev =>
+          prev.map(n => n._id === notificationId ? { ...n, isRead: true } : n)
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
       }
-      
-      
-      if (!notificationId.startsWith('message-')) {
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-        await fetch(`${backendUrl}/api/notifications/${notificationId}/read`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': user.uid,
-            'Content-Type': 'application/json'
-          }
-        });
-      }
-      
-      
-      setNotifications(notifications.map(notif => 
-        notif._id === notificationId ? { ...notif, isRead: true } : notif
-      ));
-      
-      
-      const updatedUnread = notifications.filter(n => !n.isRead && n._id !== notificationId).length;
-      setUnreadCount(updatedUnread);
-      
     } catch (err) {
       console.error('Error marking notification as read:', err);
     }
@@ -148,39 +139,40 @@ function Notifications({ user }) {
   const markAllAsRead = async () => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      await fetch(`${backendUrl}/api/notifications/read-all`, {
+      const response = await fetch(`${backendUrl}/api/notifications/read-all`, {
         method: 'PUT',
         headers: {
-          'Authorization': user.uid,
-          'Content-Type': 'application/json'
+          'Authorization': user.uid
         }
       });
-      
-      setNotifications(notifications.map(notif => ({ ...notif, isRead: true })));
-      setUnreadCount(0);
+
+      if (response.ok) {
+        setNotifications(prev =>
+          prev.map(n => ({ ...n, isRead: true }))
+        );
+        setUnreadCount(0);
+      }
     } catch (err) {
-      console.error('Error marking all as read:', err);
+      console.error('Error marking all notifications as read:', err);
     }
   };
 
   const deleteNotification = async (notificationId) => {
     try {
-      if (!notificationId.startsWith('message-')) {
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-        await fetch(`${backendUrl}/api/notifications/${notificationId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': user.uid
-          }
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${backendUrl}/api/notifications/${notificationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': user.uid
+        }
+      });
+
+      if (response.ok) {
+        setNotifications(prev => prev.filter(n => n._id !== notificationId));
+        setUnreadCount(prev => {
+          const deletedNotification = notifications.find(n => n._id === notificationId);
+          return deletedNotification && !deletedNotification.isRead ? Math.max(0, prev - 1) : prev;
         });
-      }
-      
-      const deletedNotif = notifications.find(n => n._id === notificationId);
-      setNotifications(notifications.filter(notif => notif._id !== notificationId));
-      
-      
-      if (deletedNotif && !deletedNotif.isRead) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
       }
     } catch (err) {
       console.error('Error deleting notification:', err);
@@ -191,129 +183,117 @@ function Notifications({ user }) {
     switch (type) {
       case 'booking_created':
       case 'booking_confirmed':
-        return '📅';
+      case 'booking_cancelled':
       case 'payment_success':
-        return '💳';
       case 'payment_failed':
-        return '❌';
+      case 'new_message':
+        return <Bell size={16} />;
       case 'new_review':
       case 'review_reply':
-        return '⭐';
-      case 'new_message':
-        return '💬';
+        return <i className="bi bi-star" />;
       case 'listing_approved':
-        return '✅';
       case 'listing_rejected':
-        return '🚫';
+        return <i className="bi bi-house" />;
+      case 'system_announcement':
+        return <i className="bi bi-megaphone" />;
       default:
-        return '🔔';
+        return <Bell size={16} />;
     }
   };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high': return 'danger';
-      case 'medium': return 'warning';
-      case 'low': return 'secondary';
-      default: return 'secondary';
-    }
-  };
-
-  const handleNotificationClick = (notification) => {
-    markAsRead(notification._id);
-    
-    if (notification.type === 'new_message') {
-      window.location.href = '/conversations';
+      case 'high':
+        return 'danger';
+      case 'medium':
+        return 'warning';
+      case 'low':
+        return 'info';
+      default:
+        return 'secondary';
     }
   };
 
   const NotificationDropdown = () => (
-    <Dropdown as={Nav.Item} align="end">
-      <Dropdown.Toggle as={Nav.Link} className="position-relative p-2">
-        <Bell size={20} />
+    <Dropdown align="end">
+      <Dropdown.Toggle
+        variant="link"
+        id="notifications-dropdown"
+        className="text-decoration-none position-relative p-0"
+      >
+        <Bell size={20} className="text-dark" />
         {unreadCount > 0 && (
-          <Badge 
-            bg="danger" 
-            className="position-absolute top-0 start-100 translate-middle"
-            style={{ fontSize: '0.6rem', minWidth: '18px', height: '18px' }}
+          <Badge
+            bg="danger"
+            className="position-absolute top-0 start-100 translate-middle rounded-pill"
+            style={{ fontSize: '0.7rem' }}
           >
-            {unreadCount > 9 ? '9+' : unreadCount}
+            {unreadCount}
           </Badge>
         )}
       </Dropdown.Toggle>
-
-      <Dropdown.Menu style={{ width: 'min(350px, 90vw)', maxHeight: '400px', overflowY: 'auto' }}>
-        <div className="d-flex justify-content-between align-items-center p-2 border-bottom">
+      <Dropdown.Menu className="p-0" style={{ minWidth: '300px' }}>
+        <div className="p-3 border-bottom">
           <h6 className="mb-0">Notifications</h6>
           {unreadCount > 0 && (
-            <Button variant="link" size="sm" onClick={markAllAsRead} className="p-0">
-              Mark all read
-            </Button>
+            <small className="text-muted">{unreadCount} unread</small>
           )}
         </div>
-
-        {notifications.length === 0 ? (
-          <Dropdown.ItemText className="text-center text-muted py-3">
-            No notifications
-          </Dropdown.ItemText>
-        ) : (
-          notifications.slice(0, 5).map((notification) => (
-            <Dropdown.Item 
+        <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+          {notifications.slice(0, 5).map((notification) => (
+            <Dropdown.Item
               key={notification._id}
-              className={`p-2 border-bottom ${!notification.isRead ? 'bg-light' : ''}`}
-              onClick={() => handleNotificationClick(notification)}
+              className={`${!notification.isRead ? 'bg-light' : ''} small py-2`}
+              onClick={() => {
+                setShowModal(true);
+                if (!notification.isRead) markAsRead(notification._id);
+              }}
             >
-              <div className="d-flex align-items-start">
-                <span className="me-2" style={{ fontSize: '1.2em' }}>
-                  {getNotificationIcon(notification.type)}
-                </span>
-                <div className="flex-grow-1">
-                  <div className="d-flex justify-content-between align-items-start">
-                    <h6 className="mb-1 small">{notification.title}</h6>
-                    <Badge 
-                      bg={getPriorityColor(notification.priority)} 
-                      size="sm"
-                      className="small"
-                    >
-                      {notification.priority}
-                    </Badge>
-                  </div>
-                  <p className="mb-1 small text-muted">{notification.message}</p>
+              <div className="d-flex justify-content-between align-items-start">
+                <div>
+                  <strong>{notification.title}</strong>
+                  <div>{notification.message}</div>
                   <small className="text-muted">
-                    {new Date(notification.createdAt).toLocaleDateString()}
+                    {new Date(notification.createdAt).toLocaleString()}
                   </small>
                 </div>
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="text-danger p-0 ms-2"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteNotification(notification._id);
-                  }}
-                >
-                  <Trash2 size={14} />
-                </Button>
+                <Badge bg={getPriorityColor(notification.priority)} className="ms-2">
+                  {notification.priority}
+                </Badge>
               </div>
             </Dropdown.Item>
-          ))
-        )}
-
-        {notifications.length > 5 && (
-          <div className="text-center p-2">
-            <Button variant="link" size="sm" onClick={() => setShowModal(true)}>
-              View all notifications
-            </Button>
-          </div>
-        )}
+          ))}
+          {notifications.length === 0 && (
+            <div className="text-center text-muted p-3">
+              <Bell size={24} className="mb-2" />
+              <p className="mb-0">No notifications</p>
+            </div>
+          )}
+        </div>
+        <div className="p-2 border-top text-center">
+          <Button
+            variant="link"
+            className="text-decoration-none"
+            onClick={() => setShowModal(true)}
+          >
+            View all notifications
+          </Button>
+        </div>
       </Dropdown.Menu>
     </Dropdown>
   );
 
   const NotificationsModal = () => (
-    <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
+    <Modal
+      show={showModal}
+      onHide={() => setShowModal(false)}
+      size="lg"
+      centered
+    >
       <Modal.Header closeButton>
-        <Modal.Title>All Notifications</Modal.Title>
+        <Modal.Title>
+          Notifications
+        </Modal.Title>
         {unreadCount > 0 && (
           <Button variant="outline-primary" size="sm" onClick={markAllAsRead}>
             Mark all as read

@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate } from 'react-router-dom';
 import { Container, Navbar, Nav, NavDropdown } from 'react-bootstrap';
+import { ChevronDown } from 'react-feather';
 import Home from './components/Home';
 import Bookings from './components/Bookings';
 import PaymentCallback from './components/PaymentCallback';
@@ -22,6 +23,7 @@ import usePayment from './hooks/usePayment';
 import './styles/mobile.css';
 import './styles/responsive.css';
 import ProfileAvatar from './components/ProfileAvatar';
+import UserListings from './components/UserListings';
 
 function App() {
   const [notificationRefresh, setNotificationRefresh] = useState(0);
@@ -65,7 +67,7 @@ function App() {
   return (
     <SocketProvider user={user}>
       <Router>
-        <Navbar bg="light" expand="lg" className="mb-4" collapseOnSelect>
+        <Navbar bg="light" expand="lg" className="mb-4 shadow-sm" collapseOnSelect>
           <Container fluid>
             <Navbar.Brand as={Link} to="/" className="fw-bold me-4">
               <span className="d-none d-sm-inline">Home Base</span>
@@ -73,20 +75,33 @@ function App() {
             </Navbar.Brand>
             <Navbar.Toggle 
               aria-controls="basic-navbar-nav" 
-              className="border-0"
-              style={{ padding: '4px 8px' }}
+              className="border-0 rounded-circle p-2 d-lg-none"
+              style={{ 
+                backgroundColor: '#f8f9fa', 
+                width: '40px', 
+                height: '40px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center' 
+              }}
             >
-              <span className="navbar-toggler-icon"></span>
+              <span className="navbar-toggler-icon" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 30 30%27%3E%3Cpath stroke=%27%23000%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-miterlimit=%2710%27 d=%27M4 7h22M4 15h22M4 23h22%27/%3E%3C/svg%3E")' }}></span>
             </Navbar.Toggle>
-            <Navbar.Collapse id="basic-navbar-nav">
+            <Navbar.Collapse id="basic-navbar-nav" className="mt-2 mt-lg-0">
               <Nav className="me-auto mb-2 mb-lg-0">
                 {user && (
                   <>
                     <Nav.Link 
                       as={NavLink} 
                       to="/bookings" 
-                      className="text-nowrap mx-2 my-1 my-lg-0"
-                      style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
+                      className={({ isActive }) => `text-nowrap mx-2 my-1 my-lg-0 rounded ${isActive ? 'bg-primary text-white' : ''}`}
+                      style={{ 
+                        minHeight: '44px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        padding: '8px 12px',
+                        transition: 'background-color 0.2s ease'
+                      }}
                     >
                       <span className="d-lg-none me-2">📅</span>
                       My Bookings
@@ -94,8 +109,14 @@ function App() {
                     <Nav.Link 
                       as={NavLink} 
                       to="/new-listing" 
-                      className="text-nowrap mx-2 my-1 my-lg-0"
-                      style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
+                      className={({ isActive }) => `text-nowrap mx-2 my-1 my-lg-0 rounded ${isActive ? 'bg-primary text-white' : ''}`}
+                      style={{ 
+                        minHeight: '44px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        padding: '8px 12px',
+                        transition: 'background-color 0.2s ease'
+                      }}
                     >
                       <span className="d-lg-none me-2">➕</span>
                       Create Listing
@@ -103,8 +124,14 @@ function App() {
                     <Nav.Link 
                       as={NavLink} 
                       to="/conversations" 
-                      className="text-nowrap mx-2 my-1 my-lg-0"
-                      style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
+                      className={({ isActive }) => `text-nowrap mx-2 my-1 my-lg-0 rounded ${isActive ? 'bg-primary text-white' : ''}`}
+                      style={{ 
+                        minHeight: '44px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        padding: '8px 12px',
+                        transition: 'background-color 0.2s ease'
+                      }}
                     >
                       <span className="d-lg-none me-2">💬</span>
                       My Messages
@@ -113,8 +140,14 @@ function App() {
                       <Nav.Link 
                         as={NavLink} 
                         to="/admin" 
-                        className="text-nowrap mx-2 my-1 my-lg-0"
-                        style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
+                        className={({ isActive }) => `text-nowrap mx-2 my-1 my-lg-0 rounded ${isActive ? 'bg-primary text-white' : ''}`}
+                        style={{ 
+                          minHeight: '44px', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          padding: '8px 12px',
+                          transition: 'background-color 0.2s ease'
+                        }}
                       >
                         <span className="d-lg-none me-2">⚙️</span>
                         Admin
@@ -123,8 +156,14 @@ function App() {
                     <Nav.Link 
                       as={NavLink} 
                       to="/payment-history" 
-                      className="text-nowrap mx-2 my-1 my-lg-0"
-                      style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
+                      className={({ isActive }) => `text-nowrap mx-2 my-1 my-lg-0 rounded ${isActive ? 'bg-primary text-white' : ''}`}
+                      style={{ 
+                        minHeight: '44px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        padding: '8px 12px',
+                        transition: 'background-color 0.2s ease'
+                      }}
                     >
                       <span className="d-lg-none me-2">🧾</span>
                       Payment History
@@ -141,25 +180,28 @@ function App() {
                 {user ? (
                   <NavDropdown 
                     title={
-                      <div className="d-flex align-items-center">
-                        <ProfileAvatar user={user} userProfile={userProfile} size={36} />
-                        <span className="ms-2 d-none d-lg-inline text-dark">
-                          {user.displayName || user.email}
+                      <div className="d-flex align-items-center bg-light rounded p-1" style={{ transition: 'background-color 0.2s ease' }}>
+                        <ProfileAvatar user={user} userProfile={userProfile} size={32} />
+                        <span 
+                          className="ms-2 text-dark text-truncate" 
+                          style={{ maxWidth: '150px', fontSize: '0.9rem' }}
+                        >
+                          {user.displayName || user.email || 'User'}
                         </span>
-                        <i className="ms-1 d-none d-lg-inline small">▼</i>
+                        <ChevronDown size={16} className="ms-1 text-muted" />
                       </div>
                     } 
                     id="user-dropdown"
                     align="end"
                     className="dropdown-menu-end"
                     style={{ minWidth: '200px' }}
+                    renderMenuOnMount={true}
                   >
                     <NavDropdown.Item 
                       as={NavLink} 
                       to="/profile"
                       className="d-flex align-items-center py-2"
                     >
-                      <span className="me-2">👤</span>
                       <span>My Profile</span>
                     </NavDropdown.Item>
                     <NavDropdown.Divider />
@@ -167,7 +209,6 @@ function App() {
                       onClick={handleSignOut}
                       className="d-flex align-items-center py-2 text-danger"
                     >
-                      <span className="me-2">🚪</span>
                       <span>Log Out</span>
                     </NavDropdown.Item>
                   </NavDropdown>
@@ -175,8 +216,14 @@ function App() {
                   <Nav.Item>
                     <NavLink 
                       to="/login" 
-                      className="nav-link text-nowrap btn btn-outline-primary mx-2"
-                      style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
+                      className={({ isActive }) => `nav-link text-nowrap btn btn-outline-primary mx-2 rounded ${isActive ? 'bg-primary text-white' : ''}`}
+                      style={{ 
+                        minHeight: '44px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        padding: '8px 12px',
+                        transition: 'background-color 0.2s ease'
+                      }}
                     >
                       <span className="d-lg-none me-2">🔐</span>
                       Login
@@ -232,6 +279,7 @@ function App() {
           <Route path="/payment-history" element={<PaymentHistory user={user} />} />
           <Route path="/bookings/:id" element={<BookingDetail user={user} />} />
           <Route path="/admin/users/:userId" element={<UserDetail user={user} />} />
+          <Route path="/listings" element={<UserListings user={user} />} />  
         </Routes>
       </Router>
     </SocketProvider>

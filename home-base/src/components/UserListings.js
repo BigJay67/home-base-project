@@ -1,36 +1,43 @@
-import React, { useState, useEffect, useCallback } from 'react';  
-import { Container, Row, Col, Card, Button, Badge, Modal, Alert, Spinner } from 'react-bootstrap';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Container, Row, Col, Card, Button, Badge, Modal, Alert, Spinner, Form } from 'react-bootstrap';
 
-function UserListings({ user, onEdit, onDelete, onStatusChange }) {
+function UserListings({ user }) {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editingListing, setEditingListing] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({});
+  const [newImages, setNewImages] = useState([]);
+  const [imagesToRemove, setImagesToRemove] = useState([]);
 
-  const fetchUserListings = useCallback(async () => { 
+  const fetchUserListings = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/listings?createdBy=${user.uid}`);
+      const response = await fetch(`${backendUrl}/api/listings?createdBy=${user.uid}`, {
+        headers: {
+          'Authorization': user.uid
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch listings');
       }
       const data = await response.json();
-      setListings(data);
+      const userListings = data.filter(listing => listing.createdBy === user.uid);
+      setListings(userListings);
     } catch (err) {
       console.error('Error fetching user listings:', err);
       setError('Failed to load your listings');
     } finally {
       setLoading(false);
     }
-  }, [user]);  
+  }, [user]);
 
   useEffect(() => {
     fetchUserListings();
-  }, [fetchUserListings]);  
+  }, [fetchUserListings]);
 
   const handleStatusChange = async (listingId, newStatus) => {
     try {
@@ -41,19 +48,24 @@ function UserListings({ user, onEdit, onDelete, onStatusChange }) {
           'Content-Type': 'application/json',
           'Authorization': user.uid
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: newStatus, userId: user.uid })
       });
       if (!response.ok) {
-        throw new Error('Failed to update status');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update status');
       }
       fetchUserListings();
     } catch (err) {
       console.error('Error updating listing status:', err);
-      alert('Failed to update listing status');
+      alert('Failed to update listing status: ' + err.message);
     }
   };
 
   const handleEdit = (listing) => {
+    if (listing.createdBy !== user.uid) {
+      alert('You can only edit your own listings');
+      return;
+    }
     setEditingListing(listing);
     setEditForm({
       name: listing.name,
@@ -63,12 +75,41 @@ function UserListings({ user, onEdit, onDelete, onStatusChange }) {
       type: listing.type,
       amenities: listing.amenities ? listing.amenities.join(', ') : ''
     });
+    setNewImages([]);
+    setImagesToRemove([]);
     setShowEditModal(true);
+  };
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length + (editingListing.images.length - imagesToRemove.length) > 5) {
+      alert('Maximum 5 images allowed');
+      return;
+    }
+    const newImageUrls = files.map(file => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    });
+    Promise.all(newImageUrls).then(urls => {
+      setNewImages(urls);
+    });
+  };
+
+  const toggleImageRemoval = (index) => {
+    setImagesToRemove(prev => 
+      prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+    );
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    if (!editingListing) return;
+    if (!editingListing || editingListing.createdBy !== user.uid) {
+      alert('You can only edit your own listings');
+      return;
+    }
 
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
@@ -80,18 +121,24 @@ function UserListings({ user, onEdit, onDelete, onStatusChange }) {
         },
         body: JSON.stringify({
           ...editForm,
-          amenities: editForm.amenities.split(',').map(a => a.trim()).filter(Boolean)
+          amenities: editForm.amenities.split(',').map(a => a.trim()).filter(Boolean),
+          images: newImages,
+          imagesToRemove,
+          userId: user.uid
         })
       });
       if (!response.ok) {
-        throw new Error('Failed to update listing');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update listing');
       }
       setShowEditModal(false);
       setEditingListing(null);
+      setNewImages([]);
+      setImagesToRemove([]);
       fetchUserListings();
     } catch (err) {
       console.error('Error updating listing:', err);
-      alert('Failed to update listing');
+      alert('Failed to update listing: ' + err.message);
     }
   };
 
@@ -109,12 +156,13 @@ function UserListings({ user, onEdit, onDelete, onStatusChange }) {
         body: JSON.stringify({ userId: user.uid })
       });
       if (!response.ok) {
-        throw new Error('Failed to delete listing');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete listing');
       }
       fetchUserListings();
     } catch (err) {
       console.error('Error deleting listing:', err);
-      alert('Failed to delete listing');
+      alert('Failed to delete listing: ' + err.message);
     }
   };
 
@@ -286,7 +334,68 @@ function UserListings({ user, onEdit, onDelete, onStatusChange }) {
                 placeholder="WiFi, Parking, Kitchen, etc..."
               />
             </div>
-            
+
+            <div className="mb-3">
+              <label className="form-label">Current Images</label>
+              {editingListing && editingListing.images && editingListing.images.length > 0 ? (
+                <Row>
+                  {editingListing.images.map((img, index) => (
+                    <Col xs={4} key={index} className="mb-2">
+                      <div className="position-relative">
+                        <img
+                          src={img.thumbnail || img}
+                          alt={`Image ${index + 1}`}
+                          className="img-fluid rounded"
+                          style={{ height: '100px', objectFit: 'cover' }}
+                        />
+                        <Button
+                          variant={imagesToRemove.includes(index) ? 'danger' : 'outline-danger'}
+                          size="sm"
+                          className="position-absolute top-0 end-0"
+                          onClick={() => toggleImageRemoval(index)}
+                        >
+                          {imagesToRemove.includes(index) ? 'Undo' : 'Remove'}
+                        </Button>
+                      </div>
+                    </Col>
+                  ))}
+                </Row>
+              ) : (
+                <p>No images currently</p>
+              )}
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label">Add New Images (max 5 total)</label>
+              <Form.Control
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+              />
+              <Form.Text className="text-muted">
+                Upload new images (max 5MB each)
+              </Form.Text>
+            </div>
+
+            {newImages.length > 0 && (
+              <div className="mb-3">
+                <label className="form-label">New Images Preview</label>
+                <Row>
+                  {newImages.map((img, index) => (
+                    <Col xs={4} key={index} className="mb-2">
+                      <img
+                        src={img}
+                        alt={`New Image ${index + 1}`}
+                        className="img-fluid rounded"
+                        style={{ height: '100px', objectFit: 'cover' }}
+                      />
+                    </Col>
+                  ))}
+                </Row>
+              </div>
+            )}
+
             <button type="submit" className="btn btn-primary">Update Listing</button>
           </form>
         </Modal.Body>

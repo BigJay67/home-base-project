@@ -190,7 +190,7 @@ function Home({ user, listings, error, loading, typeFilter, setTypeFilter, locat
         {user ? (
           <div className="d-flex align-items-center justify-content-between">
             <div>
-              <h5 className="mb-1">Welcome back, {user.displayName || user.email}! 👋</h5>
+              <h5 className="mb-1">Welcome, {user.displayName || user.email}! </h5>
               <p className="text-muted mb-0">Ready to find your perfect accommodation?</p>
             </div>
             <Button 

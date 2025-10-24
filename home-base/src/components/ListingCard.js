@@ -53,6 +53,16 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
 
   const validImages = listing.images ? listing.images.filter((_, index) => !imageErrors.has(index)) : [];
 
+  const formatPrice = (price) => {
+    if (!price) return '₦0';
+    const match = price.match(/(\d+[\d,]*\d*)(.*)/);
+    if (!match) return `₦${price}`;
+    const numericValue = match[1].replace(/,/g, '');
+    const terms = match[2] || '';
+    const formattedNumeric = parseInt(numericValue).toLocaleString('en-NG');
+    return `₦${formattedNumeric}${terms}`;
+  };
+
   const renderRatingStars = (rating) => {
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;
@@ -181,10 +191,10 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
         <div className="mt-auto pt-3">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <div className="h6 mb-0 text-primary">
-              {listing.price}
+              {formatPrice(listing.price)}
             </div>
             <div className="text-muted small">
-              {parsePrice(listing.price)}
+              {formatPrice(listing.price)}
             </div>
           </div>
           

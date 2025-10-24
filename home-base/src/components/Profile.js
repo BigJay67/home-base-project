@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Badge, Tab, Tabs, ListGroup, ProgressBar, InputGroup } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Camera, Edit2, Save, X, Shield, Calendar, Star, Home, MessageCircle, } from 'react-feather';
+import { User, Mail, Phone, Camera, Edit2, Save, X, Shield, Calendar, Star, Home, MessageCircle, List } from 'react-feather';
 
 function Profile({ user, onProfileUpdate }) {
   const [displayName, setDisplayName] = useState('');
@@ -63,12 +63,17 @@ function Profile({ user, onProfileUpdate }) {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       
       const [listingsRes, bookingsRes, reviewsRes] = await Promise.all([
-        fetch(`${backendUrl}/api/listings?createdBy=${user.uid}`),
-        fetch(`${backendUrl}/api/bookings?userId=${user.uid}`),
-        fetch(`${backendUrl}/api/reviews?userId=${user.uid}`) 
+        fetch(`${backendUrl}/api/listings?createdBy=${user.uid}`, {
+          headers: { 'Authorization': `Bearer ${user.uid}` }
+        }),
+        fetch(`${backendUrl}/api/bookings?userId=${user.uid}`, {
+          headers: { 'Authorization': `Bearer ${user.uid}` }
+        }),
+        fetch(`${backendUrl}/api/reviews?userId=${user.uid}`, {
+          headers: { 'Authorization': `Bearer ${user.uid}` }
+        })
       ]);
 
-     
       const stats = {
         listings: listingsRes.ok ? (await listingsRes.json()).length : 0,
         bookings: bookingsRes.ok ? (await bookingsRes.json()).length : 0,
@@ -192,7 +197,7 @@ function Profile({ user, onProfileUpdate }) {
               )}
             </div>
           </Col>
-          <Col>
+          <Col style={{ color: '#212529' }}>
             <h2 className="mb-1">{displayName || 'User'}</h2>
             <p className="mb-2 opacity-75">
               <Mail size={16} className="me-2" />
@@ -331,7 +336,6 @@ function Profile({ user, onProfileUpdate }) {
             <Col lg={4}>
               <ProfileCompletion />
               
-             
               <Card className="mb-4">
                 <Card.Header>
                   <h5 className="mb-0">Quick Actions</h5>
@@ -349,6 +353,10 @@ function Profile({ user, onProfileUpdate }) {
                     <Button variant="outline-info" onClick={() => navigate('/conversations')}>
                       <MessageCircle size={16} className="me-2" />
                       My Messages
+                    </Button>
+                    <Button variant="outline-success" onClick={() => navigate('/listings')}>
+                      <List size={16} className="me-2" />
+                      My Listings
                     </Button>
                   </div>
                 </Card.Body>

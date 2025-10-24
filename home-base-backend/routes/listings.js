@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const { type, location, maxPrice, amenities, status = 'active' } = req.query;
+    const { type, location, maxPrice, amenities, status = 'active', createdBy } = req.query;
     const query = {};
     
     if (type) query.type = type.toLowerCase();
@@ -17,10 +17,8 @@ router.get('/', async (req, res) => {
       const amenitiesArray = amenities.split(',').map(item => item.trim());
       query.amenities = { $all: amenitiesArray };
     }
-    
-    if (status) {
-      query.status = status;
-    }
+    if (status) query.status = status;
+    if (createdBy) query.createdBy = createdBy;
     
     console.log('Querying listings with:', query);
     const listings = await Listing.find(query);
@@ -78,7 +76,8 @@ router.post('/', async (req, res) => {
       distance: distance || '',
       payment: payment || '',
       images: imageUrls,
-      createdBy, 
+      createdBy,
+      status: 'active' // Default status
     });
     console.log('Attempting to save listing:', JSON.stringify(listing, null, 2));
     await listing.save();
@@ -93,8 +92,9 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId } = req.body;
-    const { type, name, price, priceValue, location, amenities, distance, payment, images } = req.body;
+    const { userId, type, name, price, priceValue, location, amenities, distance, payment, images, imagesToRemove } = req.body;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized: userId required' });
+
     const listing = await Listing.findById(id);
     if (!listing) {
       return res.status(404).json({ error: 'Listing not found' });
@@ -102,12 +102,17 @@ router.put('/:id', async (req, res) => {
     if (listing.createdBy !== userId) {
       return res.status(403).json({ error: 'Unauthorized: You can only edit your own listings' });
     }
+
     let imageUrls = listing.images || [];
+    // Remove specified images
+    if (imagesToRemove && Array.isArray(imagesToRemove)) {
+      imageUrls = imageUrls.filter((_, index) => !imagesToRemove.includes(index));
+    }
+    // Add new images
     if (images && Array.isArray(images) && images.length > 0) {
-      if (images.length > 5) {
+      if (imageUrls.length + images.length > 5) {
         return res.status(400).json({ error: 'Maximum 5 images allowed' });
       }
-      imageUrls = [];
       console.log('🖼️ Generating multiple image sizes for update...');
       for (const image of images) {
         if (!image.startsWith('data:image/')) {
@@ -123,17 +128,18 @@ router.put('/:id', async (req, res) => {
         }
       }
     }
+
     const updatedListing = await Listing.findByIdAndUpdate(
       id,
       {
-        type: type.toLowerCase(),
-        name,
-        price,
-        priceValue: parseInt(priceValue) || 0,
-        location,
-        amenities: amenities || [],
-        distance: distance || '',
-        payment: payment || '',
+        type: type ? type.toLowerCase() : listing.type,
+        name: name || listing.name,
+        price: price || listing.price,
+        priceValue: priceValue ? parseInt(priceValue) : listing.priceValue,
+        location: location || listing.location,
+        amenities: amenities || listing.amenities,
+        distance: distance || listing.distance,
+        payment: payment || listing.payment,
         images: imageUrls,
       },
       { new: true }
@@ -146,10 +152,33 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+router.put('/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, userId } = req.body;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized: userId required' });
+    if (!['active', 'inactive'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
+
+    const listing = await Listing.findById(id);
+    if (!listing) return res.status(404).json({ error: 'Listing not found' });
+    if (listing.createdBy !== userId) return res.status(403).json({ error: 'Unauthorized: You can only modify your own listings' });
+
+    listing.status = status;
+    await listing.save();
+    console.log('Listing status updated:', id, status);
+    res.json(listing);
+  } catch (err) {
+    console.error('Error updating status:', err.message, err.stack);
+    res.status(500).json({ error: 'Server error', details: err.message });
+  }
+});
+
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { userId } = req.body;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized: userId required' });
+
     const listing = await Listing.findById(id);
     if (!listing) {
       return res.status(404).json({ error: 'Listing not found' });

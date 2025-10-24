@@ -79,7 +79,7 @@ function MessageButton({ listing, user, variant = 'outline-primary', size = 'sm'
         className={className}
         onClick={handleButtonClick}
       >
-        💬 Message Host
+        Message Host
       </Button>
 
       <Modal show={showModal} onHide={() => setShowModal(false)}>
