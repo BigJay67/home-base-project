@@ -1,71 +1,71 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Card, Button, Badge, Row, Col, Alert, Spinner } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react'
+import { Container, Card, Button, Badge, Row, Col, Alert, Spinner } from 'react-bootstrap'
+import { Link } from 'react-router-dom'
 
-function Conversations({ user }) {
-  const [conversations, setConversations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+function Conversations ({ user }) {
+  const [conversations, setConversations] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (user) {
-      fetchConversations();
+      fetchConversations()
     }
-  }, [user]);
+  }, [user])
 
   const fetchConversations = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/conversations`, {
         headers: {
-          'Authorization': user.uid
+          Authorization: user.uid
         }
-      });
+      })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch conversations');
+        throw new Error('Failed to fetch conversations')
       }
 
-      const data = await response.json();
-      setConversations(data);
+      const data = await response.json()
+      setConversations(data)
     } catch (err) {
-      console.error('Error fetching conversations:', err);
-      setError('Failed to load conversations');
+      console.error('Error fetching conversations:', err)
+      setError('Failed to load conversations')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = (now - date) / (1000 * 60 * 60);
-    
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInHours = (now - date) / (1000 * 60 * 60)
+
     if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     } else {
-      return date.toLocaleDateString();
+      return date.toLocaleDateString()
     }
-  };
+  }
 
   const getUnreadCount = (conversation, userId) => {
-    if (!conversation.unreadCounts) return 0;
-    
+    if (!conversation.unreadCounts) return 0
+
     if (conversation.unreadCounts instanceof Map) {
-      return conversation.unreadCounts.get(userId) || 0;
+      return conversation.unreadCounts.get(userId) || 0
     } else if (typeof conversation.unreadCounts === 'object') {
-      return conversation.unreadCounts[userId] || 0;
+      return conversation.unreadCounts[userId] || 0
     }
-    
-    return 0;
-  };
+
+    return 0
+  }
 
   if (!user) {
     return (
       <Container className="my-5">
         <Alert variant="warning">Please log in to view your conversations.</Alert>
       </Container>
-    );
+    )
   }
 
   return (
@@ -96,8 +96,8 @@ function Conversations({ user }) {
         {conversations.map((conversation) => {
           const otherParticipant = conversation.participants.find(
             p => p.userId !== user.uid
-          );
-          const unreadCount = getUnreadCount(conversation, user.uid);
+          )
+          const unreadCount = getUnreadCount(conversation, user.uid)
 
           return (
             <Col xs={12} key={conversation._id} className="mb-3">
@@ -115,20 +115,20 @@ function Conversations({ user }) {
                           </Badge>
                         )}
                       </div>
-                      
+
                       <p className="text-muted mb-1">
                         About: <strong>{conversation.listingName}</strong>
                       </p>
-                      
+
                       <p className="mb-2">
                         {conversation.lastMessage}
                       </p>
-                      
+
                       <small className="text-muted">
                         Last message: {formatTime(conversation.lastMessageAt)}
                       </small>
                     </div>
-                    
+
                     <div className="ms-3">
                       <Button
                         as={Link}
@@ -143,11 +143,11 @@ function Conversations({ user }) {
                 </Card.Body>
               </Card>
             </Col>
-          );
+          )
         })}
       </Row>
     </Container>
-  );
+  )
 }
 
-export default Conversations;
+export default Conversations

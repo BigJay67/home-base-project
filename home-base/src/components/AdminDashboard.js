@@ -1,208 +1,200 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Table, Button, Alert, Badge, Form, Modal, InputGroup, Dropdown } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
-import { MoreVertical, ToggleLeft, ToggleRight, Filter, Mail, User, DollarSign, Check, X, RefreshCw, Download, Trash2 } from 'react-feather';
+import React, { useState, useEffect, useCallback } from 'react'
+import { Container, Row, Col, Card, Table, Button, Alert, Badge, Form, Modal, Dropdown } from 'react-bootstrap'
+import { useNavigate } from 'react-router-dom'
+import { MoreVertical, ToggleLeft, ToggleRight, Mail, User, DollarSign, Check, X, RefreshCw, Download, Trash2 } from 'react-feather'
 
-function AdminDashboard({ user }) {
-  const [listings, setListings] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState('listings');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [listingToDelete, setListingToDelete] = useState(null);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedListings, setSelectedListings] = useState(new Set());
-  const [showBulkActions, setShowBulkActions] = useState(false);
+function AdminDashboard ({ user }) {
+  const [listings, setListings] = useState([])
+  const [users, setUsers] = useState([])
+  const [bookings, setBookings] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [activeTab, setActiveTab] = useState('listings')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [listingToDelete, setListingToDelete] = useState(null)
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [selectedListings, setSelectedListings] = useState(new Set())
 
-  const navigate = useNavigate();
+  const navigate = useNavigate()
+  const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/');
-      return;
-    }
-    
-    checkAdminStatus();
-    fetchData();
-  }, [user, navigate]);
-
-  const handleBookingAction = async (bookingId, action, actionName) => {
+  const checkAdminStatus = useCallback(async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      
-      let endpoint = '';
-      let method = 'PUT';
-      let body = null;
-
-      switch (action) {
-        case 'refund':
-          endpoint = `/api/admin/bookings/${bookingId}/refund`;
-          body = { status: 'refunded' };
-          break;
-        case 'approve':
-          endpoint = `/api/admin/bookings/${bookingId}/status`;
-          body = { status: 'completed' };
-          break;
-        case 'cancel':
-          endpoint = `/api/admin/bookings/${bookingId}/status`;
-          body = { status: 'cancelled' };
-          break;
-        case 'retry':
-          endpoint = `/api/admin/bookings/${bookingId}/retry`;
-          break;
-        default:
-          return;
-      }
-
-      const response = await fetch(`${backendUrl}${endpoint}`, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': user.uid
-        },
-        body: body ? JSON.stringify(body) : undefined
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to ${actionName.toLowerCase()}`);
-      }
-
-      fetchData();
-      setMessage(`${actionName} successful`);
-      
-    } catch (err) {
-      setError(`Failed to ${actionName.toLowerCase()}: ${err.message}`);
-    }
-  };
-
-  const handleExportBooking = async (bookingId) => {
-    try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/admin/bookings/${bookingId}/export`, {
-        headers: {
-          'Authorization': user.uid
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to export booking');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `booking-${bookingId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      setMessage('Booking exported successfully');
-    } catch (err) {
-      setError('Failed to export booking: ' + err.message);
-    }
-  };
-
-  const handleDeleteBooking = async (bookingId) => {
-    if (!window.confirm('Are you sure you want to delete this booking? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/admin/bookings/${bookingId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': user.uid
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete booking');
-      }
-
-      setBookings(bookings.filter(booking => booking._id !== bookingId));
-      setMessage('Booking deleted successfully');
-      
-    } catch (err) {
-      setError('Failed to delete booking: ' + err.message);
-    }
-  };
-
-  const checkAdminStatus = async () => {
-    try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/users/${user.uid}`);
+      const response = await window.fetch(`${backendUrl}/api/users/${user.uid}`)
       if (response.ok) {
-        const userData = await response.json();
+        const userData = await response.json()
         if (userData.role !== 'admin') {
-          setError('Access denied. Admin privileges required.');
-          setLoading(false);
+          setError('Access denied. Admin privileges required.')
+          setLoading(false)
         }
       }
     } catch (err) {
-      console.error('Error checking admin status:', err);
-      setError('Error verifying admin access');
-      setLoading(false);
+      setError('Error verifying admin access')
+      setLoading(false)
     }
-  };
+  }, [user.uid, backendUrl])
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-
-      const listingsResponse = await fetch(`${backendUrl}/api/admin/listings`, {
+      const listingsResponse = await window.fetch(`${backendUrl}/api/admin/listings`, {
         headers: {
-          'Authorization': user.uid
+          Authorization: user.uid
         }
-      });
-      
-      if (!listingsResponse.ok) throw new Error('Failed to fetch listings');
-      const listingsData = await listingsResponse.json();
-      setListings(listingsData);
+      })
 
-      const usersResponse = await fetch(`${backendUrl}/api/admin/users`, {
+      if (!listingsResponse.ok) throw new Error('Failed to fetch listings')
+      const listingsData = await listingsResponse.json()
+      setListings(listingsData)
+
+      const usersResponse = await window.fetch(`${backendUrl}/api/admin/users`, {
         headers: {
-          'Authorization': user.uid
+          Authorization: user.uid
         }
-      });
-      let usersData = [];
+      })
+      let usersData = []
       if (usersResponse.ok) {
-        usersData = await usersResponse.json();
-        setUsers(usersData);
+        usersData = await usersResponse.json()
+        setUsers(usersData)
       }
 
-      const bookingsResponse = await fetch(`${backendUrl}/api/admin/bookings`, {
+      const bookingsResponse = await window.fetch(`${backendUrl}/api/admin/bookings`, {
         headers: {
-          'Authorization': user.uid
+          Authorization: user.uid
         }
-      });
-      let bookingsData = [];
+      })
+      let bookingsData = []
       if (bookingsResponse.ok) {
-        bookingsData = await bookingsResponse.json();
-        setBookings(bookingsData);
+        bookingsData = await bookingsResponse.json()
+        setBookings(bookingsData)
       }
 
       setStats({
         totalListings: listingsData.length,
-        activeListings: listingsData.filter(listing => listing.status === 'active').length,
-        inactiveListings: listingsData.filter(listing => listing.status === 'inactive').length,
+        activeListings: listingsData.filter((listing) => listing.status === 'active').length,
+        inactiveListings: listingsData.filter((listing) => listing.status === 'inactive').length,
         totalUsers: usersData.length,
         totalBookings: bookingsData.length
-      });
-
+      })
     } catch (err) {
-      console.error('Error fetching admin data:', err);
-      setError('Failed to load admin data: ' + err.message);
+      setError('Failed to load admin data: ' + err.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }, [user.uid, backendUrl])
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/')
+      return
+    }
+
+    const initialize = async () => {
+      await checkAdminStatus()
+      await fetchData()
+    }
+
+    initialize()
+  }, [user, navigate, checkAdminStatus, fetchData])
+
+  const handleBookingAction = useCallback(async (bookingId, action, actionName) => {
+    try {
+      let endpoint = ''
+      const method = 'PUT'
+      let body = null
+
+      switch (action) {
+        case 'refund':
+          endpoint = `/api/admin/bookings/${bookingId}/refund`
+          body = { status: 'refunded' }
+          break
+        case 'approve':
+          endpoint = `/api/admin/bookings/${bookingId}/status`
+          body = { status: 'completed' }
+          break
+        case 'cancel':
+          endpoint = `/api/admin/bookings/${bookingId}/status`
+          body = { status: 'cancelled' }
+          break
+        case 'retry':
+          endpoint = `/api/admin/bookings/${bookingId}/retry`
+          break
+        default:
+          return
+      }
+
+      const response = await window.fetch(`${backendUrl}${endpoint}`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: user.uid
+        },
+        body: body ? JSON.stringify(body) : undefined
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${actionName.toLowerCase()}`)
+      }
+
+      await fetchData()
+      setMessage(`${actionName} successful`)
+    } catch (err) {
+      setError(`Failed to ${actionName.toLowerCase()}: ${err.message}`)
+    }
+  }, [user.uid, backendUrl, fetchData])
+
+  const handleExportBooking = useCallback(async (bookingId) => {
+    try {
+      const response = await window.fetch(`${backendUrl}/api/admin/bookings/${bookingId}/export`, {
+        headers: {
+          Authorization: user.uid
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export booking')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `booking-${bookingId}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      setMessage('Booking exported successfully')
+    } catch (err) {
+      setError('Failed to export booking: ' + err.message)
+    }
+  }, [user.uid, backendUrl])
+
+  const handleDeleteBooking = useCallback(async (bookingId) => {
+    if (!window.confirm('Are you sure you want to delete this booking? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const response = await window.fetch(`${backendUrl}/api/admin/bookings/${bookingId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: user.uid
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete booking')
+      }
+
+      setBookings(bookings.filter((booking) => booking._id !== bookingId))
+      setMessage('Booking deleted successfully')
+    } catch (err) {
+      setError('Failed to delete booking: ' + err.message)
+    }
+  }, [user.uid, bookings, backendUrl])
 
   const [stats, setStats] = useState({
     totalListings: 0,
@@ -210,177 +202,170 @@ function AdminDashboard({ user }) {
     inactiveListings: 0,
     totalUsers: 0,
     totalBookings: 0
-  });
+  })
 
-  const toggleListingStatus = async (listingId, newStatus) => {
+  const toggleListingStatus = useCallback(async (listingId, newStatus) => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/admin/listings/${listingId}/status`, {
+      const response = await window.fetch(`${backendUrl}/api/admin/listings/${listingId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': user.uid
+          Authorization: user.uid
         },
         body: JSON.stringify({ status: newStatus })
-      });
+      })
 
-      if (!response.ok) throw new Error('Failed to update listing status');
-      
-      const data = await response.json();
+      if (!response.ok) throw new Error('Failed to update listing status')
 
-      setListings(listings.map(listing => 
+      setListings(listings.map((listing) =>
         listing._id === listingId ? { ...listing, status: newStatus } : listing
-      ));
+      ))
 
-      setStats(prev => ({
+      setStats((prev) => ({
         ...prev,
-        activeListings: newStatus === 'active' 
-          ? prev.activeListings + 1 
+        activeListings: newStatus === 'active'
+          ? prev.activeListings + 1
           : prev.activeListings - 1,
-        inactiveListings: newStatus === 'inactive' 
-          ? prev.inactiveListings + 1 
+        inactiveListings: newStatus === 'inactive'
+          ? prev.inactiveListings + 1
           : prev.inactiveListings - 1
-      }));
+      }))
 
-      setMessage(`Listing status updated to ${newStatus}`);
-      
+      setMessage(`Listing status updated to ${newStatus}`)
     } catch (err) {
-      setError('Failed to update listing status: ' + err.message);
+      setError('Failed to update listing status: ' + err.message)
     }
-  };
+  }, [user.uid, listings, backendUrl])
 
-  const handleBulkStatusUpdate = async (status) => {
+  const handleBulkStatusUpdate = useCallback(async (status) => {
     if (selectedListings.size === 0) {
-      setError('Please select at least one listing');
-      return;
+      setError('Please select at least one listing')
+      return
     }
 
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/admin/listings/bulk-status`, {
+      const response = await window.fetch(`${backendUrl}/api/admin/listings/bulk-status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': user.uid
+          Authorization: user.uid
         },
         body: JSON.stringify({
           listingIds: Array.from(selectedListings),
           status
         })
-      });
+      })
 
-      if (!response.ok) throw new Error('Failed to bulk update listings');
-      
-      const data = await response.json();
+      if (!response.ok) throw new Error('Failed to bulk update listings')
 
-      setListings(listings.map(listing => 
+      const data = await response.json()
+
+      setListings(listings.map((listing) =>
         selectedListings.has(listing._id) ? { ...listing, status } : listing
-      ));
+      ))
 
-      const updatedCount = data.modifiedCount;
-      setStats(prev => ({
+      const updatedCount = data.modifiedCount
+      setStats((prev) => ({
         ...prev,
-        activeListings: status === 'active' 
-          ? prev.activeListings + updatedCount 
+        activeListings: status === 'active'
+          ? prev.activeListings + updatedCount
           : prev.activeListings - updatedCount,
-        inactiveListings: status === 'inactive' 
-          ? prev.inactiveListings + updatedCount 
+        inactiveListings: status === 'inactive'
+          ? prev.inactiveListings + updatedCount
           : prev.inactiveListings - updatedCount
-      }));
+      }))
 
-      setSelectedListings(new Set());
-      setShowBulkActions(false);
-      setMessage(`Updated ${updatedCount} listings to ${status}`);
-      
+      setSelectedListings(new Set())
+      setMessage(`Updated ${updatedCount} listings to ${status}`)
     } catch (err) {
-      setError('Failed to bulk update listings: ' + err.message);
+      setError('Failed to bulk update listings: ' + err.message)
     }
-  };
+  }, [user.uid, listings, selectedListings, backendUrl])
 
-  const toggleSelectListing = (listingId) => {
-    const newSelected = new Set(selectedListings);
+  const toggleSelectListing = useCallback((listingId) => {
+    const newSelected = new Set(selectedListings)
     if (newSelected.has(listingId)) {
-      newSelected.delete(listingId);
+      newSelected.delete(listingId)
     } else {
-      newSelected.add(listingId);
+      newSelected.add(listingId)
     }
-    setSelectedListings(newSelected);
-  };
+    setSelectedListings(newSelected)
+  }, [selectedListings])
 
-  const toggleSelectAll = () => {
+  const toggleSelectAll = useCallback(() => {
     if (selectedListings.size === filteredListings.length) {
-      setSelectedListings(new Set());
+      setSelectedListings(new Set())
     } else {
-      const allIds = new Set(filteredListings.map(l => l._id));
-      setSelectedListings(allIds);
+      const allIds = new Set(filteredListings.map((l) => l._id))
+      setSelectedListings(allIds)
     }
-  };
+  }, [selectedListings, filteredListings])
 
-  const handleDeleteListing = async () => {
-    if (!listingToDelete) return;
-    
+  const handleDeleteListing = useCallback(async () => {
+    if (!listingToDelete) return
+
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/admin/listings/${listingToDelete._id}`, {
+      const response = await window.fetch(`${backendUrl}/api/admin/listings/${listingToDelete._id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': user.uid
+          Authorization: user.uid
         }
-      });
+      })
 
-      if (!response.ok) throw new Error('Failed to delete listing');
-      
-      setListings(listings.filter(listing => listing._id !== listingToDelete._id));
-      setMessage('Listing deleted successfully');
-      setShowDeleteModal(false);
-      setListingToDelete(null);
+      if (!response.ok) throw new Error('Failed to delete listing')
 
-      setStats(prev => ({
+      setListings(listings.filter((listing) => listing._id !== listingToDelete._id))
+      setMessage('Listing deleted successfully')
+      setShowDeleteModal(false)
+      setListingToDelete(null)
+
+      setStats((prev) => ({
         ...prev,
         totalListings: prev.totalListings - 1,
         activeListings: listingToDelete.status === 'active' ? prev.activeListings - 1 : prev.activeListings,
         inactiveListings: listingToDelete.status === 'inactive' ? prev.inactiveListings - 1 : prev.inactiveListings
-      }));
+      }))
     } catch (err) {
-      setError('Failed to delete listing: ' + err.message);
+      setError('Failed to delete listing: ' + err.message)
     }
-  };
+  }, [user.uid, listingToDelete, listings, backendUrl])
 
-  const confirmDelete = (listing) => {
-    setListingToDelete(listing);
-    setShowDeleteModal(true);
-  };
+  const confirmDelete = useCallback((listing) => {
+    setListingToDelete(listing)
+    setShowDeleteModal(true)
+  }, [])
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
-  };
+  const formatDate = useCallback((dateString) => {
+    return new Date(dateString).toLocaleDateString()
+  }, [])
 
-  const getStatusBadge = (listing) => {
+  const getStatusBadge = useCallback((listing) => {
     const variants = {
       active: 'success',
       inactive: 'danger',
       pending: 'warning'
-    };
+    }
     return (
       <Badge bg={variants[listing.status] || 'secondary'}>
         {listing.status.toUpperCase()}
       </Badge>
-    );
-  };
+    )
+  }, [])
 
-  const filteredListings = listings.filter(listing => {
-    const matchesSearch = listing.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         listing.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         listing.type.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || listing.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  const filteredListings = listings.filter((listing) => {
+    const matchesSearch =
+      listing.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      listing.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      listing.type.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesStatus = statusFilter === 'all' || listing.status === statusFilter
+
+    return matchesSearch && matchesStatus
+  })
 
   const BulkActionsToolbar = () => {
-    if (selectedListings.size === 0) return null;
+    if (selectedListings.size === 0) return null
 
     return (
       <Card className="mb-3 bg-light">
@@ -417,11 +402,11 @@ function AdminDashboard({ user }) {
           </div>
         </Card.Body>
       </Card>
-    );
-  };
+    )
+  }
 
-  if (loading) return <Container className="my-5"><Alert variant="info">Loading admin dashboard...</Alert></Container>;
-  if (error) return <Container className="my-5"><Alert variant="danger">{error}</Alert></Container>;
+  if (loading) return <Container className="my-5"><Alert variant="info">Loading admin dashboard...</Alert></Container>
+  if (error) return <Container className="my-5"><Alert variant="danger">{error}</Alert></Container>
 
   return (
     <Container className="my-3 my-md-5">
@@ -461,23 +446,23 @@ function AdminDashboard({ user }) {
         <Card.Header className="p-2 p-md-3">
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
             <div className="d-flex flex-wrap gap-1">
-              <Button 
-                variant={activeTab === 'listings' ? 'primary' : 'outline-primary'} 
+              <Button
+                variant={activeTab === 'listings' ? 'primary' : 'outline-primary'}
                 size="sm"
                 onClick={() => setActiveTab('listings')}
               >
                 <span className="d-none d-md-inline">Listings</span>
                 <span className="d-md-none">🏠</span>
               </Button>
-              <Button 
-                variant={activeTab === 'users' ? 'primary' : 'outline-primary'} 
+              <Button
+                variant={activeTab === 'users' ? 'primary' : 'outline-primary'}
                 size="sm"
                 onClick={() => setActiveTab('users')}
               >
                 <span className="d-none d-md-inline">Users</span>
                 <span className="d-md-none">👥</span>
               </Button>
-              <Button 
+              <Button
                 variant={activeTab === 'bookings' ? 'primary' : 'outline-primary'}
                 size="sm"
                 onClick={() => setActiveTab('bookings')}
@@ -486,7 +471,7 @@ function AdminDashboard({ user }) {
                 <span className="d-md-none">📅</span>
               </Button>
             </div>
-            
+
             {activeTab === 'listings' && (
               <div className="d-flex flex-wrap gap-2" style={{ width: '100%', maxWidth: '500px' }}>
                 <Form.Control
@@ -517,7 +502,7 @@ function AdminDashboard({ user }) {
           {activeTab === 'listings' && (
             <>
               <BulkActionsToolbar />
-              
+
               <div className="table-responsive">
                 <Table striped hover className="mb-0 small">
                   <thead>
@@ -542,7 +527,8 @@ function AdminDashboard({ user }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredListings.length === 0 ? (
+                    {filteredListings.length === 0
+                      ? (
                       <tr>
                         <td colSpan="8" className="text-center py-4">
                           <div className="text-muted">
@@ -550,8 +536,9 @@ function AdminDashboard({ user }) {
                           </div>
                         </td>
                       </tr>
-                    ) : (
-                      filteredListings.map((listing) => (
+                        )
+                      : (
+                          filteredListings.map((listing) => (
                         <tr key={listing._id}>
                           <td>
                             <Form.Check
@@ -590,35 +577,37 @@ function AdminDashboard({ user }) {
                                 <span className="d-none d-sm-inline">View</span>
                                 <span className="d-sm-none">👁️</span>
                               </Button>
-                              
+
                               <Dropdown>
-                                <Dropdown.Toggle 
-                                  variant="outline-secondary" 
+                                <Dropdown.Toggle
+                                  variant="outline-secondary"
                                   size="sm"
                                   id={`dropdown-${listing._id}`}
                                 >
                                   <MoreVertical size={14} />
                                 </Dropdown.Toggle>
                                 <Dropdown.Menu>
-                                  {listing.status === 'active' ? (
-                                    <Dropdown.Item 
+                                  {listing.status === 'active'
+                                    ? (
+                                    <Dropdown.Item
                                       onClick={() => toggleListingStatus(listing._id, 'inactive')}
                                       className="text-warning"
                                     >
                                       <ToggleLeft size={14} className="me-2" />
                                       Deactivate
                                     </Dropdown.Item>
-                                  ) : (
-                                    <Dropdown.Item 
+                                      )
+                                    : (
+                                    <Dropdown.Item
                                       onClick={() => toggleListingStatus(listing._id, 'active')}
                                       className="text-success"
                                     >
                                       <ToggleRight size={14} className="me-2" />
                                       Activate
                                     </Dropdown.Item>
-                                  )}
+                                      )}
                                   <Dropdown.Divider />
-                                  <Dropdown.Item 
+                                  <Dropdown.Item
                                     onClick={() => confirmDelete(listing)}
                                     className="text-danger"
                                   >
@@ -630,8 +619,8 @@ function AdminDashboard({ user }) {
                             </div>
                           </td>
                         </tr>
-                      ))
-                    )}
+                          ))
+                        )}
                   </tbody>
                 </Table>
               </div>
@@ -652,14 +641,16 @@ function AdminDashboard({ user }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.length === 0 ? (
+                  {users.length === 0
+                    ? (
                     <tr>
                       <td colSpan="6" className="text-center py-4">
                         <div className="text-muted">No users found</div>
                       </td>
                     </tr>
-                  ) : (
-                    users.map((user) => (
+                      )
+                    : (
+                        users.map((user) => (
                       <tr key={user.userId}>
                         <td>
                           <small className="font-monospace">{user.userId.substring(0, 10)}...</small>
@@ -683,8 +674,8 @@ function AdminDashboard({ user }) {
                           </Button>
                         </td>
                       </tr>
-                    ))
-                  )}
+                        ))
+                      )}
                 </tbody>
               </Table>
             </div>
@@ -705,14 +696,16 @@ function AdminDashboard({ user }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {bookings.length === 0 ? (
+                  {bookings.length === 0
+                    ? (
                     <tr>
                       <td colSpan="7" className="text-center py-4">
                         <div className="text-muted">No bookings found</div>
                       </td>
                     </tr>
-                  ) : (
-                    bookings.map((booking) => (
+                      )
+                    : (
+                        bookings.map((booking) => (
                       <tr key={booking._id}>
                         <td>
                           <small className="font-monospace">{booking._id.substring(0, 10)}...</small>
@@ -729,8 +722,9 @@ function AdminDashboard({ user }) {
                         <td>₦{booking.amount?.toLocaleString()}</td>
                         <td>
                           <Badge bg={
-                            booking.status === 'completed' ? 'success' :
-                            booking.status === 'pending' ? 'warning' : 'danger'
+                            booking.status === 'completed'
+                              ? 'success'
+                              : booking.status === 'pending' ? 'warning' : 'danger'
                           }>
                             {booking.status}
                           </Badge>
@@ -748,10 +742,10 @@ function AdminDashboard({ user }) {
                               <span className="d-none d-sm-inline">View</span>
                               <span className="d-sm-none">👁️</span>
                             </Button>
-                            
+
                             <Dropdown>
-                              <Dropdown.Toggle 
-                                variant="outline-secondary" 
+                              <Dropdown.Toggle
+                                variant="outline-secondary"
                                 size="sm"
                                 id={`dropdown-actions-${booking._id}`}
                               >
@@ -759,23 +753,23 @@ function AdminDashboard({ user }) {
                                 <span className="d-sm-none">⚙️</span>
                               </Dropdown.Toggle>
                               <Dropdown.Menu>
-                                <Dropdown.Item 
-                                  onClick={() => window.location.href = `mailto:${booking.userEmail}?subject=Regarding Booking ${booking.paymentReference}`}
+                                <Dropdown.Item
+                                  href={`mailto:${booking.userEmail}?subject=Regarding Booking ${booking.paymentReference}`}
                                 >
                                   <Mail size={14} className="me-2" />
                                   Contact User
                                 </Dropdown.Item>
-                                <Dropdown.Item 
+                                <Dropdown.Item
                                   onClick={() => navigate(`/admin/users/${booking.userId}`)}
                                 >
                                   <User size={14} className="me-2" />
                                   View User Profile
                                 </Dropdown.Item>
-                                
+
                                 <Dropdown.Divider />
-                                
+
                                 {booking.status === 'completed' && (
-                                  <Dropdown.Item 
+                                  <Dropdown.Item
                                     onClick={() => handleBookingAction(booking._id, 'refund', 'Mark as Refunded')}
                                     className="text-warning"
                                   >
@@ -783,17 +777,17 @@ function AdminDashboard({ user }) {
                                     Mark as Refunded
                                   </Dropdown.Item>
                                 )}
-                                
+
                                 {booking.status === 'pending' && (
                                   <>
-                                    <Dropdown.Item 
+                                    <Dropdown.Item
                                       onClick={() => handleBookingAction(booking._id, 'approve', 'Approve Booking')}
                                       className="text-success"
                                     >
                                       <Check size={14} className="me-2" />
                                       Approve Booking
                                     </Dropdown.Item>
-                                    <Dropdown.Item 
+                                    <Dropdown.Item
                                       onClick={() => handleBookingAction(booking._id, 'cancel', 'Cancel Booking')}
                                       className="text-danger"
                                     >
@@ -802,9 +796,9 @@ function AdminDashboard({ user }) {
                                     </Dropdown.Item>
                                   </>
                                 )}
-                                
+
                                 {booking.status === 'failed' && (
-                                  <Dropdown.Item 
+                                  <Dropdown.Item
                                     onClick={() => handleBookingAction(booking._id, 'retry', 'Retry Payment')}
                                     className="text-info"
                                   >
@@ -812,17 +806,17 @@ function AdminDashboard({ user }) {
                                     Retry Payment
                                   </Dropdown.Item>
                                 )}
-                                
+
                                 <Dropdown.Divider />
-                                
-                                <Dropdown.Item 
+
+                                <Dropdown.Item
                                   onClick={() => handleExportBooking(booking._id)}
                                 >
                                   <Download size={14} className="me-2" />
                                   Export Details
                                 </Dropdown.Item>
-                                
-                                <Dropdown.Item 
+
+                                <Dropdown.Item
                                   onClick={() => handleDeleteBooking(booking._id)}
                                   className="text-danger"
                                 >
@@ -834,8 +828,8 @@ function AdminDashboard({ user }) {
                           </div>
                         </td>
                       </tr>
-                    ))
-                  )}
+                        ))
+                      )}
                 </tbody>
               </Table>
             </div>
@@ -848,7 +842,7 @@ function AdminDashboard({ user }) {
           <Modal.Title>Confirm Delete</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          Are you sure you want to delete the listing "<strong>{listingToDelete?.name}</strong>"?
+          Are you sure you want to delete the listing &quot;<strong>{listingToDelete?.name}</strong>&quot;?
           <br />
           <small className="text-muted">This action cannot be undone and will remove all associated reviews and bookings.</small>
         </Modal.Body>
@@ -862,7 +856,7 @@ function AdminDashboard({ user }) {
         </Modal.Footer>
       </Modal>
     </Container>
-  );
+  )
 }
 
-export default AdminDashboard;
+export default AdminDashboard

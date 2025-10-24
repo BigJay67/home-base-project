@@ -1,44 +1,44 @@
-import React, { useState } from 'react';
-import { Modal, Form, Button, Alert } from 'react-bootstrap';
+import React, { useState } from 'react'
+import { Modal, Form, Button, Alert } from 'react-bootstrap'
 
-function ReviewModal({ show, onHide, listing, user, onSubmit }) {
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+function ReviewModal ({ show, onHide, listing, user, onSubmit }) {
+  const [rating, setRating] = useState(5)
+  const [comment, setComment] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     if (!user) {
-      setError('Please log in to submit a review');
-      return;
+      setError('Please log in to submit a review')
+      return
     }
 
     if (!comment.trim()) {
-      setError('Please enter a comment');
-      return;
+      setError('Please enter a comment')
+      return
     }
 
-    setSubmitting(true);
-    setError('');
+    setSubmitting(true)
+    setError('')
 
     try {
       await onSubmit({
         listingId: listing?._id,
         rating,
         comment: comment.trim()
-      });
-      
-      setRating(5);
-      setComment('');
-      onHide();
+      })
+
+      setRating(5)
+      setComment('')
+      onHide()
     } catch (err) {
-      setError(err.message || 'Failed to submit review');
+      setError(err.message || 'Failed to submit review')
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
-  };
+  }
 
   return (
     <Modal show={show} onHide={onHide}>
@@ -50,9 +50,9 @@ function ReviewModal({ show, onHide, listing, user, onSubmit }) {
           <p className="text-muted mb-3">
             Share your experience with <strong>{listing?.name || 'this property'}</strong>
           </p>
-          
+
           {error && <Alert variant="danger">{error}</Alert>}
-          
+
           <Form.Group className="mb-3">
             <Form.Label>Rating</Form.Label>
             <div>
@@ -69,7 +69,7 @@ function ReviewModal({ show, onHide, listing, user, onSubmit }) {
               ))}
             </div>
           </Form.Group>
-          
+
           <Form.Group className="mb-3">
             <Form.Label>Your Review</Form.Label>
             <Form.Control
@@ -86,9 +86,9 @@ function ReviewModal({ show, onHide, listing, user, onSubmit }) {
           <Button variant="secondary" onClick={onHide}>
             Cancel
           </Button>
-          <Button 
-            variant="primary" 
-            type="submit" 
+          <Button
+            variant="primary"
+            type="submit"
             disabled={submitting || !comment.trim()}
           >
             {submitting ? 'Submitting...' : 'Submit Review'}
@@ -96,7 +96,7 @@ function ReviewModal({ show, onHide, listing, user, onSubmit }) {
         </Modal.Footer>
       </Form>
     </Modal>
-  );
+  )
 }
 
-export default ReviewModal;
+export default ReviewModal

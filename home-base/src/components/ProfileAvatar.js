@@ -1,6 +1,6 @@
-import React from 'react';
+import React from 'react'
 
-function ProfileAvatar({ user, userProfile, size = 32 }) {
+function ProfileAvatar ({ user, userProfile, size = 32 }) {
   if (userProfile?.profilePicture) {
     return (
       <img
@@ -10,10 +10,10 @@ function ProfileAvatar({ user, userProfile, size = 32 }) {
           width: size,
           height: size,
           borderRadius: '50%',
-          objectFit: 'cover',
+          objectFit: 'cover'
         }}
       />
-    );
+    )
   }
 
   return (
@@ -33,7 +33,7 @@ function ProfileAvatar({ user, userProfile, size = 32 }) {
     >
       {user?.displayName ? user.displayName.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase()}
     </div>
-  );
+  )
 }
 
-export default ProfileAvatar;
+export default ProfileAvatar

@@ -1,31 +1,31 @@
-import React from 'react';
-import { Card, Row, Col, Badge, Button } from 'react-bootstrap';
-import { Download, Printer, Share2 } from 'react-feather';
+import React from 'react'
+import { Card, Row, Col, Badge, Button } from 'react-bootstrap'
+import { Download, Printer, Share2 } from 'react-feather'
 
-function Receipt({ payment, onDownload, onPrint, onShare }) {
-    if (!payment) return null;
+function Receipt ({ payment, onDownload, onPrint, onShare }) {
+  if (!payment) return null
 
-    const formatCurrency = (amount, currency = 'NGN') => {
-        return new Intl.NumberFormat('en-NG', {
-            style: 'currency',
-            currency: currency,
-        }).format(amount);
-    };
+  const formatCurrency = (amount, currency = 'NGN') => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency
+    }).format(amount)
+  }
 
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('en-NG', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-NG', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
 
-    return (
+  return (
         <Card className="receipt-card border-primary">
             <Card.Body className="p-4">
-                
+
                 <div className="text-center mb-4">
                     <div className="d-flex justify-content-between align-items-start mb-3">
                         <div className="text-start">
@@ -52,7 +52,6 @@ function Receipt({ payment, onDownload, onPrint, onShare }) {
 
                 <hr />
 
-               
                 <Row className="mb-2">
                     <Col>
                         <strong>Description</strong>
@@ -73,7 +72,6 @@ function Receipt({ payment, onDownload, onPrint, onShare }) {
                     </Col>
                 </Row>
 
-               
                 <Card className="bg-light">
                     <Card.Body className="p-3">
                         <h6 className="mb-3">Transaction Details</h6>
@@ -141,7 +139,7 @@ function Receipt({ payment, onDownload, onPrint, onShare }) {
                 </div>
             </Card.Footer>
         </Card>
-    );
+  )
 }
 
-export default Receipt;
+export default Receipt

@@ -1,119 +1,118 @@
-import React, { useState } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, Tab, Tabs, InputGroup } from 'react-bootstrap';
-import { auth, googleProvider } from '../firebase';
-import { signInWithPopup, signInWithEmailAndPassword, signInWithPhoneNumber, RecaptchaVerifier } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
-import { Mail, Phone, Lock, Eye, EyeOff, User, Smartphone } from 'react-feather';
+import React, { useState } from 'react'
+import { Container, Row, Col, Card, Form, Button, Alert, Tab, Tabs, InputGroup } from 'react-bootstrap'
+import { signInWithPopup, signInWithEmailAndPassword, signInWithPhoneNumber, RecaptchaVerifier } from 'firebase/auth'
+import { useNavigate } from 'react-router-dom'
+import { Mail, Phone, Lock, Eye, EyeOff, User, Smartphone } from 'react-feather'
 
-function LoginPage({ setPaymentMessage }) {
-  const [activeTab, setActiveTab] = useState('email');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [confirmationResult, setConfirmationResult] = useState(null);
-  const navigate = useNavigate();
+import { auth, googleProvider } from '../firebase'
+
+function LoginPage () {
+  const [activeTab, setActiveTab] = useState('email')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [verificationCode, setVerificationCode] = useState('')
+  const [confirmationResult, setConfirmationResult] = useState(null)
+  const navigate = useNavigate()
 
   const setupRecaptcha = () => {
     if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'normal',
-        'callback': (response) => {
-          console.log('reCAPTCHA solved');
+        size: 'normal',
+        callback: () => {
         },
         'expired-callback': () => {
-          console.log('reCAPTCHA expired');
         }
-      });
+      })
     }
-    return window.recaptchaVerifier;
-  };
+    return window.recaptchaVerifier
+  }
 
   const handleEmailLogin = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!email || !password) {
-      setMessage('Please enter both email and password.');
-      return;
+      setMessage('Please enter both email and password.')
+      return
     }
 
-    setLoading(true);
-    setMessage('');
+    setLoading(true)
+    setMessage('')
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      setMessage('Login successful!');
-      setTimeout(() => navigate('/'), 1000);
+      await signInWithEmailAndPassword(auth, email, password)
+      setMessage('Login successful!')
+      setTimeout(() => navigate('/'), 1000)
     } catch (err) {
-      console.error('Login error:', err);
-      setMessage(getErrorMessage(err.code));
+      console.error('Login error:', err)
+      setMessage(getErrorMessage(err.code))
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
-    setMessage('');
+    setLoading(true)
+    setMessage('')
     try {
-      await signInWithPopup(auth, googleProvider);
-      setMessage('Google login successful!');
-      setTimeout(() => navigate('/'), 1000);
+      await signInWithPopup(auth, googleProvider)
+      setMessage('Google login successful!')
+      setTimeout(() => navigate('/'), 1000)
     } catch (err) {
-      console.error('Google login error:', err);
-      setMessage(getErrorMessage(err.code));
+      console.error('Google login error:', err)
+      setMessage(getErrorMessage(err.code))
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handlePhoneLogin = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!phoneNumber) {
-      setMessage('Please enter your phone number.');
-      return;
+      setMessage('Please enter your phone number.')
+      return
     }
 
-    setLoading(true);
-    setMessage('');
+    setLoading(true)
+    setMessage('')
     try {
-      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+234${phoneNumber.replace(/^0/, '')}`;
-      const recaptchaVerifier = setupRecaptcha();
-      
-      const result = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier);
-      setConfirmationResult(result);
-      setMessage('Verification code sent to your phone!');
+      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+234${phoneNumber.replace(/^0/, '')}`
+      const recaptchaVerifier = setupRecaptcha()
+
+      const result = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier)
+      setConfirmationResult(result)
+      setMessage('Verification code sent to your phone!')
     } catch (err) {
-      console.error('Phone login error:', err);
-      setMessage(getErrorMessage(err.code));
+      console.error('Phone login error:', err)
+      setMessage(getErrorMessage(err.code))
       if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier.clear()
       }
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const verifyCode = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!verificationCode) {
-      setMessage('Please enter the verification code.');
-      return;
+      setMessage('Please enter the verification code.')
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
     try {
-      await confirmationResult.confirm(verificationCode);
-      setMessage('Phone verification successful!');
-      setTimeout(() => navigate('/'), 1000);
+      await confirmationResult.confirm(verificationCode)
+      setMessage('Phone verification successful!')
+      setTimeout(() => navigate('/'), 1000)
     } catch (err) {
-      console.error('Code verification error:', err);
-      setMessage('Invalid verification code. Please try again.');
+      console.error('Code verification error:', err)
+      setMessage('Invalid verification code. Please try again.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const getErrorMessage = (errorCode) => {
     const errorMessages = {
@@ -124,24 +123,23 @@ function LoginPage({ setPaymentMessage }) {
       'auth/invalid-phone-number': 'Invalid phone number format.',
       'auth/invalid-verification-code': 'Invalid verification code.',
       'auth/code-expired': 'Verification code has expired.',
-      'auth/too-many-requests': 'Too many attempts. Please try again later.',
-    };
-    return errorMessages[errorCode] || 'Login failed. Please try again.';
-  };
+      'auth/too-many-requests': 'Too many attempts. Please try again later.'
+    }
+    return errorMessages[errorCode] || 'Login failed. Please try again.'
+  }
 
   const formatPhoneNumber = (value) => {
-    
-    const cleaned = value.replace(/\D/g, '');
+    const cleaned = value.replace(/\D/g, '')
     if (cleaned.length <= 3) {
-      return cleaned;
+      return cleaned
     } else if (cleaned.length <= 6) {
-      return `${cleaned.slice(0, 3)} ${cleaned.slice(3)}`;
+      return `${cleaned.slice(0, 3)} ${cleaned.slice(3)}`
     } else if (cleaned.length <= 10) {
-      return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
+      return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`
     } else {
-      return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6, 10)}`;
+      return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6, 10)}`
     }
-  };
+  }
 
   return (
     <Container className="my-5">
@@ -150,7 +148,7 @@ function LoginPage({ setPaymentMessage }) {
           <Card className="shadow-lg border-0">
             <Card.Body className="p-4">
               <div className="text-center mb-4">
-                <div className="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                <div className="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
                      style={{ width: '60px', height: '60px' }}>
                   <User size={24} className="text-white" />
                 </div>
@@ -164,14 +162,13 @@ function LoginPage({ setPaymentMessage }) {
                 </Alert>
               )}
 
-              
               <Tabs
                 activeKey={activeTab}
                 onSelect={(k) => setActiveTab(k)}
                 className="mb-4"
                 justify
               >
-                
+
                 <Tab eventKey="email" title={
                   <span className="d-flex align-items-center">
                     <Mail size={16} className="me-2" />
@@ -228,14 +225,14 @@ function LoginPage({ setPaymentMessage }) {
                   </Form>
                 </Tab>
 
-                
                 <Tab eventKey="phone" title={
                   <span className="d-flex align-items-center">
                     <Phone size={16} className="me-2" />
                     Phone
                   </span>
                 }>
-                  {!confirmationResult ? (
+                  {!confirmationResult
+                    ? (
                     <Form onSubmit={handlePhoneLogin}>
                       <Form.Group className="mb-3">
                         <Form.Label>Phone Number</Form.Label>
@@ -257,7 +254,6 @@ function LoginPage({ setPaymentMessage }) {
                         </Form.Text>
                       </Form.Group>
 
-                      
                       <div id="recaptcha-container" className="mb-3"></div>
 
                       <Button
@@ -269,7 +265,8 @@ function LoginPage({ setPaymentMessage }) {
                         {loading ? 'Sending Code...' : 'Send Verification Code'}
                       </Button>
                     </Form>
-                  ) : (
+                      )
+                    : (
                     <Form onSubmit={verifyCode}>
                       <Form.Group className="mb-3">
                         <Form.Label>Verification Code</Form.Label>
@@ -307,17 +304,15 @@ function LoginPage({ setPaymentMessage }) {
                         Change Phone Number
                       </Button>
                     </Form>
-                  )}
+                      )}
                 </Tab>
               </Tabs>
 
-              
               <div className="text-center my-4">
                 <div className="border-bottom"></div>
                 <span className="bg-white px-3 text-muted">OR</span>
               </div>
 
-              
               <Button
                 variant="outline-danger"
                 className="w-100 py-2 fw-semibold mb-3"
@@ -334,7 +329,6 @@ function LoginPage({ setPaymentMessage }) {
                 Sign in with Google
               </Button>
 
-              
               <div className="text-center mt-4">
                 <p className="text-muted mb-0">
                   Don't have an account?{' '}
@@ -352,7 +346,7 @@ function LoginPage({ setPaymentMessage }) {
         </Col>
       </Row>
     </Container>
-  );
+  )
 }
 
-export default LoginPage;
+export default LoginPage

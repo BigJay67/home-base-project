@@ -1,131 +1,131 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, Badge, Tab, Tabs, ListGroup, ProgressBar, InputGroup } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Camera, Edit2, Save, X, Shield, Calendar, Star, Home, MessageCircle, List } from 'react-feather';
+import React, { useState, useEffect } from 'react'
+import { Container, Row, Col, Card, Form, Button, Alert, Badge, Tab, Tabs, ListGroup, ProgressBar, InputGroup } from 'react-bootstrap'
+import { useNavigate } from 'react-router-dom'
+import { User, Mail, Phone, Camera, Edit2, Save, X, Shield, Calendar, Star, Home, MessageCircle, List } from 'react-feather'
 
-function Profile({ user, onProfileUpdate }) {
-  const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [profilePicture, setProfilePicture] = useState('');
-  const [newProfilePicture, setNewProfilePicture] = useState(null);
-  const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState('profile');
-  const [userStats, setUserStats] = useState({});
-  const navigate = useNavigate();
+function Profile ({ user, onProfileUpdate }) {
+  const [displayName, setDisplayName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [profilePicture, setProfilePicture] = useState('')
+  const [newProfilePicture, setNewProfilePicture] = useState(null)
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [activeTab, setActiveTab] = useState('profile')
+  const [userStats, setUserStats] = useState({})
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (!user) {
-      setMessage('Please log in to view your profile.');
-      setTimeout(() => navigate('/login'), 2000);
-      return;
+      setMessage('Please log in to view your profile.')
+      setTimeout(() => navigate('/login'), 2000)
+      return
     }
-    
-    fetchProfile();
-    fetchUserStats();
-  }, [user, navigate]);
+
+    fetchProfile()
+    fetchUserStats()
+  }, [user, navigate])
 
   const fetchProfile = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/users/${user.uid}`);
-      
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+      const response = await fetch(`${backendUrl}/api/users/${user.uid}`)
+
       if (response.status === 404) {
-        console.log('User profile not found, creating default...');
+        if (process.env.NODE_ENV === 'development') { console.log('User profile not found, creating default...') }
         const createResponse = await fetch(`${backendUrl}/api/users/${user.uid}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            displayName: user.displayName || '', 
+          body: JSON.stringify({
+            displayName: user.displayName || '',
             profilePicture: '',
             email: user.email || '',
             phoneNumber: user.phoneNumber || ''
-          }),
-        });
-        const createData = await createResponse.json();
-        setProfileData(createData);
-        return;
+          })
+        })
+        const createData = await createResponse.json()
+        setProfileData(createData)
+        return
       }
-      
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      setProfileData(data);
+
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`)
+      const data = await response.json()
+      setProfileData(data)
     } catch (err) {
-      console.error('Error fetching profile:', err);
-      setMessage(`Failed to load profile: ${err.message}`);
+      console.error('Error fetching profile:', err)
+      setMessage(`Failed to load profile: ${err.message}`)
     }
-  };
+  }
 
   const fetchUserStats = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+
       const [listingsRes, bookingsRes, reviewsRes] = await Promise.all([
         fetch(`${backendUrl}/api/listings?createdBy=${user.uid}`, {
-          headers: { 'Authorization': `Bearer ${user.uid}` }
+          headers: { Authorization: `Bearer ${user.uid}` }
         }),
         fetch(`${backendUrl}/api/bookings?userId=${user.uid}`, {
-          headers: { 'Authorization': `Bearer ${user.uid}` }
+          headers: { Authorization: `Bearer ${user.uid}` }
         }),
         fetch(`${backendUrl}/api/reviews?userId=${user.uid}`, {
-          headers: { 'Authorization': `Bearer ${user.uid}` }
+          headers: { Authorization: `Bearer ${user.uid}` }
         })
-      ]);
+      ])
 
       const stats = {
         listings: listingsRes.ok ? (await listingsRes.json()).length : 0,
         bookings: bookingsRes.ok ? (await bookingsRes.json()).length : 0,
         reviews: reviewsRes.ok ? (await reviewsRes.json()).length : 0
-      };
-      
-      setUserStats(stats);
+      }
+
+      setUserStats(stats)
     } catch (err) {
-      console.error('Error fetching user stats:', err);
-      
+      console.error('Error fetching user stats:', err)
+
       setUserStats({
         listings: 0,
-        bookings: 0, 
+        bookings: 0,
         reviews: 0
-      });
+      })
     }
-  };
+  }
 
   const setProfileData = (data) => {
-    setDisplayName(data.displayName || user.displayName || '');
-    setEmail(data.email || user.email || '');
-    setPhoneNumber(data.phoneNumber || '');
-    setProfilePicture(data.profilePicture || '');
-  };
+    setDisplayName(data.displayName || user.displayName || '')
+    setEmail(data.email || user.email || '')
+    setPhoneNumber(data.phoneNumber || '')
+    setProfilePicture(data.profilePicture || '')
+  }
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files[0]
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setMessage('Image size too large. Please use an image smaller than 5MB.');
-        setNewProfilePicture(null);
-        return;
+        setMessage('Image size too large. Please use an image smaller than 5MB.')
+        setNewProfilePicture(null)
+        return
       }
-      const reader = new FileReader();
+      const reader = new FileReader()
       reader.onloadend = () => {
-        setNewProfilePicture(reader.result);
-      };
-      reader.readAsDataURL(file);
+        setNewProfilePicture(reader.result)
+      }
+      reader.readAsDataURL(file)
     }
-  };
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!user) {
-      setMessage('Please log in to update your profile.');
-      return;
+      setMessage('Please log in to update your profile.')
+      return
     }
-    
-    setLoading(true);
-    setMessage('');
+
+    setLoading(true)
+    setMessage('')
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/users/${user.uid}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -133,34 +133,34 @@ function Profile({ user, onProfileUpdate }) {
           displayName,
           email,
           phoneNumber,
-          profilePicture: newProfilePicture,
-        }),
-      });
-      
-      const data = await response.json();
+          profilePicture: newProfilePicture
+        })
+      })
+
+      const data = await response.json()
       if (!response.ok) {
-        throw new Error(data.error || `HTTP error! Status: ${response.status}`);
+        throw new Error(data.error || `HTTP error! Status: ${response.status}`)
       }
-      
-      setProfilePicture(data.profilePicture || '');
-      setNewProfilePicture(null);
-      setEditing(false);
-      setMessage('Profile updated successfully!');
-      
+
+      setProfilePicture(data.profilePicture || '')
+      setNewProfilePicture(null)
+      setEditing(false)
+      setMessage('Profile updated successfully!')
+
       if (onProfileUpdate) {
-        onProfileUpdate();
+        onProfileUpdate()
       }
     } catch (err) {
-      console.error('Error updating profile:', err);
-      setMessage(`Failed to update profile: ${err.message}`);
+      console.error('Error updating profile:', err)
+      setMessage(`Failed to update profile: ${err.message}`)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const getInitials = (name) => {
-    return name ? name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
-  };
+    return name ? name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'
+  }
 
   const ProfileHeader = () => (
     <Card className="bg-gradient-primary text-white mb-4">
@@ -168,21 +168,23 @@ function Profile({ user, onProfileUpdate }) {
         <Row className="align-items-center">
           <Col xs="auto">
             <div className="position-relative">
-              {profilePicture ? (
+              {profilePicture
+                ? (
                 <img
                   src={profilePicture}
                   alt="Profile"
                   className="rounded-circle border border-3 border-white"
                   style={{ width: '100px', height: '100px', objectFit: 'cover' }}
                 />
-              ) : (
-                <div 
+                  )
+                : (
+                <div
                   className="rounded-circle border border-3 border-white d-flex align-items-center justify-content-center bg-light text-primary fw-bold"
                   style={{ width: '100px', height: '100px', fontSize: '2rem' }}
                 >
                   {getInitials(displayName)}
                 </div>
-              )}
+                  )}
               {editing && (
                 <label htmlFor="profile-picture-upload" className="position-absolute bottom-0 end-0 bg-primary rounded-circle p-2 border border-2 border-white cursor-pointer">
                   <Camera size={16} className="text-white" />
@@ -215,12 +217,14 @@ function Profile({ user, onProfileUpdate }) {
             </Badge>
           </Col>
           <Col xs="auto">
-            {!editing ? (
+            {!editing
+              ? (
               <Button variant="light" onClick={() => setEditing(true)}>
                 <Edit2 size={16} className="me-2" />
                 Edit Profile
               </Button>
-            ) : (
+                )
+              : (
               <div className="d-flex gap-2">
                 <Button variant="outline-light" onClick={() => setEditing(false)}>
                   <X size={16} className="me-2" />
@@ -231,19 +235,19 @@ function Profile({ user, onProfileUpdate }) {
                   {loading ? 'Saving...' : 'Save'}
                 </Button>
               </div>
-            )}
+                )}
           </Col>
         </Row>
       </Card.Body>
     </Card>
-  );
+  )
 
   const StatsCard = () => (
     <Row className="g-3 mb-4">
       <Col md={4}>
         <Card className="h-100 border-0 shadow-sm">
           <Card.Body className="text-center">
-            <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+            <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
                  style={{ width: '60px', height: '60px' }}>
               <Home size={24} className="text-primary" />
             </div>
@@ -255,7 +259,7 @@ function Profile({ user, onProfileUpdate }) {
       <Col md={4}>
         <Card className="h-100 border-0 shadow-sm">
           <Card.Body className="text-center">
-            <div className="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+            <div className="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
                  style={{ width: '60px', height: '60px' }}>
               <Calendar size={24} className="text-success" />
             </div>
@@ -267,7 +271,7 @@ function Profile({ user, onProfileUpdate }) {
       <Col md={4}>
         <Card className="h-100 border-0 shadow-sm">
           <Card.Body className="text-center">
-            <div className="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+            <div className="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
                  style={{ width: '60px', height: '60px' }}>
               <Star size={24} className="text-warning" />
             </div>
@@ -277,7 +281,7 @@ function Profile({ user, onProfileUpdate }) {
         </Card>
       </Col>
     </Row>
-  );
+  )
 
   const ProfileCompletion = () => {
     const completion = Math.min(
@@ -286,7 +290,7 @@ function Profile({ user, onProfileUpdate }) {
       (phoneNumber ? 25 : 0) +
       (profilePicture ? 25 : 0),
       100
-    );
+    )
 
     return (
       <Card className="mb-4">
@@ -296,11 +300,13 @@ function Profile({ user, onProfileUpdate }) {
         <Card.Body>
           <ProgressBar now={completion} className="mb-3" style={{ height: '8px' }} />
           <div className="small text-muted">
-            {completion === 100 ? (
-              '🎉 Your profile is complete!'
-            ) : (
+            {completion === 100
+              ? (
+                  '🎉 Your profile is complete!'
+                )
+              : (
               `Complete your profile to get the best experience (${completion}%)`
-            )}
+                )}
           </div>
           {completion < 100 && (
             <ListGroup variant="flush" className="mt-3">
@@ -312,8 +318,8 @@ function Profile({ user, onProfileUpdate }) {
           )}
         </Card.Body>
       </Card>
-    );
-  };
+    )
+  }
 
   return (
     <Container className="my-4 my-md-5">
@@ -323,19 +329,21 @@ function Profile({ user, onProfileUpdate }) {
         </Alert>
       )}
 
-      {!user ? (
+      {!user
+        ? (
         <div className="text-center py-5">
           <p>Redirecting to login...</p>
         </div>
-      ) : (
+          )
+        : (
         <>
           <ProfileHeader />
           <StatsCard />
-          
+
           <Row>
             <Col lg={4}>
               <ProfileCompletion />
-              
+
               <Card className="mb-4">
                 <Card.Header>
                   <h5 className="mb-0">Quick Actions</h5>
@@ -362,13 +370,14 @@ function Profile({ user, onProfileUpdate }) {
                 </Card.Body>
               </Card>
             </Col>
-            
+
             <Col lg={8}>
               <Card>
                 <Card.Body>
                   <Tabs activeKey={activeTab} onSelect={setActiveTab} className="mb-3">
                     <Tab eventKey="profile" title="Profile Information">
-                      {editing ? (
+                      {editing
+                        ? (
                         <Form onSubmit={handleSubmit}>
                           <Row>
                             <Col md={6}>
@@ -402,7 +411,7 @@ function Profile({ user, onProfileUpdate }) {
                               </Form.Group>
                             </Col>
                           </Row>
-                          
+
                           <Form.Group className="mb-3">
                             <Form.Label>Email Address</Form.Label>
                             <InputGroup>
@@ -442,7 +451,8 @@ function Profile({ user, onProfileUpdate }) {
                             </div>
                           )}
                         </Form>
-                      ) : (
+                          )
+                        : (
                         <div className="row g-3">
                           <div className="col-md-6">
                             <div className="d-flex align-items-center p-3 bg-light rounded">
@@ -472,9 +482,9 @@ function Profile({ user, onProfileUpdate }) {
                             </div>
                           </div>
                         </div>
-                      )}
+                          )}
                     </Tab>
-                    
+
                     <Tab eventKey="activity" title="Recent Activity">
                       <div className="text-center py-4">
                         <div className="text-muted mb-2">
@@ -490,9 +500,9 @@ function Profile({ user, onProfileUpdate }) {
             </Col>
           </Row>
         </>
-      )}
+          )}
     </Container>
-  );
+  )
 }
 
-export default Profile;
+export default Profile

@@ -1,75 +1,72 @@
-import React, { useState } from 'react';
-import { Button, Modal, Form, Alert, Spinner } from 'react-bootstrap';
+import React, { useState } from 'react'
+import { Button, Modal, Form, Alert, Spinner } from 'react-bootstrap'
 
-function MessageButton({ listing, user, variant = 'outline-primary', size = 'sm', className = '' }) {
-  const [showModal, setShowModal] = useState(false);
-  const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+function MessageButton ({ listing, user, variant = 'outline-primary', size = 'sm', className = '' }) {
+  const [showModal, setShowModal] = useState(false)
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   const handleSendMessage = async (e) => {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     if (!user) {
-      setError('Please log in to send messages');
-      return;
+      setError('Please log in to send messages')
+      return
     }
 
     if (!message.trim()) {
-      setError('Please enter a message');
-      return;
+      setError('Please enter a message')
+      return
     }
 
-    setLoading(true);
-    setError('');
-    setSuccess('');
+    setLoading(true)
+    setError('')
+    setSuccess('')
 
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+
       const response = await fetch(`${backendUrl}/api/conversations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': user.uid
+          Authorization: user.uid
         },
         body: JSON.stringify({
           listingId: listing._id,
           message: message.trim(),
           senderId: user.uid,
           senderName: user.displayName || user.email
-        }),
-      });
+        })
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send message');
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to send message')
       }
-
-      const data = await response.json();
-      setSuccess('Message sent successfully!');
-      setMessage('');
+      setSuccess('Message sent successfully!')
+      setMessage('')
       setTimeout(() => {
-        setShowModal(false);
-        setSuccess('');
-      }, 2000);
-      
+        setShowModal(false)
+        setSuccess('')
+      }, 2000)
     } catch (err) {
-      console.error('Error sending message:', err);
-      setError(err.message || 'Failed to send message. Please try again.');
+      console.error('Error sending message:', err)
+      setError(err.message || 'Failed to send message. Please try again.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleButtonClick = () => {
     if (!user) {
-      setError('Please log in to message the host');
-      return;
+      setError('Please log in to message the host')
+      return
     }
-    setShowModal(true);
-  };
+    setShowModal(true)
+  }
 
   return (
     <>
@@ -91,10 +88,10 @@ function MessageButton({ listing, user, variant = 'outline-primary', size = 'sm'
             <p className="text-muted mb-3">
               Send a message to the host of <strong>{listing.name}</strong>
             </p>
-            
+
             {error && <Alert variant="danger">{error}</Alert>}
             {success && <Alert variant="success">{success}</Alert>}
-            
+
             <Form.Group>
               <Form.Label>Your Message</Form.Label>
               <Form.Control
@@ -108,32 +105,34 @@ function MessageButton({ listing, user, variant = 'outline-primary', size = 'sm'
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               onClick={() => setShowModal(false)}
               disabled={loading}
             >
               Cancel
             </Button>
-            <Button 
-              variant="primary" 
-              type="submit" 
+            <Button
+              variant="primary"
+              type="submit"
               disabled={loading || !message.trim() || success}
             >
-              {loading ? (
+              {loading
+                ? (
                 <>
                   <Spinner animation="border" size="sm" className="me-2" />
                   Sending...
                 </>
-              ) : (
-                'Send Message'
-              )}
+                  )
+                : (
+                    'Send Message'
+                  )}
             </Button>
           </Modal.Footer>
         </Form>
       </Modal>
     </>
-  );
+  )
 }
 
-export default MessageButton;
+export default MessageButton

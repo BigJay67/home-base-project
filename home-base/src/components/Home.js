@@ -1,31 +1,22 @@
-import React, { useState } from 'react';
-import { Container, Row, Col, Card, Button, Alert, Form, Modal } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
-import ListingCard from './ListingCard';
-import ReviewModal from './ReviewModal';
+import React, { useState } from 'react'
+import { Container, Row, Col, Card, Button, Alert, Form, Modal } from 'react-bootstrap'
+import { useNavigate } from 'react-router-dom'
 
-function Home({ user, listings, error, loading, typeFilter, setTypeFilter, locationFilter, setLocationFilter, maxPriceFilter, setMaxPriceFilter, paymentMessage, setPaymentMessage, handleSearch, handlePayment, parsePrice, fetchListings, minRatingFilter, setMinRatingFilter, reviewKeywordFilter, setReviewKeywordFilter, handleSignOut }) {
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingListing, setEditingListing] = useState(null);
-  const [editFormData, setEditFormData] = useState({});
-  const [editImages, setEditImages] = useState([]);
-  const [editLoading, setEditLoading] = useState(false);
-  const [showReviewModal, setShowReviewModal] = useState(false);
-  const [selectedListing, setSelectedListing] = useState(null);
-  const navigate = useNavigate();
+import ListingCard from './ListingCard'
+import ReviewModal from './ReviewModal'
 
-  const validateImageUrl = (url) => {
-    if (!url) return false;
-    try {
-      new URL(url);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  };
+function Home ({ user, listings, error, loading, typeFilter, setTypeFilter, locationFilter, setLocationFilter, maxPriceFilter, setMaxPriceFilter, paymentMessage, setPaymentMessage, handleSearch, handlePayment, parsePrice, fetchListings, minRatingFilter, setMinRatingFilter, reviewKeywordFilter, setReviewKeywordFilter, handleSignOut }) {
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingListing, setEditingListing] = useState(null)
+  const [editFormData, setEditFormData] = useState({})
+  const [editImages, setEditImages] = useState([])
+  const [editLoading, setEditLoading] = useState(false)
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [selectedListing] = useState(null)
+  const navigate = useNavigate()
 
   const handleEdit = (listing) => {
-    setEditingListing(listing);
+    setEditingListing(listing)
     setEditFormData({
       type: listing.type,
       name: listing.name,
@@ -34,55 +25,55 @@ function Home({ user, listings, error, loading, typeFilter, setTypeFilter, locat
       location: listing.location,
       amenities: listing.amenities.join(', '),
       distance: listing.distance || '',
-      payment: listing.payment || '',
-    });
-    setEditImages(listing.images || []);
-    setShowEditModal(true);
-  };
+      payment: listing.payment || ''
+    })
+    setEditImages(listing.images || [])
+    setShowEditModal(true)
+  }
 
   const handleEditImageChange = (e) => {
-    const files = Array.from(e.target.files);
+    const files = Array.from(e.target.files)
     if (files.length > 5) {
-      setPaymentMessage('Maximum 5 images allowed.');
-      return;
+      setPaymentMessage('Maximum 5 images allowed.')
+      return
     }
-    
+
     const imagePromises = files.map((file) => {
       if (file.size > 1024 * 1024) {
-        setPaymentMessage('Each image must be smaller than 1MB.');
-        return null;
+        setPaymentMessage('Each image must be smaller than 1MB.')
+        return null
       }
       return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result)
         reader.onerror = () => {
-          setPaymentMessage('Failed to read image file.');
-          resolve(null);
-        };
-        reader.readAsDataURL(file);
-      });
-    }).filter(Boolean);
+          setPaymentMessage('Failed to read image file.')
+          resolve(null)
+        }
+        reader.readAsDataURL(file)
+      })
+    }).filter(Boolean)
 
     Promise.all(imagePromises).then((newImageData) => {
-      const existingImages = editImages.filter(img => 
+      const existingImages = editImages.filter(img =>
         typeof img === 'string' && !img.startsWith('data:image/')
-      );
-      const allImages = [...existingImages, ...newImageData.filter(img => img !== null)];
-      setEditImages(allImages);
-    });
-  };
+      )
+      const allImages = [...existingImages, ...newImageData.filter(img => img !== null)]
+      setEditImages(allImages)
+    })
+  }
 
   const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    if (!user || !editingListing) return;
-    
-    setEditLoading(true);
+    e.preventDefault()
+    if (!user || !editingListing) return
+
+    setEditLoading(true)
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const newBase64Images = editImages.filter(img => 
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+      const newBase64Images = editImages.filter(img =>
         typeof img === 'string' && img.startsWith('data:image/')
-      );
-      
+      )
+
       const updateData = {
         type: editFormData.type,
         name: editFormData.name,
@@ -93,144 +84,146 @@ function Home({ user, listings, error, loading, typeFilter, setTypeFilter, locat
         distance: editFormData.distance,
         payment: editFormData.payment,
         images: newBase64Images,
-        userId: user.uid,
-      };
+        userId: user.uid
+      }
 
       const response = await fetch(`${backendUrl}/api/listings/${editingListing._id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': user.uid },
-        body: JSON.stringify(updateData),
-      });
-      
+        headers: { 'Content-Type': 'application/json', Authorization: user.uid },
+        body: JSON.stringify(updateData)
+      })
+
       if (!response.ok) {
-        const text = await response.text();
+        const text = await response.text()
         try {
-          const errorData = JSON.parse(text);
-          throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
-        } catch (jsonErr) {
-          console.error('Non-JSON response:', text);
-          throw new Error(`HTTP error! Status: ${response.status}`);
+          const errorData = JSON.parse(text)
+          throw new Error(errorData.error || `HTTP error! Status: ${response.status}`)
+        } catch (error) {
+          console.error('Non-JSON response:', text)
+          throw new Error(`HTTP error! Status: ${response.status}`)
         }
       }
-      
-      setPaymentMessage('Listing updated successfully!');
-      setShowEditModal(false);
-      fetchListings();
+
+      setPaymentMessage('Listing updated successfully!')
+      setShowEditModal(false)
+      fetchListings()
     } catch (err) {
-      console.error('Error updating listing:', err);
-      setPaymentMessage('Failed to update listing: ' + err.message);
+      console.error('Error updating listing:', err)
+      setPaymentMessage('Failed to update listing: ' + err.message)
     } finally {
-      setEditLoading(false);
+      setEditLoading(false)
     }
-  };
+  }
 
   const handleDelete = async (listingId) => {
-    if (!window.confirm('Are you sure you want to delete this listing?')) return;
+    if (!window.confirm('Are you sure you want to delete this listing?')) return
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/listings/${listingId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', 'Authorization': user.uid },
-        body: JSON.stringify({ userId: user.uid }),
-      });
+        headers: { 'Content-Type': 'application/json', Authorization: user.uid },
+        body: JSON.stringify({ userId: user.uid })
+      })
       if (!response.ok) {
-        const text = await response.text();
+        const text = await response.text()
         try {
-          const errorData = JSON.parse(text);
-          throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
-        } catch (jsonErr) {
-          console.error('Non-JSON response:', text);
-          throw new Error(`HTTP error! Status: ${response.status}`);
+          const errorData = JSON.parse(text)
+          throw new Error(errorData.error || `HTTP error! Status: ${response.status}`)
+        } catch (error) {
+          console.error('Non-JSON response:', text)
+          throw new Error(`HTTP error! Status: ${response.status}`)
         }
       }
-      setPaymentMessage('Listing deleted successfully!');
-      fetchListings();
+      setPaymentMessage('Listing deleted successfully!')
+      fetchListings()
     } catch (err) {
-      console.error('Error deleting listing:', err);
-      setPaymentMessage('Failed to delete listing: ' + err.message);
+      console.error('Error deleting listing:', err)
+      setPaymentMessage('Failed to delete listing: ' + err.message)
     }
-  };
+  }
 
   const removeImage = (index) => {
-    const newImages = [...editImages];
-    newImages.splice(index, 1);
-    setEditImages(newImages);
-  };
+    const newImages = [...editImages]
+    newImages.splice(index, 1)
+    setEditImages(newImages)
+  }
 
   const handleReviewSubmit = async (reviewData) => {
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
     const response = await fetch(`${backendUrl}/api/reviews`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': user.uid },
+      headers: { 'Content-Type': 'application/json', Authorization: user.uid },
       body: JSON.stringify({
         ...reviewData,
         userId: user.uid,
         userEmail: user.email
-      }),
-    });
-    
+      })
+    })
+
     if (!response.ok) {
-      const text = await response.text();
+      const text = await response.text()
       try {
-        const errorData = JSON.parse(text);
-        throw new Error(errorData.error || 'Failed to submit review');
-      } catch (jsonErr) {
-        console.error('Non-JSON response:', text);
-        throw new Error(`HTTP error! Status: ${response.status}`);
+        const errorData = JSON.parse(text)
+        throw new Error(errorData.error || 'Failed to submit review')
+      } catch (error) {
+        console.error('Non-JSON response:', text)
+        throw new Error(`HTTP error! Status: ${response.status}`)
       }
     }
-    
-    return response.json();
-  };
+
+    return response.json()
+  }
 
   return (
     <Container className="my-4 my-md-5">
       <h1 className="h3 h-md-1">Home Base</h1>
       <div className="mb-4">
-        {user ? (
+        {user
+          ? (
           <div className="d-flex align-items-center justify-content-between">
             <div>
               <h5 className="mb-1">Welcome, {user.displayName || user.email}! </h5>
               <p className="text-muted mb-0">Ready to find your perfect accommodation?</p>
             </div>
-            <Button 
-              variant="outline-danger" 
-              size="sm" 
+            <Button
+              variant="outline-danger"
+              size="sm"
               onClick={handleSignOut}
             >
               Log Out
             </Button>
           </div>
-        ) : (
+            )
+          : (
           <div className="text-center py-3">
             <h5>Find Your Perfect Accommodation 🏠</h5>
             <p className="text-muted mb-3">
               Browse listings or log in to book properties and message hosts
             </p>
             <div className="d-flex gap-2 justify-content-center">
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 onClick={() => navigate('/login')}
               >
                 Log In to Book
               </Button>
-              <Button 
-                variant="outline-primary" 
+              <Button
+                variant="outline-primary"
                 onClick={() => navigate('/login')}
               >
                 Create Account
               </Button>
             </div>
           </div>
-        )}
+            )}
       </div>
       <Card className="mb-4">
         <Card.Body>
           <Form onSubmit={handleSearch}>
             <Row className="g-2">
               <Col xs={6} md={3}>
-                <Form.Select 
-                  value={typeFilter} 
+                <Form.Select
+                  value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
                   size="sm"
                 >
@@ -385,14 +378,14 @@ function Home({ user, listings, error, loading, typeFilter, setTypeFilter, locat
           </Form>
         </Modal.Body>
       </Modal>
-      <ReviewModal 
-        show={showReviewModal && selectedListing !== null} 
-        onHide={() => setShowReviewModal(false)} 
-        listing={selectedListing} 
-        user={user} 
+      <ReviewModal
+        show={showReviewModal && selectedListing !== null}
+        onHide={() => setShowReviewModal(false)}
+        listing={selectedListing}
+        user={user}
         onSubmit={handleReviewSubmit} />
     </Container>
-  );
+  )
 }
 
-export default Home;
+export default Home

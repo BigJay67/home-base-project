@@ -1,96 +1,96 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Badge, Alert, Spinner, Carousel, Modal, Form } from 'react-bootstrap';
-import MessageButton from './MessageButton';
+import React, { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { Container, Row, Col, Card, Button, Badge, Alert, Spinner, Carousel, Modal, Form } from 'react-bootstrap'
 
-function ListingDetail({ user, handlePayment, parsePrice }) {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [listing, setListing] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [reviews, setReviews] = useState([]);
-  const [averageRating, setAverageRating] = useState(0);
-  const [totalReviews, setTotalReviews] = useState(0);
-  const [showAllReviews, setShowAllReviews] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [imageErrors, setImageErrors] = useState(new Set());
-  const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
-  const [submittingReview, setSubmittingReview] = useState(false);
+import MessageButton from './MessageButton'
+
+function ListingDetail ({ user, handlePayment, parsePrice }) {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const [listing, setListing] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [reviews, setReviews] = useState([])
+  const [averageRating, setAverageRating] = useState(0)
+  const [totalReviews, setTotalReviews] = useState(0)
+  const [showAllReviews, setShowAllReviews] = useState(false)
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [imageErrors, setImageErrors] = useState(new Set())
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' })
+  const [submittingReview, setSubmittingReview] = useState(false)
 
   useEffect(() => {
     if (!id || id === ':id') {
-      setError('Invalid listing ID');
-      setLoading(false);
-      return;
+      setError('Invalid listing ID')
+      setLoading(false)
+      return
     }
-    console.log('ListingDetail useEffect, id:', id);
-    fetchListing();
-    fetchReviews();
-  }, [id]);
+    fetchListing()
+    fetchReviews()
+  }, [id])
 
   const fetchListing = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://192.168.0.192:5000';
-      const url = `${backendUrl}/api/listings/${id}`;
-      console.log('Fetching listing, URL:', url);
-      const response = await fetch(url);
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://192.168.0.192:5000'
+      const url = `${backendUrl}/api/listings/${id}`
+
+      const response = await fetch(url)
       if (!response.ok) {
-        const text = await response.text();
-        const errorData = JSON.parse(text);
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+        const text = await response.text()
+        const errorData = JSON.parse(text)
+        throw new Error(errorData.error || `HTTP ${response.status}`)
       }
-      const data = await response.json();
-      console.log('Listing fetched:', data);
-      setListing(data);
-      setError('');
+      const data = await response.json()
+
+      setListing(data)
+      setError('')
     } catch (err) {
-      console.error('Error fetching listing:', err);
-      setError(`Failed to load listing: ${err.message}`);
+      console.error('Error fetching listing:', err)
+      setError(`Failed to load listing: ${err.message}`)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const fetchReviews = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://192.168.0.192:5000';
-      const url = `${backendUrl}/api/reviews/${id}`;
-      console.log('Fetching reviews, URL:', url);
-      const response = await fetch(url);
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://192.168.0.192:5000'
+      const url = `${backendUrl}/api/reviews/${id}`
+
+      const response = await fetch(url)
       if (!response.ok) {
-        const text = await response.text();
-        const errorData = JSON.parse(text);
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+        const text = await response.text()
+        const errorData = JSON.parse(text)
+        throw new Error(errorData.error || `HTTP ${response.status}`)
       }
-      const data = await response.json();
-      console.log('Reviews fetched:', data);
-      setReviews(data.reviews || []);
-      setAverageRating(data.averageRating || 0);
-      setTotalReviews(data.totalReviews || 0);
+      const data = await response.json()
+
+      setReviews(data.reviews || [])
+      setAverageRating(data.averageRating || 0)
+      setTotalReviews(data.totalReviews || 0)
     } catch (err) {
-      console.error('Error fetching reviews:', err);
+      console.error('Error fetching reviews:', err)
     }
-  };
+  }
 
   const getImageUrl = (image, size = 'original') => {
-    if (!image) return null;
-    if (typeof image === 'string') return image;
-    return image[size] || image.thumbnail || image;
-  };
+    if (!image) return null
+    if (typeof image === 'string') return image
+    return image[size] || image.thumbnail || image
+  }
 
   const handleImageError = (index) => {
-    setImageErrors(prev => new Set([...prev, index]));
-  };
+    setImageErrors(prev => new Set([...prev, index]))
+  }
 
-  const validImages = listing?.images ? listing.images.filter((_, index) => !imageErrors.has(index)) : [];
+  const validImages = listing?.images ? listing.images.filter((_, index) => !imageErrors.has(index)) : []
 
   const renderRatingStars = (rating, showNumber = false) => {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    const fullStars = Math.floor(rating)
+    const hasHalfStar = rating % 1 >= 0.5
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
 
     return (
       <div className="d-flex align-items-center">
@@ -107,23 +107,23 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
           <span className="ms-1 fw-bold">{rating.toFixed(1)}</span>
         )}
       </div>
-    );
-  };
+    )
+  }
 
   const handleReviewSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!user) {
-      navigate('/login');
-      return;
+      navigate('/login')
+      return
     }
 
-    setSubmittingReview(true);
+    setSubmittingReview(true)
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://192.168.0.192:5000';
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://192.168.0.192:5000'
       const response = await fetch(`${backendUrl}/api/reviews`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           listingId: id,
@@ -132,26 +132,26 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
           userName: user.displayName || user.email,
           rating: reviewForm.rating,
           comment: reviewForm.comment
-        }),
-      });
+        })
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP ${response.status}`)
       }
 
-      await fetchReviews();
-      setShowReviewModal(false);
-      setReviewForm({ rating: 5, comment: '' });
+      await fetchReviews()
+      setShowReviewModal(false)
+      setReviewForm({ rating: 5, comment: '' })
     } catch (err) {
-      console.error('Error submitting review:', err);
-      setError(`Failed to submit review: ${err.message}`);
+      console.error('Error submitting review:', err)
+      setError(`Failed to submit review: ${err.message}`)
     } finally {
-      setSubmittingReview(false);
+      setSubmittingReview(false)
     }
-  };
+  }
 
-  const displayedReviews = showAllReviews ? reviews : reviews.slice(0, 3);
+  const displayedReviews = showAllReviews ? reviews : reviews.slice(0, 3)
 
   if (loading) {
     return (
@@ -159,7 +159,7 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
         <Spinner animation="border" />
         <p className="mt-2">Loading listing details...</p>
       </Container>
-    );
+    )
   }
 
   if (error || !listing) {
@@ -172,14 +172,14 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
           Back to Listings
         </Button>
       </Container>
-    );
+    )
   }
 
   return (
     <Container className="my-4 my-md-5">
       <div className="d-flex align-items-center mb-4">
-        <Button 
-          variant="outline-secondary" 
+        <Button
+          variant="outline-secondary"
           onClick={() => navigate('/')}
           className="me-3"
         >
@@ -205,9 +205,10 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
 
       <Row>
         <Col lg={8}>
-          {validImages.length > 0 ? (
-            <Carousel 
-              activeIndex={currentImageIndex} 
+          {validImages.length > 0
+            ? (
+            <Carousel
+              activeIndex={currentImageIndex}
               onSelect={setCurrentImageIndex}
               indicators={validImages.length > 1}
               controls={validImages.length > 1}
@@ -230,7 +231,7 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
                       onError={() => handleImageError(index)}
                     />
                     {!imageLoaded && (
-                      <div 
+                      <div
                         style={{
                           width: '100%',
                           height: '100%',
@@ -248,13 +249,14 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
                 </Carousel.Item>
               ))}
             </Carousel>
-          ) : (
-            <div 
-              style={{ 
-                height: '400px', 
-                backgroundColor: '#f8f9fa', 
-                display: 'flex', 
-                alignItems: 'center', 
+              )
+            : (
+            <div
+              style={{
+                height: '400px',
+                backgroundColor: '#f8f9fa',
+                display: 'flex',
+                alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: '0.375rem'
               }}
@@ -262,7 +264,7 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
             >
               <span className="text-muted">No images available</span>
             </div>
-          )}
+              )}
 
           <Card className="mb-4">
             <Card.Body>
@@ -300,8 +302,8 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
                   Reviews {averageRating > 0 && `(${totalReviews})`}
                 </h5>
                 {user && (
-                  <Button 
-                    variant="outline-primary" 
+                  <Button
+                    variant="outline-primary"
                     size="sm"
                     onClick={() => setShowReviewModal(true)}
                   >
@@ -310,12 +312,13 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
                 )}
               </div>
 
-              {averageRating === 0 ? (
+              {averageRating === 0
+                ? (
                 <div className="text-center py-4 text-muted">
                   <p>No reviews yet. Be the first to review this property!</p>
                   {!user && (
-                    <Button 
-                      variant="primary" 
+                    <Button
+                      variant="primary"
                       size="sm"
                       onClick={() => navigate('/login')}
                     >
@@ -323,7 +326,8 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
                     </Button>
                   )}
                 </div>
-              ) : (
+                  )
+                : (
                 <>
                   <div className="mb-4">
                     <div className="d-flex align-items-center mb-2">
@@ -355,8 +359,8 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
 
                   {reviews.length > 3 && (
                     <div className="text-center">
-                      <Button 
-                        variant="outline-secondary" 
+                      <Button
+                        variant="outline-secondary"
                         size="sm"
                         onClick={() => setShowAllReviews(!showAllReviews)}
                       >
@@ -365,7 +369,7 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
                     </div>
                   )}
                 </>
-              )}
+                  )}
             </Card.Body>
           </Card>
         </Col>
@@ -379,38 +383,42 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
               </div>
 
               <div className="d-grid gap-2">
-                {user ? (
-                  user.uid === listing.createdBy ? (
+                {user
+                  ? (
+                      user.uid === listing.createdBy
+                        ? (
                     <Alert variant="info" className="text-center mb-0">
                       <small>This is your listing</small>
                     </Alert>
-                  ) : (
+                          )
+                        : (
                     <>
-                      <Button 
-                        variant="primary" 
+                      <Button
+                        variant="primary"
                         size="lg"
                         onClick={() => handlePayment(listing._id, parsePrice(listing.price))}
 
                       >
                         Book Now
                       </Button>
-                      <MessageButton 
+                      <MessageButton
                         listing={listing}
                         user={user}
                         variant="outline-primary"
                         size="lg"
                       />
                     </>
-                  )
-                ) : (
-                  <Button 
-                    variant="primary" 
+                          )
+                    )
+                  : (
+                  <Button
+                    variant="primary"
                     size="lg"
                     onClick={() => navigate('/login')}
                   >
                     Log In to Book
                   </Button>
-                )}
+                    )}
               </div>
 
               <div className="mt-4">
@@ -479,15 +487,15 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               onClick={() => setShowReviewModal(false)}
             >
               Cancel
             </Button>
-            <Button 
-              variant="primary" 
-              type="submit" 
+            <Button
+              variant="primary"
+              type="submit"
               disabled={submittingReview}
             >
               {submittingReview ? 'Submitting...' : 'Submit Review'}
@@ -496,7 +504,7 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
         </Form>
       </Modal>
     </Container>
-  );
+  )
 }
 
-export default ListingDetail;
+export default ListingDetail

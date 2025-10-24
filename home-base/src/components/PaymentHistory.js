@@ -1,351 +1,328 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Table, Button, Badge, Alert, Spinner, Form, InputGroup, Dropdown, Modal } from 'react-bootstrap';
-import { Download, Filter, Search, FileText, Mail, Share2, CheckSquare, Square, Send, MoreVertical } from 'react-feather';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react'
+import { Container, Row, Col, Card, Table, Button, Badge, Alert, Spinner, Form, InputGroup, Dropdown, Modal } from 'react-bootstrap'
+import { Download, Search, FileText, Mail, Share2, Send, MoreVertical } from 'react-feather'
+import { useNavigate } from 'react-router-dom'
 
-function PaymentHistory({ user }) {
-    const [payments, setPayments] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [message, setMessage] = useState('');
-    const [filter, setFilter] = useState('all');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [sharing, setSharing] = useState({});
-    const [emailing, setEmailing] = useState({});
-    const [selectedPayments, setSelectedPayments] = useState(new Set());
-    const [showBulkModal, setShowBulkModal] = useState(false);
-    const [bulkOperation, setBulkOperation] = useState('');
-    const navigate = useNavigate();
+function PaymentHistory ({ user }) {
+  const [payments, setPayments] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [filter, setFilter] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [sharing, setSharing] = useState({})
+  const [emailing, setEmailing] = useState({})
+  const [selectedPayments, setSelectedPayments] = useState(new Set())
+  const [showBulkModal, setShowBulkModal] = useState(false)
+  const [bulkOperation, setBulkOperation] = useState('')
+  const navigate = useNavigate()
 
-    useEffect(() => {
-        if (user) {
-            fetchPaymentHistory();
+  useEffect(() => {
+    if (user) {
+      fetchPaymentHistory()
+    }
+  }, [user, filter])
+
+  const fetchPaymentHistory = async () => {
+    try {
+      setLoading(true)
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+      const response = await fetch(`${backendUrl}/api/payments/history?status=${filter}`, {
+        headers: {
+          Authorization: user.uid
         }
-    }, [user, filter]);
+      })
 
-    const fetchPaymentHistory = async () => {
-        try {
-            setLoading(true);
-            const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-            const response = await fetch(`${backendUrl}/api/payments/history?status=${filter}`, {
-                headers: {
-                    'Authorization': user.uid
-                }
-            });
+      if (!response.ok) {
+        throw new Error('Failed to fetch payment history')
+      }
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch payment history');
-            }
+      const data = await response.json()
+      setPayments(data)
+    } catch (err) {
+      console.error('Error fetching payment history:', err)
+      setError('Failed to load payment history')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-            const data = await response.json();
-            setPayments(data);
-        } catch (err) {
-            console.error('Error fetching payment history:', err);
-            setError('Failed to load payment history');
-        } finally {
-            setLoading(false);
+  const handleDownloadReceipt = async (paymentId, template = 'standard') => {
+    const payment = payments.find(p => p._id === paymentId)
+    if (!payment) return
+
+    if (payment.status !== 'completed') {
+      alert(`❌ Receipt download is only available for completed payments. Current status: ${payment.status}`)
+      return
+    }
+
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+      const response = await fetch(`${backendUrl}/api/payments/${paymentId}/receipt?template=${template}`, {
+        headers: {
+          Authorization: user.uid
         }
-    };
+      })
 
-   
-    const getStatusMessage = (status) => {
-        const messages = {
-            pending: 'Receipt available after payment is completed',
-            failed: 'Receipt not available for failed payments',
-            cancelled: 'Receipt not available for cancelled payments'
-        };
-        return messages[status] || 'Receipt not available';
-    };
+      if (!response.ok) {
+        throw new Error('Failed to generate receipt')
+      }
 
-    const handleDownloadReceipt = async (paymentId, template = 'standard') => {
-        
-        const payment = payments.find(p => p._id === paymentId);
-        if (!payment) return;
-        
-        if (payment.status !== 'completed') {
-            alert(`❌ Receipt download is only available for completed payments. Current status: ${payment.status}`);
-            return;
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `receipt-${payment.paymentReference}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      setMessage('✅ Receipt downloaded successfully!')
+      setTimeout(() => setMessage(''), 3000)
+    } catch (err) {
+      console.error('Error downloading receipt:', err)
+      setError('Failed to download receipt')
+    }
+  }
+
+  const handleEmailReceipt = async (paymentId) => {
+    const payment = payments.find(p => p._id === paymentId)
+    if (!payment) return
+
+    if (payment.status !== 'completed') {
+      alert(`❌ Receipt email is only available for completed payments. Current status: ${payment.status}`)
+      return
+    }
+
+    try {
+      setEmailing(prev => ({ ...prev, [paymentId]: true }))
+
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+      const response = await fetch(`${backendUrl}/api/payments/${paymentId}/email-receipt`, {
+        method: 'POST',
+        headers: {
+          Authorization: user.uid
         }
+      })
 
-        try {
-            const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-            const response = await fetch(`${backendUrl}/api/payments/${paymentId}/receipt?template=${template}`, {
-                headers: {
-                    'Authorization': user.uid
-                }
-            });
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to email receipt')
+      }
 
-            if (!response.ok) {
-                throw new Error('Failed to generate receipt');
-            }
+      setMessage('✅ Receipt sent to your email successfully!')
+      setTimeout(() => setMessage(''), 3000)
+    } catch (err) {
+      console.error('Error emailing receipt:', err)
+      setError(`Failed to email receipt: ${err.message}`)
+    } finally {
+      setEmailing(prev => ({ ...prev, [paymentId]: false }))
+    }
+  }
 
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `receipt-${payment.paymentReference}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-            
-           
-            setMessage('✅ Receipt downloaded successfully!');
-            setTimeout(() => setMessage(''), 3000);
-        } catch (err) {
-            console.error('Error downloading receipt:', err);
-            setError('Failed to download receipt');
-        }
-    };
+  const handleShareReceipt = async (paymentId) => {
+    const payment = payments.find(p => p._id === paymentId)
+    if (!payment) return
 
-    const handleEmailReceipt = async (paymentId) => {
-        
-        const payment = payments.find(p => p._id === paymentId);
-        if (!payment) return;
-        
-        if (payment.status !== 'completed') {
-            alert(`❌ Receipt email is only available for completed payments. Current status: ${payment.status}`);
-            return;
-        }
+    if (payment.status !== 'completed') {
+      alert(`❌ Shareable receipt is only available for completed payments. Current status: ${payment.status}`)
+      return
+    }
 
-        try {
-            setEmailing(prev => ({ ...prev, [paymentId]: true }));
-            
-            const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-            const response = await fetch(`${backendUrl}/api/payments/${paymentId}/email-receipt`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': user.uid
-                }
-            });
+    try {
+      setSharing(prev => ({ ...prev, [paymentId]: true }))
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to email receipt');
-            }
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+      const response = await fetch(`${backendUrl}/api/payments/${paymentId}/share`, {
+        method: 'POST',
+        headers: {
+          Authorization: user.uid,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ expiresIn: '7d' })
+      })
 
-           
-            setMessage('✅ Receipt sent to your email successfully!');
-            setTimeout(() => setMessage(''), 3000);
-            
-        } catch (err) {
-            console.error('Error emailing receipt:', err);
-            setError(`Failed to email receipt: ${err.message}`);
-        } finally {
-            setEmailing(prev => ({ ...prev, [paymentId]: false }));
-        }
-    };
+      if (!response.ok) {
+        throw new Error('Failed to create share link')
+      }
 
-    const handleShareReceipt = async (paymentId) => {
-        
-        const payment = payments.find(p => p._id === paymentId);
-        if (!payment) return;
-        
-        if (payment.status !== 'completed') {
-            alert(`❌ Shareable receipt is only available for completed payments. Current status: ${payment.status}`);
-            return;
-        }
+      const result = await response.json()
 
-        try {
-            setSharing(prev => ({ ...prev, [paymentId]: true }));
-            
-            const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-            const response = await fetch(`${backendUrl}/api/payments/${paymentId}/share`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': user.uid,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ expiresIn: '7d' })
-            });
+      await navigator.clipboard.writeText(result.shareableLink)
 
-            if (!response.ok) {
-                throw new Error('Failed to create share link');
-            }
+      setMessage('✅ Shareable link copied to clipboard!')
+      setTimeout(() => setMessage(''), 3000)
+    } catch (err) {
+      console.error('Error sharing receipt:', err)
+      setError(`Failed to create share link: ${err.message}`)
+    } finally {
+      setSharing(prev => ({ ...prev, [paymentId]: false }))
+    }
+  }
 
-            const result = await response.json();
-            
-            
-            await navigator.clipboard.writeText(result.shareableLink);
-            
-            
-            setMessage('✅ Shareable link copied to clipboard!');
-            setTimeout(() => setMessage(''), 3000);
-        } catch (err) {
-            console.error('Error sharing receipt:', err);
-            setError(`Failed to create share link: ${err.message}`);
-        } finally {
-            setSharing(prev => ({ ...prev, [paymentId]: false }));
-        }
-    };
+  const handleBulkEmail = async (paymentIds) => {
+    const completedPayments = paymentIds.filter(id => {
+      const payment = payments.find(p => p._id === id)
+      return payment && payment.status === 'completed'
+    })
 
-    const handleBulkEmail = async (paymentIds) => {
-        
-        const completedPayments = paymentIds.filter(id => {
-            const payment = payments.find(p => p._id === id);
-            return payment && payment.status === 'completed';
-        });
+    const pendingPayments = paymentIds.filter(id => {
+      const payment = payments.find(p => p._id === id)
+      return payment && payment.status !== 'completed'
+    })
 
-        const pendingPayments = paymentIds.filter(id => {
-            const payment = payments.find(p => p._id === id);
-            return payment && payment.status !== 'completed';
-        });
+    if (completedPayments.length === 0) {
+      alert('❌ No completed payments selected. Receipts can only be emailed for completed payments.')
+      return
+    }
 
-        if (completedPayments.length === 0) {
-            alert('❌ No completed payments selected. Receipts can only be emailed for completed payments.');
-            return;
-        }
+    if (pendingPayments.length > 0) {
+      alert(`ℹ️ ${pendingPayments.length} pending payments skipped. Receipts are only available for completed payments.`)
+    }
 
-        if (pendingPayments.length > 0) {
-            alert(`ℹ️ ${pendingPayments.length} pending payments skipped. Receipts are only available for completed payments.`);
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+
+      for (const paymentId of completedPayments) {
+        setEmailing(prev => ({ ...prev, [paymentId]: true }))
+
+        const response = await fetch(`${backendUrl}/api/payments/${paymentId}/email-receipt`, {
+          method: 'POST',
+          headers: {
+            Authorization: user.uid
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to email receipt for payment ${paymentId}`)
         }
 
-        try {
-            const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-            
-            for (const paymentId of completedPayments) {
-                setEmailing(prev => ({ ...prev, [paymentId]: true }));
-                
-                const response = await fetch(`${backendUrl}/api/payments/${paymentId}/email-receipt`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': user.uid
-                    }
-                });
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
 
-                if (!response.ok) {
-                    throw new Error(`Failed to email receipt for payment ${paymentId}`);
-                }
+      setMessage(`✅ Successfully emailed ${completedPayments.length} receipts!`)
+      setSelectedPayments(new Set())
+    } catch (err) {
+      throw err
+    } finally {
+      const resetEmailing = {}
+      paymentIds.forEach(id => resetEmailing[id] = false)
+      setEmailing(prev => ({ ...prev, ...resetEmailing }))
+    }
+  }
 
-                
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-            
-            setMessage(`✅ Successfully emailed ${completedPayments.length} receipts!`);
-            setSelectedPayments(new Set());
-            
-        } catch (err) {
-            throw err;
-        } finally {
-            
-            const resetEmailing = {};
-            paymentIds.forEach(id => resetEmailing[id] = false);
-            setEmailing(prev => ({ ...prev, ...resetEmailing }));
-        }
-    };
+  const handleBulkDownload = async (paymentIds) => {
+    const completedPayments = paymentIds.filter(id => {
+      const payment = payments.find(p => p._id === id)
+      return payment && payment.status === 'completed'
+    })
 
-    const handleBulkDownload = async (paymentIds) => {
-        
-        const completedPayments = paymentIds.filter(id => {
-            const payment = payments.find(p => p._id === id);
-            return payment && payment.status === 'completed';
-        });
+    const pendingPayments = paymentIds.filter(id => {
+      const payment = payments.find(p => p._id === id)
+      return payment && payment.status !== 'completed'
+    })
 
-        const pendingPayments = paymentIds.filter(id => {
-            const payment = payments.find(p => p._id === id);
-            return payment && payment.status !== 'completed';
-        });
+    if (completedPayments.length === 0) {
+      alert('❌ No completed payments selected. Receipts can only be downloaded for completed payments.')
+      return
+    }
 
-        if (completedPayments.length === 0) {
-            alert('❌ No completed payments selected. Receipts can only be downloaded for completed payments.');
-            return;
-        }
+    if (pendingPayments.length > 0) {
+      alert(`ℹ️ ${pendingPayments.length} pending payments skipped. Receipts are only available for completed payments.`)
+    }
 
-        if (pendingPayments.length > 0) {
-            alert(`ℹ️ ${pendingPayments.length} pending payments skipped. Receipts are only available for completed payments.`);
-        }
+    try {
+      for (const paymentId of completedPayments) {
+        await handleDownloadReceipt(paymentId)
 
-        try {
-            for (const paymentId of completedPayments) {
-                await handleDownloadReceipt(paymentId);
-                
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-        } catch (err) {
-            throw err;
-        }
-    };
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+    } catch (err) {
+      throw err
+    }
+  }
 
-    const toggleSelectAll = () => {
-        if (selectedPayments.size === filteredPayments.length) {
-            setSelectedPayments(new Set());
-        } else {
-            const allIds = new Set(filteredPayments.map(p => p._id));
-            setSelectedPayments(allIds);
-        }
-    };
+  const toggleSelectAll = () => {
+    if (selectedPayments.size === filteredPayments.length) {
+      setSelectedPayments(new Set())
+    } else {
+      const allIds = new Set(filteredPayments.map(p => p._id))
+      setSelectedPayments(allIds)
+    }
+  }
 
-    const toggleSelectPayment = (paymentId) => {
-        const newSelected = new Set(selectedPayments);
-        if (newSelected.has(paymentId)) {
-            newSelected.delete(paymentId);
-        } else {
-            newSelected.add(paymentId);
-        }
-        setSelectedPayments(newSelected);
-    };
+  const toggleSelectPayment = (paymentId) => {
+    const newSelected = new Set(selectedPayments)
+    if (newSelected.has(paymentId)) {
+      newSelected.delete(paymentId)
+    } else {
+      newSelected.add(paymentId)
+    }
+    setSelectedPayments(newSelected)
+  }
 
-    const handleBulkOperation = (operation) => {
-        if (selectedPayments.size === 0) {
-            alert('Please select at least one payment');
-            return;
-        }
+  const handleBulkOperation = (operation) => {
+    if (selectedPayments.size === 0) {
+      alert('Please select at least one payment')
+      return
+    }
 
-        setBulkOperation(operation);
-        setShowBulkModal(true);
-    };
+    setBulkOperation(operation)
+    setShowBulkModal(true)
+  }
 
-    const confirmBulkOperation = async () => {
-        const paymentIds = Array.from(selectedPayments);
-        
-        try {
-            if (bulkOperation === 'email') {
-                await handleBulkEmail(paymentIds);
-            } else if (bulkOperation === 'download') {
-                await handleBulkDownload(paymentIds);
-            }
-        } catch (err) {
-            console.error('Bulk operation failed:', err);
-            alert(`❌ Bulk operation failed: ${err.message}`);
-        } finally {
-            setShowBulkModal(false);
-            setBulkOperation('');
-        }
-    };
+  const confirmBulkOperation = async () => {
+    const paymentIds = Array.from(selectedPayments)
 
-    const getStatusBadge = (status) => {
-        const variants = {
-            completed: 'success',
-            pending: 'warning',
-            failed: 'danger',
-            refunded: 'info'
-        };
-        return <Badge bg={variants[status] || 'secondary'}>{status.toUpperCase()}</Badge>;
-    };
+    try {
+      if (bulkOperation === 'email') {
+        await handleBulkEmail(paymentIds)
+      } else if (bulkOperation === 'download') {
+        await handleBulkDownload(paymentIds)
+      }
+    } catch (err) {
+      console.error('Bulk operation failed:', err)
+      alert(`❌ Bulk operation failed: ${err.message}`)
+    } finally {
+      setShowBulkModal(false)
+      setBulkOperation('')
+    }
+  }
 
-    const formatCurrency = (amount, currency = 'NGN') => {
-        return new Intl.NumberFormat('en-NG', {
-            style: 'currency',
-            currency: currency,
-        }).format(amount);
-    };
+  const getStatusBadge = (status) => {
+    const variants = {
+      completed: 'success',
+      pending: 'warning',
+      failed: 'danger',
+      refunded: 'info'
+    }
+    return <Badge bg={variants[status] || 'secondary'}>{status.toUpperCase()}</Badge>
+  }
 
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('en-NG', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
+  const formatCurrency = (amount, currency = 'NGN') => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency
+    }).format(amount)
+  }
 
-    const filteredPayments = payments.filter(payment =>
-        payment.listingId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-NG', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const filteredPayments = payments.filter(payment =>
+    payment.listingId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         payment.paymentReference.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  )
 
-    const SelectionHeader = () => (
+  const SelectionHeader = () => (
         <th style={{ width: '40px' }}>
             {filteredPayments.length > 0 && (
                 <Form.Check
@@ -356,9 +333,9 @@ function PaymentHistory({ user }) {
                 />
             )}
         </th>
-    );
+  )
 
-    const SelectionCell = ({ paymentId }) => (
+  const SelectionCell = ({ paymentId }) => (
         <td>
             <Form.Check
                 type="checkbox"
@@ -366,12 +343,12 @@ function PaymentHistory({ user }) {
                 onChange={() => toggleSelectPayment(paymentId)}
             />
         </td>
-    );
+  )
 
-    const BulkActionsToolbar = () => {
-        if (selectedPayments.size === 0) return null;
+  const BulkActionsToolbar = () => {
+    if (selectedPayments.size === 0) return null
 
-        return (
+    return (
             <Card className="mb-3 bg-light">
                 <Card.Body className="py-2">
                     <div className="d-flex justify-content-between align-items-center">
@@ -407,18 +384,18 @@ function PaymentHistory({ user }) {
                     </div>
                 </Card.Body>
             </Card>
-        );
-    };
+    )
+  }
 
-    if (!user) {
-        return (
+  if (!user) {
+    return (
             <Container className="my-5">
                 <Alert variant="warning">Please log in to view your payment history.</Alert>
             </Container>
-        );
-    }
+    )
+  }
 
-    return (
+  return (
         <Container className="my-4 my-md-5">
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-2">
                 <div>
@@ -474,27 +451,31 @@ function PaymentHistory({ user }) {
 
             <BulkActionsToolbar />
 
-            {loading ? (
+            {loading
+              ? (
                 <div className="text-center py-5">
                     <Spinner animation="border" variant="primary" />
                     <p className="mt-3 text-muted">Loading payment history...</p>
                 </div>
-            ) : (
+                )
+              : (
                 <>
-                    {filteredPayments.length === 0 ? (
+                    {filteredPayments.length === 0
+                      ? (
                         <Card>
                             <Card.Body className="text-center py-5">
                                 <FileText size={48} className="text-muted mb-3" />
                                 <h5>No payments found</h5>
                                 <p className="text-muted">
-                                    {searchTerm || filter !== 'all' 
-                                        ? 'Try adjusting your search or filters' 
-                                        : 'You haven\'t made any payments yet'
+                                    {searchTerm || filter !== 'all'
+                                      ? 'Try adjusting your search or filters'
+                                      : 'You haven\'t made any payments yet'
                                     }
                                 </p>
                             </Card.Body>
                         </Card>
-                    ) : (
+                        )
+                      : (
                         <div className="table-responsive">
                             <Table hover className="align-middle">
                                 <thead className="table-light">
@@ -541,41 +522,41 @@ function PaymentHistory({ user }) {
                                                     {payment.status === 'completed' && (
                                                         <>
                                                             <Dropdown>
-                                                                <Dropdown.Toggle 
-                                                                    variant="outline-primary" 
+                                                                <Dropdown.Toggle
+                                                                    variant="outline-primary"
                                                                     size="sm"
                                                                     id="dropdown-receipt"
                                                                 >
                                                                     <MoreVertical size={14} />
                                                                 </Dropdown.Toggle>
                                                                 <Dropdown.Menu>
-                                                                    <Dropdown.Item 
+                                                                    <Dropdown.Item
                                                                         onClick={() => handleDownloadReceipt(payment._id, 'standard')}
                                                                     >
                                                                         <Download size={14} className="me-2" />
                                                                         Download PDF
                                                                     </Dropdown.Item>
-                                                                    <Dropdown.Item 
+                                                                    <Dropdown.Item
                                                                         onClick={() => handleDownloadReceipt(payment._id, 'minimal')}
                                                                     >
                                                                         <Download size={14} className="me-2" />
                                                                         Download Minimal
                                                                     </Dropdown.Item>
-                                                                    <Dropdown.Item 
+                                                                    <Dropdown.Item
                                                                         onClick={() => handleDownloadReceipt(payment._id, 'corporate')}
                                                                     >
                                                                         <Download size={14} className="me-2" />
                                                                         Download Corporate
                                                                     </Dropdown.Item>
                                                                     <Dropdown.Divider />
-                                                                    <Dropdown.Item 
+                                                                    <Dropdown.Item
                                                                         onClick={() => handleEmailReceipt(payment._id)}
                                                                         disabled={emailing[payment._id]}
                                                                     >
                                                                         <Mail size={14} className="me-2" />
                                                                         {emailing[payment._id] ? 'Sending...' : 'Email Receipt'}
                                                                     </Dropdown.Item>
-                                                                    <Dropdown.Item 
+                                                                    <Dropdown.Item
                                                                         onClick={() => handleShareReceipt(payment._id)}
                                                                         disabled={sharing[payment._id]}
                                                                     >
@@ -602,9 +583,9 @@ function PaymentHistory({ user }) {
                                 </tbody>
                             </Table>
                         </div>
-                    )}
+                        )}
                 </>
-            )}
+                )}
 
             {!loading && payments.length > 0 && (
                 <Card className="mt-4">
@@ -666,7 +647,7 @@ function PaymentHistory({ user }) {
                 </Modal.Footer>
             </Modal>
         </Container>
-    );
+  )
 }
 
-export default PaymentHistory;
+export default PaymentHistory

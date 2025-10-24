@@ -1,150 +1,150 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Card, Row, Col, Button, Alert, Badge, Form, Modal, Spinner, Table } from 'react-bootstrap';
-import { ArrowLeft, User, Mail, Phone, Calendar, Shield, Trash2, Edit, Save, X } from 'react-feather';
+import React, { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { Container, Card, Row, Col, Button, Alert, Badge, Form, Modal, Spinner, Table } from 'react-bootstrap'
+import { ArrowLeft, User, Mail, Phone, Calendar, Shield, Trash2, Edit, Save, X } from 'react-feather'
 
-function UserDetail({ user: currentAdmin }) {
-  const { userId } = useParams();
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
-  const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState({});
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [saving, setSaving] = useState(false);
+function UserDetail ({ user: currentAdmin }) {
+  const { userId } = useParams()
+  const navigate = useNavigate()
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [editing, setEditing] = useState(false)
+  const [editForm, setEditForm] = useState({})
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (currentAdmin && userId) {
-      fetchUserDetails();
+      fetchUserDetails()
     }
-  }, [currentAdmin, userId]);
+  }, [currentAdmin, userId])
 
   const fetchUserDetails = async () => {
     try {
-      setLoading(true);
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      setLoading(true)
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/admin/users/${userId}`, {
         headers: {
-          'Authorization': currentAdmin.uid
+          Authorization: currentAdmin.uid
         }
-      });
+      })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch user details');
+        throw new Error('Failed to fetch user details')
       }
 
-      const data = await response.json();
-      setUser(data);
+      const data = await response.json()
+      setUser(data)
       setEditForm({
         displayName: data.displayName || '',
         email: data.email || '',
         phoneNumber: data.phoneNumber || '',
         status: data.status || 'active',
         role: data.role || 'user'
-      });
+      })
     } catch (err) {
-      console.error('Error fetching user details:', err);
-      setError('Failed to load user details');
+      console.error('Error fetching user details:', err)
+      setError('Failed to load user details')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleSave = async () => {
     try {
-      setSaving(true);
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      setSaving(true)
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/admin/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': currentAdmin.uid
+          Authorization: currentAdmin.uid
         },
         body: JSON.stringify(editForm)
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update user');
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update user')
       }
 
-      const data = await response.json();
-      setUser(data.user);
-      setEditing(false);
-      setMessage('User updated successfully');
-      setTimeout(() => setMessage(''), 3000);
+      const data = await response.json()
+      setUser(data.user)
+      setEditing(false)
+      setMessage('User updated successfully')
+      setTimeout(() => setMessage(''), 3000)
     } catch (err) {
-      setError(err.message);
+      setError(err.message)
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   const handleMakeAdmin = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/admin/users/${userId}/make-admin`, {
         method: 'POST',
         headers: {
-          'Authorization': currentAdmin.uid
+          Authorization: currentAdmin.uid
         }
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to make user admin');
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to make user admin')
       }
 
-      const data = await response.json();
-      setUser(data.user);
-      setEditForm(prev => ({ ...prev, role: 'admin' }));
-      setMessage('User promoted to admin successfully');
-      
-      setTimeout(() => setMessage(''), 3000);
+      const data = await response.json()
+      setUser(data.user)
+      setEditForm(prev => ({ ...prev, role: 'admin' }))
+      setMessage('User promoted to admin successfully')
+
+      setTimeout(() => setMessage(''), 3000)
     } catch (err) {
-      setError(err.message);
+      setError(err.message)
     }
-  };
+  }
 
   const handleDeleteUser = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/admin/users/${userId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': currentAdmin.uid
+          Authorization: currentAdmin.uid
         }
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete user');
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete user')
       }
 
-      setMessage('User deleted successfully');
-      setTimeout(() => navigate('/admin'), 2000);
+      setMessage('User deleted successfully')
+      setTimeout(() => navigate('/admin'), 2000)
     } catch (err) {
-      setError(err.message);
-      setShowDeleteModal(false);
+      setError(err.message)
+      setShowDeleteModal(false)
     }
-  };
+  }
 
   const getStatusBadge = (status) => {
     const variants = {
       active: 'success',
       suspended: 'warning',
       banned: 'danger'
-    };
-    return <Badge bg={variants[status] || 'secondary'}>{status.toUpperCase()}</Badge>;
-  };
+    }
+    return <Badge bg={variants[status] || 'secondary'}>{status.toUpperCase()}</Badge>
+  }
 
   const getRoleBadge = (role) => {
-    return role === 'admin' 
+    return role === 'admin'
       ? <Badge bg="danger"><Shield size={12} className="me-1" /> ADMIN</Badge>
-      : <Badge bg="secondary">USER</Badge>;
-  };
+      : <Badge bg="secondary">USER</Badge>
+  }
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-NG', {
@@ -153,15 +153,15 @@ function UserDetail({ user: currentAdmin }) {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    });
-  };
+    })
+  }
 
   if (!currentAdmin) {
     return (
       <Container className="my-5">
         <Alert variant="warning">Please log in to view user details.</Alert>
       </Container>
-    );
+    )
   }
 
   if (loading) {
@@ -170,7 +170,7 @@ function UserDetail({ user: currentAdmin }) {
         <Spinner animation="border" variant="primary" />
         <p className="mt-3">Loading user details...</p>
       </Container>
-    );
+    )
   }
 
   if (error && !user) {
@@ -181,7 +181,7 @@ function UserDetail({ user: currentAdmin }) {
           Back to Admin
         </Button>
       </Container>
-    );
+    )
   }
 
   if (!user) {
@@ -192,17 +192,17 @@ function UserDetail({ user: currentAdmin }) {
           Back to Admin
         </Button>
       </Container>
-    );
+    )
   }
 
-  const isCurrentUser = userId === currentAdmin.uid;
+  const isCurrentUser = userId === currentAdmin.uid
 
   return (
     <Container className="my-4 my-md-5">
       {/* Header */}
       <div className="d-flex align-items-center mb-4">
-        <Button 
-          variant="outline-secondary" 
+        <Button
+          variant="outline-secondary"
           onClick={() => navigate('/admin')}
           className="me-3"
         >
@@ -213,8 +213,9 @@ function UserDetail({ user: currentAdmin }) {
           <h1 className="h4 h-md-3 mb-1">User Management</h1>
           <p className="text-muted mb-0">User ID: {userId}</p>
         </div>
-        
-        {!editing ? (
+
+        {!editing
+          ? (
           <div className="d-flex gap-2">
             {user.role !== 'admin' && !isCurrentUser && (
               <Button variant="warning" onClick={handleMakeAdmin}>
@@ -233,7 +234,8 @@ function UserDetail({ user: currentAdmin }) {
               </Button>
             )}
           </div>
-        ) : (
+            )
+          : (
           <div className="d-flex gap-2">
             <Button variant="outline-secondary" onClick={() => setEditing(false)}>
               <X size={16} className="me-2" />
@@ -244,7 +246,7 @@ function UserDetail({ user: currentAdmin }) {
               {saving ? 'Saving...' : 'Save'}
             </Button>
           </div>
-        )}
+            )}
       </div>
 
       {message && <Alert variant="success">{message}</Alert>}
@@ -261,7 +263,8 @@ function UserDetail({ user: currentAdmin }) {
               </h5>
             </Card.Header>
             <Card.Body>
-              {editing ? (
+              {editing
+                ? (
                 <Row className="g-3">
                   <Col md={6}>
                     <Form.Group>
@@ -313,7 +316,7 @@ function UserDetail({ user: currentAdmin }) {
                       <Form.Select
                         value={editForm.role}
                         onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                        disabled={isCurrentUser} 
+                        disabled={isCurrentUser}
                       >
                         <option value="user">User</option>
                         <option value="admin">Admin</option>
@@ -326,7 +329,8 @@ function UserDetail({ user: currentAdmin }) {
                     </Form.Group>
                   </Col>
                 </Row>
-              ) : (
+                  )
+                : (
                 <Row className="g-3">
                   <Col md={6}>
                     <div className="d-flex align-items-center mb-3">
@@ -337,7 +341,7 @@ function UserDetail({ user: currentAdmin }) {
                       </div>
                     </div>
                   </Col>
-                  
+
                   <Col md={6}>
                     <div className="d-flex align-items-center mb-3">
                       <Mail size={20} className="text-primary me-3" />
@@ -392,7 +396,7 @@ function UserDetail({ user: currentAdmin }) {
                     </Col>
                   )}
                 </Row>
-              )}
+                  )}
             </Card.Body>
           </Card>
         </Col>
@@ -450,7 +454,7 @@ function UserDetail({ user: currentAdmin }) {
                     Make Admin
                   </Button>
                 )}
-                <Button 
+                <Button
                   variant="outline-secondary"
                   onClick={() => window.location.href = `mailto:${user.email}`}
                 >
@@ -458,8 +462,8 @@ function UserDetail({ user: currentAdmin }) {
                   Send Email
                 </Button>
                 {!isCurrentUser && (
-                  <Button 
-                    variant="outline-danger" 
+                  <Button
+                    variant="outline-danger"
                     onClick={() => setShowDeleteModal(true)}
                   >
                     <Trash2 size={16} className="me-2" />
@@ -504,7 +508,7 @@ function UserDetail({ user: currentAdmin }) {
         </Modal.Footer>
       </Modal>
     </Container>
-  );
+  )
 }
 
-export default UserDetail;
+export default UserDetail

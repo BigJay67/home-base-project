@@ -1,42 +1,43 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Button, Badge, Carousel, Spinner } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
-import MessageButton from './MessageButton';
+import React, { useState, useEffect } from 'react'
+import { Card, Button, Badge, Carousel, Spinner } from 'react-bootstrap'
+import { Link } from 'react-router-dom'
 
-function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, handleDelete }) {
-  const [averageRating, setAverageRating] = useState(0);
-  const [totalReviews, setTotalReviews] = useState(0);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [imageErrors, setImageErrors] = useState(new Set());
+import MessageButton from './MessageButton'
+
+function ListingCard ({ listing, user, handlePayment, parsePrice, handleEdit, handleDelete }) {
+  const [averageRating, setAverageRating] = useState(0)
+  const [totalReviews, setTotalReviews] = useState(0)
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [imageErrors, setImageErrors] = useState(new Set())
 
   useEffect(() => {
     const fetchRating = async () => {
       try {
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-        const response = await fetch(`${backendUrl}/api/reviews/${listing._id}/average`);
+        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+        const response = await fetch(`${backendUrl}/api/reviews/${listing._id}/average`)
         if (response.ok) {
-          const data = await response.json();
-          setAverageRating(data.averageRating);
-          setTotalReviews(data.totalReviews);
+          const data = await response.json()
+          setAverageRating(data.averageRating)
+          setTotalReviews(data.totalReviews)
         }
       } catch (err) {
-        console.error('Error fetching rating:', err);
+        console.error('Error fetching rating:', err)
       }
-    };
+    }
 
-    fetchRating();
-  }, [listing._id]);
+    fetchRating()
+  }, [listing._id])
 
   const getImageUrl = (image, size = 'thumbnail') => {
-    if (!image) return null;
-    
+    if (!image) return null
+
     if (typeof image === 'string') {
-      return image;
+      return image
     }
-    
-    return image[size] || image.original || image;
-  };
+
+    return image[size] || image.original || image
+  }
 
   const getPlaceholderImage = (width = 400, height = 300) => {
     return `data:image/svg+xml;base64,${btoa(`
@@ -44,29 +45,29 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
         <rect width="100%" height="100%" fill="#f8f9fa"/>
         <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="16" fill="#6c757d">No Image</text>
       </svg>
-    `)}`;
-  };
+    `)}`
+  }
 
   const handleImageError = (index) => {
-    setImageErrors(prev => new Set([...prev, index]));
-  };
+    setImageErrors(prev => new Set([...prev, index]))
+  }
 
-  const validImages = listing.images ? listing.images.filter((_, index) => !imageErrors.has(index)) : [];
+  const validImages = listing.images ? listing.images.filter((_, index) => !imageErrors.has(index)) : []
 
   const formatPrice = (price) => {
-    if (!price) return '₦0';
-    const match = price.match(/(\d+[\d,]*\d*)(.*)/);
-    if (!match) return `₦${price}`;
-    const numericValue = match[1].replace(/,/g, '');
-    const terms = match[2] || '';
-    const formattedNumeric = parseInt(numericValue).toLocaleString('en-NG');
-    return `₦${formattedNumeric}${terms}`;
-  };
+    if (!price) return '₦0'
+    const match = price.match(/(\d+[\d,]*\d*)(.*)/)
+    if (!match) return `₦${price}`
+    const numericValue = match[1].replace(/,/g, '')
+    const terms = match[2] || ''
+    const formattedNumeric = parseInt(numericValue).toLocaleString('en-NG')
+    return `₦${formattedNumeric}${terms}`
+  }
 
   const renderRatingStars = (rating) => {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    const fullStars = Math.floor(rating)
+    const hasHalfStar = rating % 1 >= 0.5
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
 
     return (
       <div className="d-flex align-items-center">
@@ -83,14 +84,15 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
           ({rating.toFixed(1)})
         </small>
       </div>
-    );
-  };
+    )
+  }
 
   return (
     <Card className="h-100 listing-card">
-      {validImages.length > 0 ? (
-        <Carousel 
-          activeIndex={currentImageIndex} 
+      {validImages.length > 0
+        ? (
+        <Carousel
+          activeIndex={currentImageIndex}
           onSelect={setCurrentImageIndex}
           indicators={validImages.length > 1}
           controls={validImages.length > 1}
@@ -112,7 +114,7 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
                   onError={() => handleImageError(index)}
                 />
                 {!imageLoaded && (
-                  <div 
+                  <div
                     style={{
                       width: '100%',
                       height: '100%',
@@ -129,7 +131,8 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
             </Carousel.Item>
           ))}
         </Carousel>
-      ) : (
+          )
+        : (
         <div style={{ height: '200px', overflow: 'hidden' }}>
           <img
             src={getPlaceholderImage()}
@@ -141,8 +144,8 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
             }}
           />
         </div>
-      )}
-      
+          )}
+
       <Card.Body className="d-flex flex-column">
         <div className="d-flex justify-content-between align-items-start mb-2">
           <Card.Title className="h6 mb-0 flex-grow-1">
@@ -152,20 +155,22 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
             {listing.type}
           </Badge>
         </div>
-        
+
         <div className="mb-2">
-          {averageRating > 0 ? (
-            renderRatingStars(averageRating)
-          ) : (
+          {averageRating > 0
+            ? (
+                renderRatingStars(averageRating)
+              )
+            : (
             <small className="text-muted">No reviews yet</small>
-          )}
+              )}
           {totalReviews > 0 && (
             <small className="text-muted d-block">
               {totalReviews} review{totalReviews !== 1 ? 's' : ''}
             </small>
           )}
         </div>
-        
+
         <div className="flex-grow-1 small">
           <div className="mb-1">
             <strong>Location:</strong> {listing.location}
@@ -187,7 +192,7 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
             </div>
           )}
         </div>
-        
+
         <div className="mt-auto pt-3">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <div className="h6 mb-0 text-primary">
@@ -197,50 +202,54 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
               {formatPrice(listing.price)}
             </div>
           </div>
-          
+
           <div className="d-flex gap-2 flex-wrap">
-            {user && user.uid === listing.userId ? (
+            {user && user.uid === listing.userId
+              ? (
               <>
-                <Button 
-                  variant="outline-primary" 
-                  size="sm" 
+                <Button
+                  variant="outline-primary"
+                  size="sm"
                   className="flex-fill"
                   onClick={() => handleEdit(listing)}
                 >
                   Edit
                 </Button>
-                <Button 
-                  variant="outline-danger" 
-                  size="sm" 
+                <Button
+                  variant="outline-danger"
+                  size="sm"
                   className="flex-fill"
                   onClick={() => handleDelete(listing._id)}
                 >
                   Delete
                 </Button>
               </>
-            ) : (
+                )
+              : (
               <>
-                {user ? (
-                  <Button 
-                    variant="primary" 
-                    size="sm" 
+                {user
+                  ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
                     className="flex-fill"
                     onClick={() => handlePayment(listing._id, parsePrice(listing.price))}
                   >
                     Book Now
                   </Button>
-                ) : (
-                  <Button 
-                    variant="outline-primary" 
-                    size="sm" 
+                    )
+                  : (
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
                     className="flex-fill"
                     as={Link}
                     to="/login"
                   >
                     Log In to Book
                   </Button>
-                )}
-                <MessageButton 
+                    )}
+                <MessageButton
                   listing={listing}
                   user={user}
                   variant="outline-secondary"
@@ -248,10 +257,10 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
                   className="flex-fill"
                 />
               </>
-            )}
-            <Button 
-              variant="outline-info" 
-              size="sm" 
+                )}
+            <Button
+              variant="outline-info"
+              size="sm"
               className="flex-fill"
               as={Link}
               to={`/listing/${listing._id}`}
@@ -262,7 +271,7 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
         </div>
       </Card.Body>
     </Card>
-  );
+  )
 }
 
-export default ListingCard;
+export default ListingCard

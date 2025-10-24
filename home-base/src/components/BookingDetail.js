@@ -1,80 +1,82 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Card, Row, Col, Button, Badge, Alert, Spinner, Table, Modal } from 'react-bootstrap';
-import { ArrowLeft, Download, Printer, Share2, Calendar, MapPin, DollarSign, User, FileText, Mail, Shield } from 'react-feather';
+import React, { useState, useEffect, useCallback } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { Container, Card, Row, Col, Button, Badge, Alert, Spinner, Table, Modal } from 'react-bootstrap'
+import { ArrowLeft, Download, Printer, Share2, Calendar, MapPin, DollarSign, User, FileText, Mail, Shield } from 'react-feather'
 
-function BookingDetail({ user: currentUser }) {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [booking, setBooking] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [showContactModal, setShowContactModal] = useState(false);
+/* global process, fetch, console, window, document, alert */
+
+function BookingDetail ({ user: currentUser }) {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const [booking, setBooking] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [showContactModal, setShowContactModal] = useState(false)
 
   const checkAdminStatus = useCallback(async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/users/${currentUser.uid}`);
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+      const response = await fetch(`${backendUrl}/api/users/${currentUser.uid}`)
       if (response.ok) {
-        const userData = await response.json();
-        setIsAdmin(userData.role === 'admin');
+        const userData = await response.json()
+        setIsAdmin(userData.role === 'admin')
       }
     } catch (err) {
-      console.error('Error checking admin status:', err);
+      console.error('Error checking admin status:', err)
     }
-  }, [currentUser]);
+  }, [currentUser])
 
   const fetchBookingDetail = useCallback(async () => {
     try {
-      setLoading(true);
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      setLoading(true)
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/bookings/${id}`, {
         headers: {
-          'Authorization': currentUser.uid
+          Authorization: currentUser.uid
         }
-      });
+      })
 
       if (!response.ok) {
         if (response.status === 403 || response.status === 404) {
           const adminResponse = await fetch(`${backendUrl}/api/admin/bookings/${id}`, {
             headers: {
-              'Authorization': currentUser.uid
+              Authorization: currentUser.uid
             }
-          });
-          
+          })
+
           if (adminResponse.ok) {
-            const data = await adminResponse.json();
-            setBooking(data);
-            return;
+            const data = await adminResponse.json()
+            setBooking(data)
+            return
           }
         }
-        throw new Error('Failed to fetch booking details');
+        throw new Error('Failed to fetch booking details')
       }
 
-      const data = await response.json();
-      setBooking(data);
+      const data = await response.json()
+      setBooking(data)
     } catch (err) {
-      console.error('Error fetching booking details:', err);
-      setError('Failed to load booking details');
+      console.error('Error fetching booking details:', err)
+      setError('Failed to load booking details')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [currentUser, id]);
+  }, [currentUser, id])
 
   useEffect(() => {
     if (currentUser && id) {
-      checkAdminStatus();
-      fetchBookingDetail();
+      checkAdminStatus()
+      fetchBookingDetail()
     }
-  }, [currentUser, id, checkAdminStatus, fetchBookingDetail]);
+  }, [currentUser, id, checkAdminStatus, fetchBookingDetail])
 
   const formatCurrency = (amount, currency = 'NGN') => {
     return new Intl.NumberFormat('en-NG', {
       style: 'currency',
-      currency: currency,
-    }).format(amount);
-  };
+      currency
+    }).format(amount)
+  }
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-NG', {
@@ -83,8 +85,8 @@ function BookingDetail({ user: currentUser }) {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    });
-  };
+    })
+  }
 
   const getStatusBadge = (status) => {
     const variants = {
@@ -92,52 +94,52 @@ function BookingDetail({ user: currentUser }) {
       pending: 'warning',
       failed: 'danger',
       cancelled: 'secondary'
-    };
-    return <Badge bg={variants[status] || 'secondary'}>{status.toUpperCase()}</Badge>;
-  };
+    }
+    return <Badge bg={variants[status] || 'secondary'}>{status.toUpperCase()}</Badge>
+  }
 
   const handleDownloadReceipt = async () => {
-    if (!booking) return;
-    
+    if (!booking) return
+
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/payments/${booking._id}/receipt`, {
         headers: {
-          'Authorization': currentUser.uid
+          Authorization: currentUser.uid
         }
-      });
+      })
 
       if (!response.ok) {
-        throw new Error('Failed to download receipt');
+        throw new Error('Failed to download receipt')
       }
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `receipt-${booking.paymentReference}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `receipt-${booking.paymentReference}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
     } catch (err) {
-      console.error('Error downloading receipt:', err);
-      alert('Failed to download receipt: ' + err.message);
+      console.error('Error downloading receipt:', err)
+      alert('Failed to download receipt: ' + err.message)
     }
-  };
+  }
 
   const handleContactUser = () => {
     if (booking && booking.userEmail) {
-      window.location.href = `mailto:${booking.userEmail}?subject=Regarding Booking ${booking.paymentReference}&body=Hello, I'm contacting you regarding your booking (Reference: ${booking.paymentReference})`;
+      window.location.href = `mailto:${booking.userEmail}?subject=Regarding Booking ${booking.paymentReference}&body=Hello, I'm contacting you regarding your booking (Reference: ${booking.paymentReference})`
     }
-  };
+  }
 
   const handlePrint = () => {
-    window.print();
-  };
+    window.print()
+  }
 
   const AdminActions = () => {
-    if (!isAdmin || !booking) return null;
+    if (!isAdmin || !booking) return null
 
     return (
       <Card className="mb-4 border-warning">
@@ -153,14 +155,14 @@ function BookingDetail({ user: currentUser }) {
               <Mail size={16} className="me-2" />
               Contact User
             </Button>
-            <Button 
+            <Button
               variant="outline-info"
               onClick={() => navigate(`/admin/users/${booking.userId}`)}
             >
               <User size={16} className="me-2" />
               View User Profile
             </Button>
-            <Button 
+            <Button
               variant="outline-secondary"
               onClick={() => navigate('/admin')}
             >
@@ -170,12 +172,12 @@ function BookingDetail({ user: currentUser }) {
           </div>
         </Card.Body>
       </Card>
-    );
-  };
+    )
+  }
 
   const HeaderBadges = () => {
-    if (!booking) return null;
-    
+    if (!booking) return null
+
     return (
       <div className="d-flex align-items-center gap-2 mt-2">
         {isAdmin && (
@@ -190,15 +192,15 @@ function BookingDetail({ user: currentUser }) {
           </Badge>
         )}
       </div>
-    );
-  };
+    )
+  }
 
   if (!currentUser) {
     return (
       <Container className="my-5">
         <Alert variant="warning">Please log in to view booking details.</Alert>
       </Container>
-    );
+    )
   }
 
   if (loading) {
@@ -207,7 +209,7 @@ function BookingDetail({ user: currentUser }) {
         <Spinner animation="border" variant="primary" />
         <p className="mt-3">Loading booking details...</p>
       </Container>
-    );
+    )
   }
 
   if (error) {
@@ -218,7 +220,7 @@ function BookingDetail({ user: currentUser }) {
           Back to {isAdmin ? 'Admin' : 'Bookings'}
         </Button>
       </Container>
-    );
+    )
   }
 
   if (!booking) {
@@ -229,22 +231,22 @@ function BookingDetail({ user: currentUser }) {
           Back to {isAdmin ? 'Admin' : 'Bookings'}
         </Button>
       </Container>
-    );
+    )
   }
 
-  const isOwnBooking = booking.userId === currentUser.uid;
+  const isOwnBooking = booking.userId === currentUser.uid
 
   return (
     <Container className="my-4 my-md-5">
-      
+
       <div className="d-flex align-items-center mb-4">
-        <Button 
-          variant="outline-secondary" 
+        <Button
+          variant="outline-secondary"
           onClick={() => {
             if (isAdmin && !isOwnBooking) {
-              navigate('/admin');
+              navigate('/admin')
             } else {
-              navigate('/bookings');
+              navigate('/bookings')
             }
           }}
           className="me-3"
@@ -271,11 +273,10 @@ function BookingDetail({ user: currentUser }) {
         )}
       </div>
 
-      
       <AdminActions />
 
       <Row>
-        
+
         <Col lg={8}>
           <Card className="mb-4">
             <Card.Header className="bg-light">
@@ -295,7 +296,7 @@ function BookingDetail({ user: currentUser }) {
                     </div>
                   </div>
                 </Col>
-                
+
                 <Col md={6}>
                   <div className="d-flex align-items-center mb-3">
                     <DollarSign size={20} className="text-success me-3" />
@@ -346,7 +347,6 @@ function BookingDetail({ user: currentUser }) {
             </Card.Body>
           </Card>
 
-          
           <Card className="mb-4">
             <Card.Header className="bg-light">
               <h5 className="mb-0">
@@ -355,29 +355,30 @@ function BookingDetail({ user: currentUser }) {
               </h5>
             </Card.Header>
             <Card.Body>
-              {booking.listingId ? (
+              {booking.listingId
+                ? (
                 <>
                   <h6 className="text-primary">{booking.listingId.name}</h6>
                   <p className="text-muted mb-3">
                     <MapPin size={16} className="me-1" />
                     {booking.listingId.location}
                   </p>
-                  
+
                   {booking.listingId.type && (
                     <div className="mb-2">
-                      <strong>Type:</strong> 
+                      <strong>Type:</strong>
                       <Badge bg="primary" className="ms-2 text-capitalize">
                         {booking.listingId.type}
                       </Badge>
                     </div>
                   )}
-                  
+
                   {booking.listingId.price && (
                     <div className="mb-2">
                       <strong>Listing Price:</strong> {booking.listingId.price}
                     </div>
                   )}
-                  
+
                   {booking.listingId.amenities && booking.listingId.amenities.length > 0 && (
                     <div>
                       <strong>Amenities:</strong>
@@ -391,7 +392,7 @@ function BookingDetail({ user: currentUser }) {
                     </div>
                   )}
                   <div className="mt-3">
-                    <Button 
+                    <Button
                       variant="outline-primary"
                       onClick={() => navigate(`/listing/${booking.listingId._id}`)}
                     >
@@ -399,11 +400,12 @@ function BookingDetail({ user: currentUser }) {
                     </Button>
                   </div>
                 </>
-              ) : (
+                  )
+                : (
                 <Alert variant="warning">
                   This listing is no longer available. The property may have been removed.
                 </Alert>
-              )}
+                  )}
             </Card.Body>
           </Card>
         </Col>
@@ -426,16 +428,16 @@ function BookingDetail({ user: currentUser }) {
                     </Button>
                   </>
                 )}
-                
+
                 {booking.listingId && (
-                  <Button 
+                  <Button
                     variant="outline-secondary"
                     onClick={() => navigate(`/listing/${booking.listingId._id}`)}
                   >
                     View Property
                   </Button>
                 )}
-                
+
                 {(isAdmin || isOwnBooking) && (
                   <Button variant="outline-info">
                     <Share2 size={16} className="me-2" />
@@ -504,7 +506,6 @@ function BookingDetail({ user: currentUser }) {
         </Col>
       </Row>
 
-      
       <Modal show={showContactModal} onHide={() => setShowContactModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Contact User</Modal.Title>
@@ -524,7 +525,7 @@ function BookingDetail({ user: currentUser }) {
         </Modal.Footer>
       </Modal>
     </Container>
-  );
+  )
 }
 
-export default BookingDetail;
+export default BookingDetail

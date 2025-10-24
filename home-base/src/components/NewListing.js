@@ -1,96 +1,96 @@
-import React, { useState } from 'react';
-import { Container, Form, Button, Alert, Card, Row, Col, InputGroup } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
-import { Home, MapPin, List, Image } from 'react-feather';
+import React, { useState } from 'react'
+import { Container, Form, Button, Alert, Card, Row, Col, InputGroup } from 'react-bootstrap'
+import { useNavigate } from 'react-router-dom'
+import { Home, MapPin, List, Image } from 'react-feather'
 
-function NewListing({ user }) {
-  const [type, setType] = useState('');
-  const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
-  const [location, setLocation] = useState('');
-  const [amenities, setAmenities] = useState('');
-  const [distance, setDistance] = useState('');
-  const [payment, setPayment] = useState('');
-  const [images, setImages] = useState([]);
-  const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+function NewListing ({ user }) {
+  const [type, setType] = useState('')
+  const [name, setName] = useState('')
+  const [price, setPrice] = useState('')
+  const [location, setLocation] = useState('')
+  const [amenities, setAmenities] = useState('')
+  const [distance, setDistance] = useState('')
+  const [payment, setPayment] = useState('')
+  const [images, setImages] = useState([])
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
   const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
+    const files = Array.from(e.target.files)
     if (files.length > 5) {
-      setMessage('Maximum 5 images allowed.');
-      setImages([]);
-      return;
+      setMessage('Maximum 5 images allowed.')
+      setImages([])
+      return
     }
-    
+
     const validFiles = files.filter(file => {
       if (file.size > 1024 * 1024) {
-        setMessage(`File ${file.name} is too large (max 1MB each).`);
-        return false;
+        setMessage(`File ${file.name} is too large (max 1MB each).`)
+        return false
       }
       if (!file.type.startsWith('image/')) {
-        setMessage(`File ${file.name} is not an image.`);
-        return false;
+        setMessage(`File ${file.name} is not an image.`)
+        return false
       }
-      return true;
-    });
+      return true
+    })
 
     const imagePromises = validFiles.map((file) => {
       return new Promise((resolve) => {
-        const reader = new FileReader();
+        const reader = new FileReader()
         reader.onloadend = () => {
-          resolve(reader.result);
-        };
+          resolve(reader.result)
+        }
         reader.onerror = () => {
-          setMessage(`Failed to read file: ${file.name}`);
-          resolve(null);
-        };
-        reader.readAsDataURL(file);
-      });
-    });
+          setMessage(`Failed to read file: ${file.name}`)
+          resolve(null)
+        }
+        reader.readAsDataURL(file)
+      })
+    })
 
     Promise.all(imagePromises).then((imageData) => {
-      setImages(imageData.filter(img => img !== null));
-    });
-  };
+      setImages(imageData.filter(img => img !== null))
+    })
+  }
 
   const formatPrice = (value) => {
     // Remove non-numeric characters except for commas and periods
-    const numericValue = value.replace(/[^0-9,.]/g, '');
+    const numericValue = value.replace(/[^0-9,.]/g, '')
     // Format with commas for thousands
-    const formatted = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return formatted ? `₦${formatted}` : '';
-  };
+    const formatted = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    return formatted ? `₦${formatted}` : ''
+  }
 
   const handlePriceChange = (e) => {
-    const rawValue = e.target.value.replace(/[^0-9]/g, '');
-    setPrice(formatPrice(rawValue));
-  };
+    const rawValue = e.target.value.replace(/[^0-9]/g, '')
+    setPrice(formatPrice(rawValue))
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!user) {
-      setMessage('Please log in to create a listing.');
-      return;
+      setMessage('Please log in to create a listing.')
+      return
     }
 
     if (!type || !name || !price || !location) {
-      setMessage('Please fill in all required fields: Type, Name, Price, and Location.');
-      return;
+      setMessage('Please fill in all required fields: Type, Name, Price, and Location.')
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
     try {
-      const priceValue = parseInt(price.replace(/[^0-9]/g, '')) || 0;
+      const priceValue = parseInt(price.replace(/[^0-9]/g, '')) || 0
       if (priceValue <= 0) {
-        setMessage('Please enter a valid price.');
-        setLoading(false);
-        return;
+        setMessage('Please enter a valid price.')
+        setLoading(false)
+        return
       }
 
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+
       console.log('Sending data to backend:', {
         type,
         name,
@@ -102,7 +102,7 @@ function NewListing({ user }) {
         payment,
         images,
         createdBy: user.uid
-      });
+      })
 
       const response = await fetch(`${backendUrl}/api/listings`, {
         method: 'POST',
@@ -118,23 +118,23 @@ function NewListing({ user }) {
           payment,
           images,
           createdBy: user.uid
-        }),
-      });
+        })
+      })
 
-      const data = await response.json();
+      const data = await response.json()
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create listing');
+        throw new Error(data.error || 'Failed to create listing')
       }
 
-      setMessage('Listing created successfully!');
-      setTimeout(() => navigate('/listings'), 2000);
+      setMessage('Listing created successfully!')
+      setTimeout(() => navigate('/listings'), 2000)
     } catch (err) {
-      console.error('Error creating listing:', err);
-      setMessage(`Failed to create listing: ${err.message}`);
+      console.error('Error creating listing:', err)
+      setMessage(`Failed to create listing: ${err.message}`)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <Container className="my-4 my-md-5">
@@ -147,8 +147,8 @@ function NewListing({ user }) {
         </Card.Header>
         <Card.Body className="p-4">
           {message && (
-            <Alert 
-              variant={message.includes('successfully') ? 'success' : 'danger'} 
+            <Alert
+              variant={message.includes('successfully') ? 'success' : 'danger'}
               className="mb-4"
               dismissible
               onClose={() => setMessage('')}
@@ -156,7 +156,7 @@ function NewListing({ user }) {
               {message}
             </Alert>
           )}
-          
+
           <Form onSubmit={handleSubmit}>
             <Row>
               <Col md={6}>
@@ -334,25 +334,25 @@ function NewListing({ user }) {
             )}
 
             <div className="d-flex gap-2">
-              <Button 
-                variant="primary" 
-                type="submit" 
+              <Button
+                variant="primary"
+                type="submit"
                 disabled={loading || !user}
-                style={{ 
+                style={{
                   padding: '0.75rem 2rem',
-                  transition: 'all 0.3s ease',
+                  transition: 'all 0.3s ease'
                 }}
                 onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
                 onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
               >
                 {loading ? 'Creating...' : 'Create Listing'}
               </Button>
-              <Button 
-                variant="outline-secondary" 
+              <Button
+                variant="outline-secondary"
                 onClick={() => navigate('/listings')}
-                style={{ 
+                style={{
                   padding: '0.75rem 2rem',
-                  transition: 'all 0.3s ease',
+                  transition: 'all 0.3s ease'
                 }}
                 onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
                 onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
@@ -364,7 +364,7 @@ function NewListing({ user }) {
         </Card.Body>
       </Card>
     </Container>
-  );
+  )
 }
 
-export default NewListing;
+export default NewListing
