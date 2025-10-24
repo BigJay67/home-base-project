@@ -6,5 +6,4 @@
 .env.production.local
 
 # Build output
-build
 node_modules
