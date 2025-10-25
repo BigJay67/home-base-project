@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Container, Row, Col, Card, Table, Button, Alert, Badge, Form, Modal, Dropdown } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
 import { MoreVertical, ToggleLeft, ToggleRight, Mail, User, DollarSign, Check, X, RefreshCw, Download, Trash2 } from 'react-feather'
@@ -20,9 +20,17 @@ function AdminDashboard ({ user }) {
   const navigate = useNavigate()
   const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
 
+  const filteredListings = useMemo(() => {
+  return listings.filter((listing) => {
+    const matchesSearch = listing.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+    const matchesStatus = statusFilter === 'all' || listing.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+  }, [listings, searchTerm, statusFilter]);
+
   const checkAdminStatus = useCallback(async () => {
     try {
-      const response = await window.fetch(`${backendUrl}/api/users/${user.uid}`)
+      const response = await window.fetch(`${backendUrl}/api/users/${user?.uid}`)
       if (response.ok) {
         const userData = await response.json()
         if (userData.role !== 'admin') {
@@ -34,13 +42,13 @@ function AdminDashboard ({ user }) {
       setError('Error verifying admin access')
       setLoading(false)
     }
-  }, [user.uid, backendUrl])
+  }, [user?.uid, backendUrl])
 
   const fetchData = useCallback(async () => {
     try {
       const listingsResponse = await window.fetch(`${backendUrl}/api/admin/listings`, {
         headers: {
-          Authorization: user.uid
+          Authorization: user?.uid
         }
       })
 
@@ -50,7 +58,7 @@ function AdminDashboard ({ user }) {
 
       const usersResponse = await window.fetch(`${backendUrl}/api/admin/users`, {
         headers: {
-          Authorization: user.uid
+          Authorization: user?.uid
         }
       })
       let usersData = []
@@ -61,7 +69,7 @@ function AdminDashboard ({ user }) {
 
       const bookingsResponse = await window.fetch(`${backendUrl}/api/admin/bookings`, {
         headers: {
-          Authorization: user.uid
+          Authorization: user?.uid
         }
       })
       let bookingsData = []
@@ -82,7 +90,7 @@ function AdminDashboard ({ user }) {
     } finally {
       setLoading(false)
     }
-  }, [user.uid, backendUrl])
+  }, [user?.uid, backendUrl])
 
   useEffect(() => {
     if (!user) {
@@ -128,7 +136,7 @@ function AdminDashboard ({ user }) {
         method,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: user.uid
+          Authorization: user?.uid
         },
         body: body ? JSON.stringify(body) : undefined
       })
@@ -142,13 +150,13 @@ function AdminDashboard ({ user }) {
     } catch (err) {
       setError(`Failed to ${actionName.toLowerCase()}: ${err.message}`)
     }
-  }, [user.uid, backendUrl, fetchData])
+  }, [user?.uid, backendUrl, fetchData])
 
   const handleExportBooking = useCallback(async (bookingId) => {
     try {
       const response = await window.fetch(`${backendUrl}/api/admin/bookings/${bookingId}/export`, {
         headers: {
-          Authorization: user.uid
+          Authorization: user?.uid
         }
       })
 
@@ -170,7 +178,7 @@ function AdminDashboard ({ user }) {
     } catch (err) {
       setError('Failed to export booking: ' + err.message)
     }
-  }, [user.uid, backendUrl])
+  }, [user?.uid, backendUrl])
 
   const handleDeleteBooking = useCallback(async (bookingId) => {
     if (!window.confirm('Are you sure you want to delete this booking? This action cannot be undone.')) {
@@ -181,7 +189,7 @@ function AdminDashboard ({ user }) {
       const response = await window.fetch(`${backendUrl}/api/admin/bookings/${bookingId}`, {
         method: 'DELETE',
         headers: {
-          Authorization: user.uid
+          Authorization: user?.uid
         }
       })
 
@@ -194,7 +202,7 @@ function AdminDashboard ({ user }) {
     } catch (err) {
       setError('Failed to delete booking: ' + err.message)
     }
-  }, [user.uid, bookings, backendUrl])
+  }, [user?.uid, bookings, backendUrl])
 
   const [stats, setStats] = useState({
     totalListings: 0,
@@ -210,7 +218,7 @@ function AdminDashboard ({ user }) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: user.uid
+          Authorization: user?.uid
         },
         body: JSON.stringify({ status: newStatus })
       })
@@ -235,7 +243,7 @@ function AdminDashboard ({ user }) {
     } catch (err) {
       setError('Failed to update listing status: ' + err.message)
     }
-  }, [user.uid, listings, backendUrl])
+  }, [user?.uid, listings, backendUrl])
 
   const handleBulkStatusUpdate = useCallback(async (status) => {
     if (selectedListings.size === 0) {
@@ -248,7 +256,7 @@ function AdminDashboard ({ user }) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: user.uid
+          Authorization: user?.uid
         },
         body: JSON.stringify({
           listingIds: Array.from(selectedListings),
@@ -280,7 +288,7 @@ function AdminDashboard ({ user }) {
     } catch (err) {
       setError('Failed to bulk update listings: ' + err.message)
     }
-  }, [user.uid, listings, selectedListings, backendUrl])
+  }, [user?.uid, listings, selectedListings, backendUrl])
 
   const toggleSelectListing = useCallback((listingId) => {
     const newSelected = new Set(selectedListings)
@@ -309,7 +317,7 @@ function AdminDashboard ({ user }) {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: user.uid
+          Authorization: user?.uid
         }
       })
 
@@ -329,7 +337,7 @@ function AdminDashboard ({ user }) {
     } catch (err) {
       setError('Failed to delete listing: ' + err.message)
     }
-  }, [user.uid, listingToDelete, listings, backendUrl])
+  }, [user?.uid, listingToDelete, listings, backendUrl])
 
   const confirmDelete = useCallback((listing) => {
     setListingToDelete(listing)
@@ -353,16 +361,7 @@ function AdminDashboard ({ user }) {
     )
   }, [])
 
-  const filteredListings = listings.filter((listing) => {
-    const matchesSearch =
-      listing.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      listing.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      listing.type.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesStatus = statusFilter === 'all' || listing.status === statusFilter
-
-    return matchesSearch && matchesStatus
-  })
+  
 
   const BulkActionsToolbar = () => {
     if (selectedListings.size === 0) return null
