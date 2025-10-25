@@ -9,7 +9,7 @@ const requiredEnvVars = [
 const allowedOrigins = [
   'http://localhost:3000',
   'http://192.168.0.192:3000',
-  'https://your-app-name.vercel.app'
+  'https://home-base-efdbay72n-big-jay.vercel.app/'
 ];
 
 const getCallbackUrl = () => {
