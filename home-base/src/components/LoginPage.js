@@ -23,8 +23,10 @@ function LoginPage () {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         size: 'normal',
         callback: () => {
+          console.log('Login callback triggered');
         },
         'expired-callback': () => {
+          console.log('Session expired');
         }
       })
     }
