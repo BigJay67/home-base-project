@@ -2,7 +2,7 @@ const socketIo = require('socket.io');
 const Conversation = require('../models/Conversation');
 const User = require('../models/User');
 
-let io;
+let io; 
 
 const initializeWebSocket = (server) => {
   io = socketIo(server, {
