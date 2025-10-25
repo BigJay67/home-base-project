@@ -44,7 +44,7 @@ function Notifications ({ user }) {
       const response = await fetch(`${backendUrl}/api/notifications`, {
         headers: {
           Authorization: user.uid
-        }
+        } 
       })
 
       if (response.ok) {
@@ -56,8 +56,8 @@ function Notifications ({ user }) {
           return notificationUnread + Math.max(0, messageCount)
         })
       }
-    } catch (err) {
-      console.error('Error fetching notifications:', err)
+    } catch (error) {
+      console.error('Error fetching notifications:', error)
     }
   }
 
@@ -82,8 +82,8 @@ function Notifications ({ user }) {
           createMessageNotification(messageCount)
         }
       }
-    } catch (err) {
-      console.error('Error fetching unread message count:', err)
+    } catch (error) {
+      console.error('Error fetching unread message count:', error)
     }
   }
 

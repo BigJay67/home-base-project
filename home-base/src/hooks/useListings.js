@@ -23,7 +23,7 @@ function useListings () {
       if (reviewKeywordFilter) query.append('reviewKeyword', reviewKeywordFilter)
       query.append('status', 'active')
 
-      if (process.env.NODE_ENV === 'development') { console.log('Fetching listings from:', `${backendUrl}/api/listings?${query.toString()}`) }
+       console.log('Fetching listings from:', `${backendUrl}/api/listings?${query.toString()}`) 
 
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 10000)
@@ -34,7 +34,7 @@ function useListings () {
         })
         clearTimeout(timeoutId)
 
-        if (process.env.NODE_ENV === 'development') { console.log('Response status:', response.status) }
+         console.log('Response status:', response.status) 
 
         if (!response.ok) {
           const text = await response.text()
@@ -47,7 +47,7 @@ function useListings () {
           }
         }
         const data = await response.json()
-        if (process.env.NODE_ENV === 'development') { console.log('Listings loaded:', data.length) }
+        console.log('Listings loaded:', data.length)
         setListings(data)
       } catch (fetchErr) {
         if (fetchErr.name === 'AbortError') {

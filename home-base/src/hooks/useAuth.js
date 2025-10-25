@@ -19,8 +19,8 @@ function useAuth () {
           const profileData = await response.json()
           setUserProfile(profileData)
         }
-      } catch (err) {
-        console.error('Error refreshing user profile:', err)
+      } catch (error) {
+        console.error('Error refreshing user profile:', error)
       }
     } else {
       setUserProfile(null)
