@@ -1,13 +1,14 @@
 const socketIo = require('socket.io');
 const Conversation = require('../models/Conversation');
 const User = require('../models/User');
+const {allowedOrigins} = require('../config/constants');
 
 let io; 
 
 const initializeWebSocket = (server) => {
   io = socketIo(server, {
     cors: {
-      origin: ["http://localhost:3000", "http://192.168.0.192:3000"],
+      origin: allowedOrigins,
       methods: ["GET", "POST"]
     }
   });
