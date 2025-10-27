@@ -8,7 +8,11 @@ class NotificationService {
       console.log('Notification created:', notification.title);
       return notification;
     } catch (err) {
-      console.error('Error creating notification:', err);
+      console.error('Error creating notification:', {
+        message: err.message,
+        stack: err.stack,
+        notificationData,
+      });
       throw err;
     }
   }
@@ -21,7 +25,7 @@ class NotificationService {
       message: `Your booking for "${listingName}" has been created successfully.`,
       relatedId: booking._id,
       relatedModel: 'Booking',
-      priority: 'medium'
+      priority: 'medium',
     });
   }
 
@@ -33,7 +37,7 @@ class NotificationService {
       message: `Payment for "${listingName}" was successful. Your booking is confirmed!`,
       relatedId: booking._id,
       relatedModel: 'Booking',
-      priority: 'high'
+      priority: 'high',
     });
   }
 
@@ -45,7 +49,7 @@ class NotificationService {
       message: `Payment for "${listingName}" failed. Please try again.`,
       relatedId: booking._id,
       relatedModel: 'Booking',
-      priority: 'high'
+      priority: 'high',
     });
   }
 
@@ -57,7 +61,7 @@ class NotificationService {
       message: `You have a new review for your listing "${listingName}".`,
       relatedId: review._id,
       relatedModel: 'Review',
-      priority: 'medium'
+      priority: 'medium',
     });
   }
 
@@ -69,18 +73,19 @@ class NotificationService {
       message: `Your listing "${listingName}" has a new booking from ${booking.userEmail}.`,
       relatedId: booking._id,
       relatedModel: 'Booking',
-      priority: 'high'
+      priority: 'high',
     });
   }
+
   static async notifyNewMessage(conversation, recipientId, senderName) {
     return this.createNotification({
       userId: recipientId,
-      type: 'new_message',
+      type: 'system_announcement',
       title: 'New Message',
       message: `${senderName} sent you a message about "${conversation.listingName}"`,
       relatedId: conversation._id,
-      relatedModel: 'Conversation',
-      priority: 'medium'
+      relatedModel: null,
+      priority: 'medium',
     });
   }
 }

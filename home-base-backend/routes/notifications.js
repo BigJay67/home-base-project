@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
 
 router.get('/', async (req, res) => {
@@ -20,8 +21,12 @@ router.get('/', async (req, res) => {
 
     res.json({ notifications, unreadCount });
   } catch (err) {
-    console.error('Error fetching notifications:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error fetching notifications:', {
+      message: err.message,
+      stack: err.stack,
+      userId: req.headers.authorization
+    });
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
 
@@ -32,7 +37,7 @@ router.post('/', async (req, res) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const { type, title, message, priority } = req.body;
+    const { type, title, message, priority, relatedModel } = req.body;
     if (!type || !title || !message) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -44,7 +49,10 @@ router.post('/', async (req, res) => {
       message,
       priority: priority || 'medium',
       isRead: false,
-      createdAt: new Date()
+      createdAt: new Date(),
+      relatedId: null,
+      relatedModel: relatedModel || null,
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     });
 
     await notification.save();
@@ -56,7 +64,8 @@ router.post('/', async (req, res) => {
       message: err.message,
       stack: err.stack,
       requestBody: req.body,
-      userId: req.headers.authorization
+      userId: req.headers.authorization,
+      mongoDbStatus: mongoose.connection.readyState
     });
     res.status(500).json({ error: 'Server error', details: err.message });
   }
@@ -79,8 +88,12 @@ router.put('/:id/read', async (req, res) => {
 
     res.json({ message: 'Notification marked as read' });
   } catch (err) {
-    console.error('Error marking notification as read:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error marking notification as read:', {
+      message: err.message,
+      stack: err.stack,
+      userId: req.headers.authorization
+    });
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
 
@@ -94,8 +107,12 @@ router.put('/read-all', async (req, res) => {
 
     res.json({ message: 'All notifications marked as read' });
   } catch (err) {
-    console.error('Error marking all as read:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error marking all as read:', {
+      message: err.message,
+      stack: err.stack,
+      userId: req.headers.authorization
+    });
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
 
@@ -115,8 +132,12 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ message: 'Notification deleted' });
   } catch (err) {
-    console.error('Error deleting notification:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error deleting notification:', {
+      message: err.message,
+      stack: err.stack,
+      userId: req.headers.authorization
+    });
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
 

@@ -34,9 +34,19 @@ if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !pr
 }
 
 mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log('MongoDB connected successfully'))
+  .catch((err) => {
+    console.error('MongoDB connection error:', {
+      message: err.message,
+      stack: err.stack,
+      mongoUri: process.env.MONGO_URI ? 'Set' : 'Missing',
+    });
+    process.exit(1); 
+  });
 
 const app = express();
 const server = http.createServer(app);
