@@ -1,6 +1,6 @@
 const express = require('express');
-const Notification = require('../models/Notification');
 const router = express.Router();
+const Notification = require('../models/Notification');
 
 router.get('/', async (req, res) => {
   try {
@@ -21,6 +21,37 @@ router.get('/', async (req, res) => {
     res.json({ notifications, unreadCount });
   } catch (err) {
     console.error('Error fetching notifications:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post('/', async (req, res) => {
+  try {
+    const userId = req.headers.authorization;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { type, title, message, priority } = req.body;
+    if (!type || !title || !message) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const notification = new Notification({
+      userId,
+      type,
+      title,
+      message,
+      priority: priority || 'medium',
+      isRead: false,
+      createdAt: new Date()
+    });
+
+    await notification.save();
+
+    res.status(201).json({ notification });
+  } catch (err) {
+    console.error('Error creating notification:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
