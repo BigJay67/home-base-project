@@ -21,7 +21,7 @@ function MessageButton ({ listing, user, variant = 'outline-primary', size = 'sm
       return;
     }
 
-    if (!listing.owner) {
+    if (!listing.createdBy) {
       setError('Cannot send message: Host information missing');
       return;
     }
@@ -32,7 +32,7 @@ function MessageButton ({ listing, user, variant = 'outline-primary', size = 'sm
 
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const toUserId = listing.owner 
+      const toUserId = listing.createdBy 
 
       const response = await fetch(`${backendUrl}/api/conversations`, {
         method: 'POST',
