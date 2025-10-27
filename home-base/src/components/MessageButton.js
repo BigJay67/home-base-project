@@ -8,25 +8,31 @@ function MessageButton ({ listing, user, variant = 'outline-primary', size = 'sm
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault()
-
+    const handleSendMessage = async (e) => {
+    e.preventDefault();
+      console.log('Listing:', listing);
     if (!user) {
-      setError('Please log in to send messages')
-      return
+      setError('Please log in to send messages');
+      return;
     }
 
     if (!message.trim()) {
-      setError('Please enter a message')
-      return
+      setError('Please enter a message');
+      return;
     }
 
-    setLoading(true)
-    setError('')
-    setSuccess('')
+    if (!listing.owner) {
+      setError('Cannot send message: Host information missing');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
 
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const toUserId = listing.owner 
 
       const response = await fetch(`${backendUrl}/api/conversations`, {
         method: 'POST',
@@ -35,30 +41,30 @@ function MessageButton ({ listing, user, variant = 'outline-primary', size = 'sm
           Authorization: user.uid
         },
         body: JSON.stringify({
-          listingId: listing._id,
+          toUserId,
           message: message.trim(),
-          senderId: user.uid,
-          senderName: user.displayName || user.email
+          listingId: listing._id
         })
-      })
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to send message')
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send message');
       }
-      setSuccess('Message sent successfully!')
-      setMessage('')
+
+      setSuccess('Message sent successfully!');
+      setMessage('');
       setTimeout(() => {
-        setShowModal(false)
-        setSuccess('')
-      }, 2000)
+        setShowModal(false);
+        setSuccess('');
+      }, 2000);
     } catch (err) {
-      console.error('Error sending message:', err)
-      setError(err.message || 'Failed to send message. Please try again.')
+      console.error('Error sending message:', err);
+      setError(err.message || 'Failed to send message. Please try again.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleButtonClick = () => {
     if (!user) {
