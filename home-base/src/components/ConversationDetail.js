@@ -97,37 +97,64 @@ function ConversationDetail ({ user }) {
   }
 
   const handleSendMessage = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!message.trim()) {
-      setError('Please enter a message')
-      return
+      setError('Please enter a message');
+      return;
     }
 
     if (!isConnected) {
-      setError('Not connected to server. Please try again.')
-      return
+      setError('Not connected to server. Please try again.');
+      return;
     }
 
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current)
-      typingTimeoutRef.current = null
+    if (!conversation) {
+      setError('Conversation data not loaded.');
+      return;
     }
-    stopTyping()
 
-    setSending(true)
-    setError('')
+    setSending(true);
+    setError('');
 
     try {
-      await sendMessage(message.trim())
-      setMessage('')
+      const toUserId = conversation.participants.find(p => p.userId !== user.uid)?.userId;
+      const listingId = conversation.listingId?._id;
+
+      if (!toUserId || !listingId) {
+        throw new Error('Missing recipient or listing information');
+      }
+
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: user.uid
+        },
+        body: JSON.stringify({
+          toUserId,
+          message: message.trim(),
+          listingId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error((await response.json()).error || 'Failed to send message');
+      }
+
+      const data = await response.json();
+      setConversation(data); 
+      setMessage('');
+      if (isConnected) {
+        markMessagesRead(); 
+      }
     } catch (err) {
-      console.error('Error sending message:', err)
-      setError(err.message || 'Failed to send message')
+      console.error('Error sending message:', err);
+      setError(err.message || 'Failed to send message');
     } finally {
-      setSending(false)
+      setSending(false);
     }
-  }
+  };
 
   const formatTime = (dateString) => {
     const date = new Date(dateString)

@@ -1,89 +1,65 @@
-const socketIo = require('socket.io');
+const { Server } = require('socket.io');
+const { allowedOrigins } = require('../config/constants');
 const Conversation = require('../models/Conversation');
 const User = require('../models/User');
-const {allowedOrigins} = require('../config/constants');
-
-let io; 
+const Listing = require('../models/Listing');
+const NotificationService = require('../services/notificationService');
 
 const initializeWebSocket = (server) => {
-  io = socketIo(server, {
+  const io = new Server(server, {
     cors: {
       origin: allowedOrigins,
-      methods: ["GET", "POST"]
+      methods: ['GET', 'POST'],
+      credentials: true
     }
   });
 
-  const userSockets = new Map();
-
   io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
-
-    socket.on('user_join', async (userId) => {
-      try {
-        console.log('User joining:', userId);
-        userSockets.set(userId, socket.id);
-        socket.userId = userId;
-        
-        socket.join(`user_${userId}`);
-        console.log(`User ${userId} joined room user_${userId}`);
-        
-        socket.broadcast.emit('user_online', { userId });
-      } catch (error) {
-        console.error('Error in user_join:', error);
-      }
-    });
+    console.log('WebSocket client connected:', socket.id);
 
     socket.on('join_conversation', (conversationId) => {
-      socket.join(`conversation_${conversationId}`);
+      socket.join(conversationId);
       console.log(`User joined conversation: ${conversationId}`);
     });
 
-    socket.on('leave_conversation', (conversationId) => {
-      socket.leave(`conversation_${conversationId}`);
-      console.log(`User left conversation: ${conversationId}`);
-    });
-
-    socket.on('send_message', async (data) => {
+    socket.on('send_message', async ({ conversationId, message, senderId }) => {
       try {
-        const { conversationId, message, senderId } = data;
-        console.log('Sending message:', { conversationId, senderId, message });
-
         const conversation = await Conversation.findById(conversationId);
         if (!conversation) {
           socket.emit('error', { message: 'Conversation not found' });
           return;
         }
 
-        const recipient = conversation.participants.find(
-          p => p.userId !== senderId
-        );
+        const toUserId = conversation.participants.find(p => p.userId !== senderId)?.userId;
+        const listingId = conversation.listingId;
 
-        if (!recipient) {
-          socket.emit('error', { message: 'Recipient not found' });
+        if (!toUserId || !listingId) {
+          socket.emit('error', { message: 'Missing recipient or listing information' });
           return;
         }
 
-        const sender = await User.findOne({ userId: senderId });
-        if (!sender) {
-          socket.emit('error', { message: 'Sender not found' });
+        const [fromUser, toUser, listing] = await Promise.all([
+          User.findOne({ userId: senderId }),
+          User.findOne({ userId: toUserId }),
+          Listing.findById(listingId)
+        ]);
+
+        if (!fromUser || !toUser || !listing) {
+          socket.emit('error', { message: 'User or listing not found' });
           return;
         }
 
-        const newMessage = {
+        conversation.messages.push({
           senderId,
-          senderEmail: sender.email,
-          senderName: sender.displayName || sender.email.split('@')[0],
-          content: message,
-          read: false,
-          createdAt: new Date()
-        };
+          senderEmail: fromUser.email,
+          senderName: fromUser.displayName || fromUser.email.split('@')[0],
+          content: message
+        });
 
-        conversation.messages.push(newMessage);
         conversation.lastMessage = message.length > 50 ? message.substring(0, 50) + '...' : message;
         conversation.lastMessageAt = new Date();
-        
-        const currentUnread = conversation.unreadCounts.get(recipient.userId) || 0;
-        conversation.unreadCounts.set(recipient.userId, currentUnread + 1);
+        const currentUnread = conversation.unreadCounts.get(toUserId) || 0;
+        conversation.unreadCounts.set(toUserId, currentUnread + 1);
 
         await conversation.save();
 
@@ -92,99 +68,70 @@ const initializeWebSocket = (server) => {
           conversationObj.unreadCounts = Object.fromEntries(conversationObj.unreadCounts);
         }
 
-        io.to(`conversation_${conversationId}`).emit('new_message', {
-          conversation: conversationObj,
-          message: newMessage
-        });
-
-        const recipientSocketId = userSockets.get(recipient.userId);
-        if (recipientSocketId) {
-          io.to(`user_${recipient.userId}`).emit('message_notification', {
-            conversationId,
-            message: newMessage.content,
-            senderName: newMessage.senderName,
-            listingName: conversation.listingName
+        try {
+          await NotificationService.createNotification({
+            userId: toUserId,
+            type: 'new_message',
+            title: 'New Message',
+            message: `New message in your conversation about "${conversation.listingName}"`,
+            relatedId: conversation._id,
+            relatedModel: 'Conversation',
+            priority: 'medium'
           });
+        } catch (notifErr) {
+          console.error('Notification error:', notifErr);
         }
 
-        console.log('Message sent successfully');
-
-      } catch (error) {
-        console.error('Error sending message:', error);
+        io.to(conversationId).emit('new_message', { conversation: conversationObj });
+      } catch (err) {
+        console.error('Error handling send_message:', err);
         socket.emit('error', { message: 'Failed to send message' });
       }
     });
 
-    socket.on('mark_messages_read', async (data) => {
+    socket.on('typing_start', ({ conversationId, userId }) => {
+      socket.to(conversationId).emit('user_typing', { userId });
+    });
+
+    socket.on('typing_stop', ({ conversationId, userId }) => {
+      socket.to(conversationId).emit('user_typing', { userId, stopped: true });
+    });
+
+    socket.on('mark_messages_read', async ({ conversationId, userId }) => {
       try {
-        const { conversationId, userId } = data;
-
         const conversation = await Conversation.findById(conversationId);
-        if (!conversation) return;
+        if (conversation) {
+          conversation.messages.forEach(msg => {
+            if (msg.senderId !== userId && !msg.read) {
+              msg.read = true;
+            }
+          });
+          conversation.unreadCounts.set(userId, 0);
+          await conversation.save();
 
-        conversation.messages.forEach(message => {
-          if (message.senderId !== userId && !message.read) {
-            message.read = true;
+          const conversationObj = conversation.toObject();
+          if (conversationObj.unreadCounts instanceof Map) {
+            conversationObj.unreadCounts = Object.fromEntries(conversationObj.unreadCounts);
           }
-        });
 
-        conversation.unreadCounts.set(userId, 0);
-        await conversation.save();
-
-        const conversationObj = conversation.toObject();
-        if (conversationObj.unreadCounts instanceof Map) {
-          conversationObj.unreadCounts = Object.fromEntries(conversationObj.unreadCounts);
+          io.to(conversationId).emit('messages_read', { conversation: conversationObj });
         }
-
-        socket.to(`conversation_${conversationId}`).emit('messages_read', {
-          conversationId,
-          userId
-        });
-
-      } catch (error) {
-        console.error('Error marking messages as read:', error);
+      } catch (err) {
+        console.error('Error marking messages read:', err);
       }
     });
 
-    socket.on('typing_start', (data) => {
-      const { conversationId, userId } = data;
-      socket.to(`conversation_${conversationId}`).emit('user_typing', {
-        conversationId,
-        userId,
-        typing: true
-      });
-    });
-
-    socket.on('typing_stop', (data) => {
-      const { conversationId, userId } = data;
-      socket.to(`conversation_${conversationId}`).emit('user_typing', {
-        conversationId,
-        userId,
-        typing: false
-      });
+    socket.on('leave_conversation', (conversationId) => {
+      socket.leave(conversationId);
+      console.log(`User left conversation: ${conversationId}`);
     });
 
     socket.on('disconnect', () => {
-      console.log('User disconnected:', socket.id);
-      if (socket.userId) {
-        userSockets.delete(socket.userId);
-        socket.broadcast.emit('user_offline', { userId: socket.userId });
-      }
-    });
-
-    socket.on('error', (error) => {
-      console.error('Socket error:', error);
+      console.log('WebSocket client disconnected:', socket.id);
     });
   });
 
   return io;
 };
 
-const getIo = () => {
-  if (!io) {
-    throw new Error('Socket.io not initialized');
-  }
-  return io;
-};
-
-module.exports = { initializeWebSocket, getIo };
+module.exports = { initializeWebSocket };
