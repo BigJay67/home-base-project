@@ -48,11 +48,17 @@ router.post('/', async (req, res) => {
     });
 
     await notification.save();
+    console.log('Notification created:', { id: notification._id, userId, type, title });
 
     res.status(201).json({ notification });
   } catch (err) {
-    console.error('Error creating notification:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error creating notification:', {
+      message: err.message,
+      stack: err.stack,
+      requestBody: req.body,
+      userId: req.headers.authorization
+    });
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
 
