@@ -13,27 +13,22 @@ function PaymentCallback({ user }) {
     const verifyPayment = async () => {
       const reference = searchParams.get('reference');
 
-      if (!user) {
-        setMessage('User not authenticated. Redirecting to login...');
-        setLoading(false);
-        setTimeout(() => navigate('/login'), 3000);
-        return;
-      }
-
       if (!reference) {
-        setMessage('No payment reference found. Redirecting to bookings...');
+        setMessage('No payment reference found. Redirecting to home...');
         setLoading(false);
-        setTimeout(() => navigate('/bookings'), 3000);
+        setTimeout(() => navigate('/'), 3000);
         return;
       }
 
       try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (user) {
+          headers.Authorization = user.uid;
+        }
+
         const response = await fetch(`${backendUrl}/api/payments/paystack/verify/${reference}`, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: user.uid,
-          },
+          headers,
         });
 
         if (!response.ok) {
@@ -52,16 +47,16 @@ function PaymentCallback({ user }) {
         const data = await response.json();
         setMessage(
           data.status === 'success'
-            ? 'Payment successful! Redirecting to bookings...'
-            : `Payment failed: ${data.message || 'Unknown error'}. Redirecting to bookings...`
+            ? 'Payment successful! Redirecting to home...'
+            : `Payment failed: ${data.message || 'Unknown error'}. Redirecting to home...`
         );
         setLoading(false);
-        setTimeout(() => navigate('/bookings'), 3000);
+        setTimeout(() => navigate('/'), 3000);
       } catch (err) {
         console.error('Error verifying payment:', err);
-        setMessage(`Failed to verify payment: ${err.message}. Please contact support. Redirecting to bookings...`);
+        setMessage(`Failed to verify payment: ${err.message}. Please contact support. Redirecting to home...`);
         setLoading(false);
-        setTimeout(() => navigate('/bookings'), 3000);
+        setTimeout(() => navigate('/'), 3000);
       }
     };
 

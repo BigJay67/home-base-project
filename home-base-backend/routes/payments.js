@@ -73,12 +73,6 @@ router.get('/paystack/verify/:reference', async (req, res) => {
     const { reference } = req.params;
     const userId = req.headers.authorization;
 
-    if (!userId) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    const verification = await paystack.transaction.verify({ reference });
-
     const booking = await Booking.findOne({ paymentReference: reference }).populate(
       'listingId',
       'name createdBy'
@@ -88,9 +82,11 @@ router.get('/paystack/verify/:reference', async (req, res) => {
       return res.status(404).json({ error: 'Booking not found' });
     }
 
-    if (booking.userId !== userId) {
+    if (userId && booking.userId !== userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
+
+    const verification = await paystack.transaction.verify({ reference });
 
     if (verification.data.status === 'success') {
       await Booking.updateOne(
