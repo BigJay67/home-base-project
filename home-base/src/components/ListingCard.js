@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { Card, Button, Badge, Carousel, Spinner } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
 
-import MessageButton from './MessageButton'
-
 function ListingCard ({ listing, user, handlePayment, parsePrice, handleEdit, handleDelete }) {
   const [averageRating, setAverageRating] = useState(0)
   const [totalReviews, setTotalReviews] = useState(0)
@@ -249,15 +247,6 @@ function ListingCard ({ listing, user, handlePayment, parsePrice, handleEdit, ha
                     Log In to Book
                   </Button>
                     )}
-                  {user && user.uid !== listing.createdBy && (  
-                    <MessageButton
-                      listing={listing}
-                      user={user}
-                      variant="outline-secondary"
-                      size="sm"
-                      className="flex-fill"
-                    />
-                  )}
               </>
                 )}
             <Button
@@ -276,4 +265,4 @@ function ListingCard ({ listing, user, handlePayment, parsePrice, handleEdit, ha
   )
 }
 
-export default ListingCard
+export default ListingCard;
