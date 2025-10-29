@@ -1,43 +1,45 @@
 .listing-card {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: none;
   overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .listing-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
 }
 
-.card-img-top {
-  object-fit: cover;
-  height: 200px;
-  transition: transform 0.3s ease;
+.listing-card .carousel,
+.listing-card .carousel-item,
+.listing-card img {
+  border-radius: 16px 16px 0 0;
 }
 
-.listing-card:hover .card-img-top {
-  transform: scale(1.05);
+.listing-card button svg {
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
 }
 
-.card-body {
-  padding: 1.5rem;
-}
 
-.card-title {
-  font-weight: 600;
-  color: #ffffff;
-}
+.listing-card .fw-semibold { font-weight: 600; }
+.listing-card .text-dark { color: #222 !important; }
+.listing-card .text-muted { color: #717171 !important; }
 
-.card-text {
-  color: rgba(255, 255, 255, 0.9);
-}
 
-.btn {
+.listing-card .btn {
   border-radius: 8px;
-  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+}
+
+
+@media (max-width: 576px) {
+  .listing-card .carousel,
+  .listing-card .carousel-item,
+  .listing-card img {
+    height: 220px !important;
+  }
 }

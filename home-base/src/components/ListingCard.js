@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Button, Badge, Carousel, Spinner } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
+import './ListingCard.css'
 
 function ListingCard ({ listing, user, handlePayment, parsePrice, handleEdit, handleDelete }) {
   const [averageRating, setAverageRating] = useState(0)
@@ -86,183 +87,133 @@ function ListingCard ({ listing, user, handlePayment, parsePrice, handleEdit, ha
   }
 
   return (
-    <Card className="h-100 listing-card">
-      {validImages.length > 0
-        ? (
-        <Carousel
-          activeIndex={currentImageIndex}
-          onSelect={setCurrentImageIndex}
-          indicators={validImages.length > 1}
-          controls={validImages.length > 1}
-          interval={null}
-        >
-          {validImages.map((image, index) => (
-            <Carousel.Item key={index}>
-              <div style={{ height: '200px', overflow: 'hidden' }}>
+    <Card className="listing-card h-100 border-0 shadow-sm">
+      {validImages.length > 0 ? (
+        <div className="position-relative overflow-hidden" style={{ height: '280px' }}>
+          <Carousel
+            activeIndex={currentImageIndex}
+            onSelect={setCurrentImageIndex}
+            indicators={validImages.length > 1}
+            controls={validImages.length > 1}
+            interval={null}
+            className="h-100"
+          >
+            {validImages.map((image, index) => (
+              <Carousel.Item key={index} className="h-100">
                 <img
                   src={getImageUrl(image)}
-                  alt={`${listing.name} - Image ${index + 1}`}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    display: imageLoaded ? 'block' : 'none'
-                  }}
+                  alt={`${listing.name} - ${index + 1}`}
+                  className="d-block w-100 h-100"
+                  style={{ objectFit: 'cover' }}
                   onLoad={() => setImageLoaded(true)}
                   onError={() => handleImageError(index)}
                 />
-                {!imageLoaded && (
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      backgroundColor: '#f8f9fa',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <Spinner animation="border" size="sm" />
-                  </div>
-                )}
-              </div>
-            </Carousel.Item>
-          ))}
-        </Carousel>
-          )
-        : (
-        <div style={{ height: '200px', overflow: 'hidden' }}>
-          <img
-            src={getPlaceholderImage()}
-            alt="Placeholder"
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover'
-            }}
-          />
+              </Carousel.Item>
+            ))}
+          </Carousel>
+          <button
+            className="position-absolute top-0 end-0 m-3 btn p-0 border-0 bg-transparent"
+            style={{ zIndex: 10 }}
+          >
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                strokeWidth="2"
+                className="text-white"
+              />
+            </svg>
+          </button>
         </div>
-          )}
-
-      <Card.Body className="d-flex flex-column">
-        <div className="d-flex justify-content-between align-items-start mb-2">
-          <Card.Title className="h6 mb-0 flex-grow-1">
-            {listing.name}
-          </Card.Title>
-          <Badge bg="secondary" className="ms-2">
-            {listing.type}
-          </Badge>
+      ) : (
+        <div style={{ height: '280px', background: '#f8f9fa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span className="text-muted">No Image</span>
         </div>
-
-        <div className="mb-2">
-          {averageRating > 0
-            ? (
-                renderRatingStars(averageRating)
-              )
-            : (
-            <small className="text-muted">No reviews yet</small>
-              )}
-          {totalReviews > 0 && (
-            <small className="text-muted d-block">
-              {totalReviews} review{totalReviews !== 1 ? 's' : ''}
-            </small>
-          )}
-        </div>
-
-        <div className="flex-grow-1 small">
-          <div className="mb-1">
-            <strong>Location:</strong> {listing.location}
-          </div>
-          {listing.distance && (
-            <div className="mb-1">
-              <strong>Distance:</strong> {listing.distance}
-            </div>
-          )}
-          {listing.amenities && listing.amenities.length > 0 && (
-            <div className="mb-1">
-              <strong>Amenities:</strong> {listing.amenities.slice(0, 3).join(', ')}
-              {listing.amenities.length > 3 && '...'}
-            </div>
-          )}
-          {listing.payment && (
-            <div className="mb-1">
-              <strong>Payment:</strong> {listing.payment}
-            </div>
-          )}
-        </div>
-
-        <div className="mt-auto pt-3">
-          <div className="d-flex justify-content-between align-items-center mb-2">
-            <div className="h6 mb-0 text-primary">
-              {formatPrice(listing.price)}
-            </div>
-            <div className="text-muted small">
-              {formatPrice(listing.price)}
-            </div>
-          </div>
-
-          <div className="d-flex gap-2 flex-wrap">
-            {user && user.uid === listing.userId
-              ? (
+      )}
+      <Card.Body className="p-3 d-flex flex-column">
+        <div className="d-flex justify-content-between align-items-center mb-1">
+          <div className="d-flex align-items-center gap-1">
+            {averageRating > 0 ? (
               <>
+                <span className="fw-bold">{averageRating.toFixed(1)}</span>
+                <span className="text-warning">★</span>
+                {totalReviews > 0 && (
+                  <span className="text-muted small">· {totalReviews} review{totalReviews > 1 ? 's' : ''}</span>
+                )}
+              </>
+            ) : (
+              <span className="text-muted small">New</span>
+            )}
+          </div>
+          {listing.isSuperhost && (
+            <Badge bg="dark" className="small px-2 py-1">Superhost</Badge>
+          )}
+        </div>
+        <h6 className="mb-1 text-dark fw-semibold text-truncate">{listing.name}</h6>
+        <p className="text-muted small mb-2 text-truncate">{listing.location}</p>
+        <div className="mt-auto">
+          <div className="d-flex align-items-baseline gap-1">
+            <span className="fw-bold text-dark">{formatPrice(listing.price)}</span>
+            <span className="text-muted small">/ {listing.payment || 'month'}</span>
+          </div>
+        </div>
+        <div className="d-flex gap-2 mt-3">
+          {user && user.uid === listing.userId ? (
+            <>
+              <Button
+                variant="outline-primary"
+                size="sm"
+                className="flex-fill"
+                onClick={() => handleEdit(listing)}
+              >
+                Edit
+              </Button>
+              <Button
+                variant="outline-danger"
+                size="sm"
+                className="flex-fill"
+                onClick={() => handleDelete(listing._id)}
+              >
+                Delete
+              </Button>
+            </>
+          ) : (
+            <>
+              {user ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="flex-fill"
+                  onClick={() => handlePayment(listing._id, parsePrice(listing.price))}
+                >
+                  Book Now
+                </Button>
+              ) : (
                 <Button
                   variant="outline-primary"
                   size="sm"
                   className="flex-fill"
-                  onClick={() => handleEdit(listing)}
+                  as={Link}
+                  to="/login"
                 >
-                  Edit
+                  Log In to Book
                 </Button>
-                <Button
-                  variant="outline-danger"
-                  size="sm"
-                  className="flex-fill"
-                  onClick={() => handleDelete(listing._id)}
-                >
-                  Delete
-                </Button>
-              </>
-                )
-              : (
-              <>
-                {user
-                  ? (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="flex-fill"
-                    onClick={() => handlePayment(listing._id, parsePrice(listing.price))}
-                  >
-                    Book Now
-                  </Button>
-                    )
-                  : (
-                  <Button
-                    variant="outline-primary"
-                    size="sm"
-                    className="flex-fill"
-                    as={Link}
-                    to="/login"
-                  >
-                    Log In to Book
-                  </Button>
-                    )}
-              </>
-                )}
-            <Button
-              variant="outline-info"
-              size="sm"
-              className="flex-fill"
-              as={Link}
-              to={`/listing/${listing._id}`}
-            >
-              Details
-            </Button>
-          </div>
+              )}
+            </>
+          )}
+
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            className="flex-fill"
+            as={Link}
+            to={`/listing/${listing._id}`}
+          >
+            Details
+          </Button>
         </div>
       </Card.Body>
     </Card>
-  )
+  );
 }
 
 export default ListingCard;
