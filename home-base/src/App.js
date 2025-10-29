@@ -25,6 +25,7 @@ import './styles/responsive.css';
 import ProfileAvatar from './components/ProfileAvatar';
 import UserListings from './components/UserListings';
 import './styles/Navbar.css';
+import './styles/Footer.css';
 
 function App() {
   const [notificationRefresh, setNotificationRefresh] = useState(0);
@@ -149,6 +150,51 @@ function App() {
           <Route path="/admin/users/:userId" element={<UserDetail user={user} />} />
           <Route path="/listings" element={<UserListings user={user} />} />
         </Routes>
+        <footer className="bg-light border-top mt-auto">
+          <Container className="py-5">
+            <div className="row g-4">
+              <div className="col-lg-3 col-md-6">
+                <h5 className="fw-bold text-dark mb-3">HomeBase</h5>
+                <p className="text-muted small">
+                  Find your perfect home away from home. Book apartments, studios, and more across Nigeria.
+                </p>
+              </div>
+              <div className="col-lg-3 col-md-6">
+                <h6 className="fw-semibold text-dark mb-3">Explore</h6>
+                <ul className="list-unstyled">
+                  <li className="mb-2"><Link to="/" className="text-muted text-decoration-none small">Home</Link></li>
+                  <li className="mb-2"><Link to="/bookings" className="text-muted text-decoration-none small">My Bookings</Link></li>
+                  <li className="mb-2"><Link to="/new-listing" className="text-muted text-decoration-none small">Host a Property</Link></li>
+                </ul>
+              </div>
+              <div className="col-lg-3 col-md-6">
+                <h6 className="fw-semibold text-dark mb-3">Support</h6>
+                <ul className="list-unstyled">
+                  <li className="mb-2"><Link to="/conversations" className="text-muted text-decoration-none small">Help Center</Link></li>
+                  <li className="mb-2"><a href="#" className="text-muted text-decoration-none small">Safety</a></li>
+                  <li className="mb-2"><a href="#" className="text-muted text-decoration-none small">Contact Us</a></li>
+                </ul>
+              </div>
+              <div className="col-lg-3 col-md-6">
+                <h6 className="fw-semibold text-dark mb-3">Legal</h6>
+                <ul className="list-unstyled">
+                  <li className="mb-2"><a href="#" className="text-muted text-decoration-none small">Terms of Service</a></li>
+                  <li className="mb-2"><a href="#" className="text-muted text-decoration-none small">Privacy Policy</a></li>
+                  <li className="mb-2"><a href="#" className="text-muted text-decoration-none small">Cookie Policy</a></li>
+                </ul>
+              </div>
+            </div>
+            <hr className="my-4" />
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-center small text-muted">
+              <p className="mb-2 mb-md-0">© 2025 HomeBase. All rights reserved.</p>
+              <div className="d-flex gap-3">
+                <a href="#" className="text-muted"><i className="bi bi-facebook"></i></a>
+                <a href="#" className="text-muted"><i className="bi bi-twitter"></i></a>
+                <a href="#" className="text-muted"><i className="bi bi-instagram"></i></a>
+              </div>
+            </div>
+          </Container>
+        </footer>
       </Router>
     </SocketProvider>
   );
