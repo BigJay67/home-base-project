@@ -249,13 +249,15 @@ function ListingCard ({ listing, user, handlePayment, parsePrice, handleEdit, ha
                     Log In to Book
                   </Button>
                     )}
-                <MessageButton
-                  listing={listing}
-                  user={user}
-                  variant="outline-secondary"
-                  size="sm"
-                  className="flex-fill"
-                />
+                  {user && user.uid !== listing.createdBy && (  
+                    <MessageButton
+                      listing={listing}
+                      user={user}
+                      variant="outline-secondary"
+                      size="sm"
+                      className="flex-fill"
+                    />
+                  )}
               </>
                 )}
             <Button

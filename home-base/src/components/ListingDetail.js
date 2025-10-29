@@ -401,12 +401,14 @@ function ListingDetail ({ user, handlePayment, parsePrice }) {
                       >
                         Book Now
                       </Button>
-                      <MessageButton
-                        listing={listing}
-                        user={user}
-                        variant="outline-primary"
-                        size="lg"
-                      />
+                      {user && user.uid !== listing.createdBy && (
+                        <MessageButton
+                          listing={listing}
+                          user={user}
+                          variant="outline-primary"
+                          size="lg"
+                        />
+                      )}
                     </>
                           )
                     )
