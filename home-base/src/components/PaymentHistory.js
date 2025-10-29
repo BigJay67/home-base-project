@@ -52,7 +52,7 @@ function PaymentHistory ({ user }) {
     if (!payment) return
 
     if (payment.status !== 'completed') {
-      alert(`❌ Receipt download is only available for completed payments. Current status: ${payment.status}`)
+      alert(`Receipt download is only available for completed payments. Current status: ${payment.status}`)
       return
     }
 
@@ -78,7 +78,7 @@ function PaymentHistory ({ user }) {
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
 
-      setMessage('✅ Receipt downloaded successfully!')
+      setMessage('Receipt downloaded successfully!')
       setTimeout(() => setMessage(''), 3000)
     } catch (err) {
       console.error('Error downloading receipt:', err)
@@ -91,7 +91,7 @@ function PaymentHistory ({ user }) {
     if (!payment) return
 
     if (payment.status !== 'completed') {
-      alert(`❌ Receipt email is only available for completed payments. Current status: ${payment.status}`)
+      alert(`Receipt email is only available for completed payments. Current status: ${payment.status}`)
       return
     }
 
@@ -111,7 +111,7 @@ function PaymentHistory ({ user }) {
         throw new Error(errorData.error || 'Failed to email receipt')
       }
 
-      setMessage('✅ Receipt sent to your email successfully!')
+      setMessage('Receipt sent to your email successfully!')
       setTimeout(() => setMessage(''), 3000)
     } catch (err) {
       console.error('Error emailing receipt:', err)
@@ -126,7 +126,7 @@ function PaymentHistory ({ user }) {
     if (!payment) return
 
     if (payment.status !== 'completed') {
-      alert(`❌ Shareable receipt is only available for completed payments. Current status: ${payment.status}`)
+      alert(`Shareable receipt is only available for completed payments. Current status: ${payment.status}`)
       return
     }
 
@@ -151,7 +151,7 @@ function PaymentHistory ({ user }) {
 
       await navigator.clipboard.writeText(result.shareableLink)
 
-      setMessage('✅ Shareable link copied to clipboard!')
+      setMessage('Shareable link copied to clipboard!')
       setTimeout(() => setMessage(''), 3000)
     } catch (err) {
       console.error('Error sharing receipt:', err)
@@ -173,7 +173,7 @@ function PaymentHistory ({ user }) {
     })
 
     if (completedPayments.length === 0) {
-      alert('❌ No completed payments selected. Receipts can only be emailed for completed payments.')
+      alert('No completed payments selected. Receipts can only be emailed for completed payments.')
       return
     }
 
@@ -201,7 +201,7 @@ function PaymentHistory ({ user }) {
         await new Promise(resolve => setTimeout(resolve, 1000))
       }
 
-      setMessage(`✅ Successfully emailed ${completedPayments.length} receipts!`)
+      setMessage(`Successfully emailed ${completedPayments.length} receipts!`)
       setSelectedPayments(new Set())
     } catch (err) {
       throw err
@@ -224,7 +224,7 @@ function PaymentHistory ({ user }) {
     })
 
     if (completedPayments.length === 0) {
-      alert('❌ No completed payments selected. Receipts can only be downloaded for completed payments.')
+      alert('No completed payments selected. Receipts can only be downloaded for completed payments.')
       return
     }
 
@@ -283,7 +283,7 @@ function PaymentHistory ({ user }) {
       }
     } catch (err) {
       console.error('Bulk operation failed:', err)
-      alert(`❌ Bulk operation failed: ${err.message}`)
+      alert(`Bulk operation failed: ${err.message}`)
     } finally {
       setShowBulkModal(false)
       setBulkOperation('')
@@ -574,7 +574,7 @@ function PaymentHistory ({ user }) {
                                                         title="View Booking Details"
                                                     >
                                                         <span className="d-none d-md-inline">View</span>
-                                                        <span className="d-md-none">👁️</span>
+                                                        <span className="d-md-none">•••</span>
                                                     </Button>
                                                 </div>
                                             </td>

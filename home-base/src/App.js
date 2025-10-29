@@ -59,7 +59,7 @@ function App() {
           <Container fluid>
             <Navbar.Brand as={Link} to="/" className="fw-bold me-4">
               <span className="d-none d-sm-inline">Home Base</span>
-              <span className="d-sm-none">🏠 HomeBase</span>
+              <span className="d-sm-none">HomeBase</span>
             </Navbar.Brand>
             <Navbar.Toggle
               aria-controls="basic-navbar-nav"
@@ -99,7 +99,6 @@ function App() {
                         transition: 'background-color 0.2s ease',
                       }}
                     >
-                      <span className="d-lg-none me-2">📅</span>
                       My Bookings
                     </Nav.Link>
                     <Nav.Link
@@ -116,7 +115,6 @@ function App() {
                         transition: 'background-color 0.2s ease',
                       }}
                     >
-                      <span className="d-lg-none me-2">➕</span>
                       Create Listing
                     </Nav.Link>
                     <Nav.Link
@@ -133,7 +131,6 @@ function App() {
                         transition: 'background-color 0.2s ease',
                       }}
                     >
-                      <span className="d-lg-none me-2">💬</span>
                       My Messages
                     </Nav.Link>
                     {userProfile?.role === 'admin' && (
@@ -151,7 +148,6 @@ function App() {
                           transition: 'background-color 0.2s ease',
                         }}
                       >
-                        <span className="d-lg-none me-2">⚙️</span>
                         Admin
                       </Nav.Link>
                     )}
@@ -169,7 +165,6 @@ function App() {
                         transition: 'background-color 0.2s ease',
                       }}
                     >
-                      <span className="d-lg-none me-2">🧾</span>
                       Payment History
                     </Nav.Link>
                   </>
@@ -236,7 +231,6 @@ function App() {
                         transition: 'background-color 0.2s ease',
                       }}
                     >
-                      <span className="d-lg-none me-2">🔐</span>
                       Login
                     </NavLink>
                   </Nav.Item>

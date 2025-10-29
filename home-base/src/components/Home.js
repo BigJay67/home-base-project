@@ -185,13 +185,6 @@ function Home ({ user, listings, error, loading, typeFilter, setTypeFilter, loca
               <h5 className="mb-1">Welcome, {user.displayName || user.email}! </h5>
               <p className="text-muted mb-0">Ready to find your perfect accommodation?</p>
             </div>
-            <Button
-              variant="outline-danger"
-              size="sm"
-              onClick={handleSignOut}
-            >
-              Log Out
-            </Button>
           </div>
             )
           : (

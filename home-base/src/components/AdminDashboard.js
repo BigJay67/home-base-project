@@ -413,7 +413,7 @@ function AdminDashboard ({ user }) {
         <h1 className="h4 h-md-2 mb-0">Admin Dashboard</h1>
         <Button variant="outline-primary" size="sm" onClick={fetchData}>
           <span className="d-none d-md-inline">Refresh Data</span>
-          <span className="d-md-none">🔄</span>
+          <span className="d-md-none">Refresh</span>
         </Button>
       </div>
 
@@ -451,7 +451,7 @@ function AdminDashboard ({ user }) {
                 onClick={() => setActiveTab('listings')}
               >
                 <span className="d-none d-md-inline">Listings</span>
-                <span className="d-md-none">🏠</span>
+                <span className="d-md-none">Listings</span>
               </Button>
               <Button
                 variant={activeTab === 'users' ? 'primary' : 'outline-primary'}
@@ -459,7 +459,7 @@ function AdminDashboard ({ user }) {
                 onClick={() => setActiveTab('users')}
               >
                 <span className="d-none d-md-inline">Users</span>
-                <span className="d-md-none">👥</span>
+                <span className="d-md-none">Users</span>
               </Button>
               <Button
                 variant={activeTab === 'bookings' ? 'primary' : 'outline-primary'}
@@ -467,7 +467,7 @@ function AdminDashboard ({ user }) {
                 onClick={() => setActiveTab('bookings')}
               >
                 <span className="d-none d-md-inline">Bookings</span>
-                <span className="d-md-none">📅</span>
+                <span className="d-md-none">Bookings</span>
               </Button>
             </div>
 
@@ -574,7 +574,7 @@ function AdminDashboard ({ user }) {
                                 onClick={() => navigate(`/listing/${listing._id}`)}
                               >
                                 <span className="d-none d-sm-inline">View</span>
-                                <span className="d-sm-none">👁️</span>
+                                <span className="d-sm-none">•••</span>
                               </Button>
 
                               <Dropdown>
@@ -669,7 +669,7 @@ function AdminDashboard ({ user }) {
                             onClick={() => navigate(`/admin/users/${user.userId}`)}
                           >
                             <span className="d-none d-sm-inline">Manage</span>
-                            <span className="d-sm-none">👁️</span>
+                            <span className="d-sm-none">•••</span>
                           </Button>
                         </td>
                       </tr>
@@ -739,7 +739,7 @@ function AdminDashboard ({ user }) {
                               onClick={() => navigate(`/bookings/${booking._id}`)}
                             >
                               <span className="d-none d-sm-inline">View</span>
-                              <span className="d-sm-none">👁️</span>
+                              <span className="d-sm-none">•••</span>
                             </Button>
 
                             <Dropdown>
@@ -749,7 +749,7 @@ function AdminDashboard ({ user }) {
                                 id={`dropdown-actions-${booking._id}`}
                               >
                                 <span className="d-none d-sm-inline">Actions</span>
-                                <span className="d-sm-none">⚙️</span>
+                                <span className="d-sm-none">Actions</span>
                               </Dropdown.Toggle>
                               <Dropdown.Menu>
                                 <Dropdown.Item
