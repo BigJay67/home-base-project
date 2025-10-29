@@ -1,0 +1,14 @@
+.navbar { font-family: 'Circular', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+.navbar .navbar-brand { font-weight: 900 !important; font-size: 1.5rem !important; color: #ff385c !important; }
+.nav-link-lg { font-weight: 500; color: #222 !important; padding: 0.5rem 1rem !important; border-radius: 8px; transition: all 0.2s ease; }
+.nav-link-lg:hover, .nav-link-lg.active { background-color: #f7f7f7; color: #ff385c !important; }
+@media (max-width: 991.98px) {
+  .navbar-collapse { background: white; margin-top: 1rem; padding: 1rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .nav-link-lg { padding: 0.75rem 1rem !important; border-bottom: 1px solid #eee; }
+  .nav-link-lg:last-child { border-bottom: none; }
+}
+.dropdown-toggle::after { display: none; }
+.dropdown-menu { border: none; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); padding: 0.51rem 0; }
+.dropdown-item { padding: 0.75rem 1.5rem; font-weight: 500; }
+.btn-outline-primary { border-width: 2px; font-weight: 600; }
+.btn-outline-primary:hover { background-color: #ff385c; border-color: #ff385c; color: white; }

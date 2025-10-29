@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate } from 'react-router-dom';
-import { Container, Navbar, Nav, NavDropdown } from 'react-bootstrap';
+import { Container, Navbar, Nav, NavDropdown, Button } from 'react-bootstrap';
 import { ChevronDown } from 'react-feather';
 import Home from './components/Home';
 import Bookings from './components/Bookings';
@@ -24,9 +24,11 @@ import './styles/mobile.css';
 import './styles/responsive.css';
 import ProfileAvatar from './components/ProfileAvatar';
 import UserListings from './components/UserListings';
+import './styles/Navbar.css';
 
 function App() {
   const [notificationRefresh, setNotificationRefresh] = useState(0);
+  const [expanded, setExpanded] = useState(false);
   const {
     listings,
     error,
@@ -39,201 +41,69 @@ function App() {
     setMaxPriceFilter,
     fetchListings,
   } = useListings();
-  const { user, userProfile, paymentMessage, setPaymentMessage, refreshUserProfile, handleSignOut } =
-    useAuth();
+  const { user, userProfile, paymentMessage, setPaymentMessage, refreshUserProfile, handleSignOut } = useAuth();
   const { handlePayment, parsePrice } = usePayment(user, setPaymentMessage);
-
   const handleSearch = e => {
     e.preventDefault();
     fetchListings();
   };
-
   const refreshNotifications = useCallback(() => {
     setNotificationRefresh(prev => prev + 1);
   }, []);
+  const closeNavbar = () => setExpanded(false);
 
   return (
     <SocketProvider user={user}>
       <Router>
-        <Navbar bg="light" expand="lg" className="mb-4 shadow-sm" collapseOnSelect>
+        <Navbar bg="white" expand="lg" expanded={expanded} onToggle={setExpanded} className="border-bottom shadow-sm py-2">
           <Container fluid>
-            <Navbar.Brand as={Link} to="/" className="fw-bold me-4">
-              <span className="d-none d-sm-inline">Home Base</span>
-              <span className="d-sm-none">HomeBase</span>
+            <Navbar.Brand as={Link} to="/" className="fw-bold text-primary fs-4">
+              HomeBase
             </Navbar.Brand>
-            <Navbar.Toggle
-              aria-controls="basic-navbar-nav"
-              className="border-0 rounded-circle p-2 d-lg-none"
-              style={{
-                backgroundColor: '#f8f9fa',
-                width: '40px',
-                height: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <span
-                className="navbar-toggler-icon"
-                style={{
-                  backgroundImage:
-                    'url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 30 30%27%3E%3Cpath stroke=%27%23000%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-miterlimit=%2710%27 d=%27M4 7h22M4 15h22M4 23h22%27/%3E%3C/svg%3E")',
-                }}
-              ></span>
-            </Navbar.Toggle>
-            <Navbar.Collapse id="basic-navbar-nav" className="mt-2 mt-lg-0">
-              <Nav className="me-auto mb-2 mb-lg-0">
+            <Navbar.Toggle aria-controls="main-nav" className="border-0 p-2" />
+            <Navbar.Collapse id="main-nav">
+              <Nav className="mx-auto align-items-lg-center gap-2 gap-lg-4 flex-grow-1 justify-content-center">
                 {user && (
                   <>
-                    <Nav.Link
-                      as={NavLink}
-                      to="/bookings"
-                      className={({ isActive }) =>
-                        `text-nowrap mx-2 my-1 my-lg-0 rounded ${isActive ? 'bg-primary text-white' : ''}`
-                      }
-                      style={{
-                        minHeight: '44px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '8px 12px',
-                        transition: 'background-color 0.2s ease',
-                      }}
-                    >
-                      My Bookings
-                    </Nav.Link>
-                    <Nav.Link
-                      as={NavLink}
-                      to="/new-listing"
-                      className={({ isActive }) =>
-                        `text-nowrap mx-2 my-1 my-lg-0 rounded ${isActive ? 'bg-primary text-white' : ''}`
-                      }
-                      style={{
-                        minHeight: '44px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '8px 12px',
-                        transition: 'background-color 0.2s ease',
-                      }}
-                    >
-                      Create Listing
-                    </Nav.Link>
-                    <Nav.Link
-                      as={NavLink}
-                      to="/conversations"
-                      className={({ isActive }) =>
-                        `text-nowrap mx-2 my-1 my-lg-0 rounded ${isActive ? 'bg-primary text-white' : ''}`
-                      }
-                      style={{
-                        minHeight: '44px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '8px 12px',
-                        transition: 'background-color 0.2s ease',
-                      }}
-                    >
-                      My Messages
-                    </Nav.Link>
+                    <Nav.Link as={NavLink} to="/bookings" onClick={closeNavbar} className="nav-link-lg">Bookings</Nav.Link>
+                    <Nav.Link as={NavLink} to="/new-listing" onClick={closeNavbar} className="nav-link-lg">Host</Nav.Link>
+                    <Nav.Link as={NavLink} to="/conversations" onClick={closeNavbar} className="nav-link-lg">Messages</Nav.Link>
                     {userProfile?.role === 'admin' && (
-                      <Nav.Link
-                        as={NavLink}
-                        to="/admin"
-                        className={({ isActive }) =>
-                          `text-nowrap mx-2 my-1 my-lg-0 rounded ${isActive ? 'bg-primary text-white' : ''}`
-                        }
-                        style={{
-                          minHeight: '44px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '8px 12px',
-                          transition: 'background-color 0.2s ease',
-                        }}
-                      >
-                        Admin
-                      </Nav.Link>
+                      <Nav.Link as={NavLink} to="/admin" onClick={closeNavbar} className="nav-link-lg">Admin</Nav.Link>
                     )}
-                    <Nav.Link
-                      as={NavLink}
-                      to="/payment-history"
-                      className={({ isActive }) =>
-                        `text-nowrap mx-2 my-1 my-lg-0 rounded ${isActive ? 'bg-primary text-white' : ''}`
-                      }
-                      style={{
-                        minHeight: '44px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '8px 12px',
-                        transition: 'background-color 0.2s ease',
-                      }}
-                    >
-                      Payment History
-                    </Nav.Link>
+                    <Nav.Link as={NavLink} to="/payment-history" onClick={closeNavbar} className="nav-link-lg">History</Nav.Link>
                   </>
                 )}
               </Nav>
-              <Nav className="align-items-center flex-row">
+              <Nav className="align-items-center gap-3">
                 {user && (
-                  <div className="d-flex align-items-center me-3">
+                  <div className="d-flex align-items-center">
                     <Notifications user={user} refresh={notificationRefresh} />
                   </div>
                 )}
                 {user ? (
                   <NavDropdown
                     title={
-                      <div
-                        className="d-flex align-items-center bg-light rounded p-1"
-                        style={{ transition: 'background-color 0.2s ease' }}
-                      >
+                      <div className="d-flex align-items-center bg-light rounded-pill px-3 py-1 shadow-sm">
                         <ProfileAvatar user={user} userProfile={userProfile} size={32} />
-                        <span
-                          className="ms-2 text-dark text-truncate"
-                          style={{ maxWidth: '150px', fontSize: '0.9rem' }}
-                        >
-                          {user.displayName || user.email || 'User'}
+                        <span className="ms-2 text-dark fw-medium text-truncate" style={{ maxWidth: '120px' }}>
+                          {user.displayName || user.email.split('@')[0]}
                         </span>
                         <ChevronDown size={16} className="ms-1 text-muted" />
                       </div>
                     }
-                    id="user-dropdown"
+                    id="user-menu"
                     align="end"
                     className="dropdown-menu-end"
-                    style={{ minWidth: '200px' }}
-                    renderMenuOnMount={true}
                   >
-                    <NavDropdown.Item
-                      as={NavLink}
-                      to="/profile"
-                      className="d-flex align-items-center py-2"
-                    >
-                      <span>My Profile</span>
-                    </NavDropdown.Item>
+                    <NavDropdown.Item as={NavLink} to="/profile" onClick={closeNavbar}>My Profile</NavDropdown.Item>
                     <NavDropdown.Divider />
-                    <NavDropdown.Item
-                      onClick={handleSignOut}
-                      className="d-flex align-items-center py-2 text-danger"
-                    >
-                      <span>Log Out</span>
-                    </NavDropdown.Item>
+                    <NavDropdown.Item onClick={() => { handleSignOut(); closeNavbar(); }} className="text-danger">Log Out</NavDropdown.Item>
                   </NavDropdown>
                 ) : (
-                  <Nav.Item>
-                    <NavLink
-                      to="/login"
-                      className={({ isActive }) =>
-                        `nav-link text-nowrap btn btn-outline-primary mx-2 rounded ${
-                          isActive ? 'bg-primary text-white' : ''
-                        }`
-                      }
-                      style={{
-                        minHeight: '44px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '8px 12px',
-                        transition: 'background-color 0.2s ease',
-                      }}
-                    >
-                      Login
-                    </NavLink>
-                  </Nav.Item>
+                  <Button variant="outline-primary" size="sm" as={NavLink} to="/login" onClick={closeNavbar} className="rounded-pill px-4">
+                    Login
+                  </Button>
                 )}
               </Nav>
             </Navbar.Collapse>
@@ -269,17 +139,11 @@ function App() {
           <Route path="/payment-callback" element={<PaymentCallback />} />
           <Route path="/new-listing" element={<NewListing user={user} />} />
           <Route path="/profile" element={<Profile user={user} onProfileUpdate={refreshUserProfile} />} />
-          <Route
-            path="/listing/:id"
-            element={<ListingDetail user={user} handlePayment={handlePayment} parsePrice={parsePrice} />}
-          />
+          <Route path="/listing/:id" element={<ListingDetail user={user} handlePayment={handlePayment} parsePrice={parsePrice} />} />
           <Route path="/listings/:id" element={<Navigate to="/listing/:id" replace />} />
           <Route path="/admin" element={<AdminDashboard user={user} />} />
           <Route path="/conversations" element={<Conversations user={user} />} />
-          <Route
-            path="/conversation/:id"
-            element={<ConversationDetail user={user} onMessageSent={refreshNotifications} />}
-          />
+          <Route path="/conversation/:id" element={<ConversationDetail user={user} onMessageSent={refreshNotifications} />} />
           <Route path="/payment-history" element={<PaymentHistory user={user} />} />
           <Route path="/bookings/:id" element={<BookingDetail user={user} />} />
           <Route path="/admin/users/:userId" element={<UserDetail user={user} />} />
@@ -289,5 +153,4 @@ function App() {
     </SocketProvider>
   );
 }
-
 export default App;
