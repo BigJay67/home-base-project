@@ -37,10 +37,6 @@ function App() {
     setLocationFilter,
     maxPriceFilter,
     setMaxPriceFilter,
-    minRatingFilter,
-    setMinRatingFilter,
-    reviewKeywordFilter,
-    setReviewKeywordFilter,
     fetchListings,
   } = useListings();
   const { user, userProfile, paymentMessage, setPaymentMessage, refreshUserProfile, handleSignOut } =
@@ -265,10 +261,6 @@ function App() {
                 setLocationFilter={setLocationFilter}
                 maxPriceFilter={maxPriceFilter}
                 setMaxPriceFilter={setMaxPriceFilter}
-                minRatingFilter={minRatingFilter}
-                setMinRatingFilter={setMinRatingFilter}
-                reviewKeywordFilter={reviewKeywordFilter}
-                setReviewKeywordFilter={setReviewKeywordFilter}
                 paymentMessage={paymentMessage}
                 setPaymentMessage={setPaymentMessage}
                 handleSearch={handleSearch}

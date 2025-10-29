@@ -7,8 +7,6 @@ function useListings () {
   const [typeFilter, setTypeFilter] = useState('')
   const [locationFilter, setLocationFilter] = useState('')
   const [maxPriceFilter, setMaxPriceFilter] = useState('')
-  const [minRatingFilter, setMinRatingFilter] = useState('')
-  const [reviewKeywordFilter, setReviewKeywordFilter] = useState('')
 
   const fetchListings = useCallback(async () => {
     setLoading(true)
@@ -19,8 +17,6 @@ function useListings () {
       if (typeFilter) query.append('type', typeFilter)
       if (locationFilter) query.append('location', locationFilter)
       if (maxPriceFilter) query.append('maxPrice', maxPriceFilter)
-      if (minRatingFilter) query.append('minRating', minRatingFilter)
-      if (reviewKeywordFilter) query.append('reviewKeyword', reviewKeywordFilter)
       query.append('status', 'active')
 
        console.log('Fetching listings from:', `${backendUrl}/api/listings?${query.toString()}`) 
@@ -61,7 +57,7 @@ function useListings () {
     } finally {
       setLoading(false)
     }
-  }, [typeFilter, locationFilter, maxPriceFilter, minRatingFilter, reviewKeywordFilter])
+  }, [typeFilter, locationFilter, maxPriceFilter,])
 
   useEffect(() => {
     fetchListings()
@@ -80,10 +76,6 @@ function useListings () {
     setLocationFilter,
     maxPriceFilter,
     setMaxPriceFilter,
-    minRatingFilter,
-    setMinRatingFilter,
-    reviewKeywordFilter,
-    setReviewKeywordFilter,
     fetchListings
   }
 }

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import ListingCard from './ListingCard'
 import ReviewModal from './ReviewModal'
 
-function Home ({ user, listings, error, loading, typeFilter, setTypeFilter, locationFilter, setLocationFilter, maxPriceFilter, setMaxPriceFilter, paymentMessage, setPaymentMessage, handleSearch, handlePayment, parsePrice, fetchListings, minRatingFilter, setMinRatingFilter, reviewKeywordFilter, setReviewKeywordFilter, handleSignOut }) {
+function Home ({ user, listings, error, loading, typeFilter, setTypeFilter, locationFilter, setLocationFilter, maxPriceFilter, setMaxPriceFilter, paymentMessage, setPaymentMessage, handleSearch, handlePayment, parsePrice, fetchListings, handleSignOut }) {
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingListing, setEditingListing] = useState(null)
   const [editFormData, setEditFormData] = useState({})
@@ -250,18 +250,6 @@ function Home ({ user, listings, error, loading, typeFilter, setTypeFilter, loca
                   size="sm"
                 />
               </Col>
-              <Col xs={6} md={2}>
-                <Form.Control
-                  type="number"
-                  placeholder="Min Rating"
-                  min="1"
-                  max="5"
-                  step="0.1"
-                  value={minRatingFilter}
-                  onChange={(e) => setMinRatingFilter(e.target.value)}
-                  size="sm"
-                />
-              </Col>
               <Col xs={12} md={2}>
                 <Button variant="primary" type="submit" className="w-100" size="sm">
                   <span className="d-none d-md-inline">Search</span>
@@ -269,15 +257,6 @@ function Home ({ user, listings, error, loading, typeFilter, setTypeFilter, loca
                 </Button>
               </Col>
             </Row>
-            <div className="mt-2">
-              <Form.Control
-                type="text"
-                placeholder="Review keyword..."
-                value={reviewKeywordFilter}
-                onChange={(e) => setReviewKeywordFilter(e.target.value)}
-                size="sm"
-              />
-            </div>
           </Form>
         </Card.Body>
       </Card>
