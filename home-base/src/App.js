@@ -68,7 +68,6 @@ function App() {
                   <>
                     <Nav.Link as={NavLink} to="/bookings" onClick={closeNavbar} className="nav-link-lg">Bookings</Nav.Link>
                     <Nav.Link as={NavLink} to="/new-listing" onClick={closeNavbar} className="nav-link-lg">Host</Nav.Link>
-                    <Nav.Link as={NavLink} to="/conversations" onClick={closeNavbar} className="nav-link-lg">Messages</Nav.Link>
                     {userProfile?.role === 'admin' && (
                       <Nav.Link as={NavLink} to="/admin" onClick={closeNavbar} className="nav-link-lg">Admin</Nav.Link>
                     )}
@@ -150,6 +149,17 @@ function App() {
           <Route path="/admin/users/:userId" element={<UserDetail user={user} />} />
           <Route path="/listings" element={<UserListings user={user} />} />
         </Routes>
+        {user && (
+          <Link
+            to="/conversations"
+            className="floating-chat-btn"
+            title="Messages"
+          >
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+        )}
         <footer className="bg-light border-top mt-auto">
           <Container className="py-5">
             <div className="row g-4">

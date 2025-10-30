@@ -12,3 +12,42 @@
 .dropdown-item { padding: 0.75rem 1.5rem; font-weight: 500; }
 .btn-outline-primary { border-width: 2px; font-weight: 600; }
 .btn-outline-primary:hover { background-color: #ff385c; border-color: #ff385c; color: white; }
+
+
+.floating-chat-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  background: #ff385c;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(255, 56, 92, 0.4);
+  z-index: 1050;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.floating-chat-btn:hover {
+  background: #e91e4f;
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(255, 56, 92, 0.5);
+}
+
+.floating-chat-btn svg {
+  stroke-width: 2.5;
+}
+
+
+@media (max-width: 576px) {
+  .floating-chat-btn {
+    width: 50px;
+    height: 50px;
+    bottom: 16px;
+    right: 16px;
+  }
+}
