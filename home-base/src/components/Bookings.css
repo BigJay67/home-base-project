@@ -1,0 +1,34 @@
+.booking-card {
+  border-radius: 16px !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  background: #fff;
+}
+
+.booking-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1) !important;
+}
+
+.booking-card .card-body {
+  padding: 1.5rem;
+}
+
+.booking-card h6 {
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+.booking-card .text-primary {
+  font-size: 1.25rem;
+}
+
+.empty-state svg {
+  opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+  .booking-card .card-body {
+    padding: 1.25rem;
+  }
+}
