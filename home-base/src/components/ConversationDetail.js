@@ -25,7 +25,7 @@ function ConversationDetail({ user }) {
 
   useEffect(() => {
     if (user && id) fetchConversation();
-  }, [user, id, fetchConversation]);
+  }, [user, id]);
 
   useEffect(() => {
     const unsubscribe = handleNewMessage((data) => {

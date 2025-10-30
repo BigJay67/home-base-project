@@ -19,6 +19,17 @@ function Profile({ user, onProfileUpdate }) {
   const [activityLoading, setActivityLoading] = useState(true);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (!user) {
+      setMessage('Please log in to view your profile.');
+      setTimeout(() => navigate('/login'), 2000);
+      return;
+    }
+    fetchProfile();
+    fetchUserStats();
+    fetchRecentActivity();
+  }, [user, navigate]);
+
   const fetchProfile = async () => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
@@ -95,17 +106,6 @@ function Profile({ user, onProfileUpdate }) {
       setActivityLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (!user) {
-      setMessage('Please log in to view your profile.');
-      setTimeout(() => navigate('/login'), 2000);
-      return;
-    }
-    fetchProfile();
-    fetchUserStats();
-    fetchRecentActivity();
-  }, [user, navigate]);
 
   const setProfileData = (data) => {
     setDisplayName(data.displayName || user.displayName || '');

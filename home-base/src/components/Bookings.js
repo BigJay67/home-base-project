@@ -34,7 +34,7 @@ function Bookings({ user }) {
 
   useEffect(() => {
     fetchBookings();
-  }, [user, navigate, fetchBookings]);
+  }, [user, navigate]);
 
   const getStatusBadge = (status) => {
     const variants = { completed: 'success', pending: 'warning', failed: 'danger', cancelled: 'secondary' };

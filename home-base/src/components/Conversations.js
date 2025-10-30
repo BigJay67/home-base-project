@@ -10,7 +10,7 @@ function Conversations({ user }) {
 
   useEffect(() => {
     if (user) fetchConversations();
-  }, [user, fetchConversations]);
+  }, [user]);
 
   const fetchConversations = async () => {
     try {
