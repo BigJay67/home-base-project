@@ -1,0 +1,13 @@
+.activity-list {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.activity-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.activity-list::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 3px;
+} 
