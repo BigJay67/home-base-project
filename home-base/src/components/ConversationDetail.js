@@ -17,7 +17,6 @@ function ConversationDetail({ user }) {
 
   const {
     isConnected,
-    sendMessage,
     startTyping,
     stopTyping,
     markMessagesRead,
@@ -26,7 +25,7 @@ function ConversationDetail({ user }) {
 
   useEffect(() => {
     if (user && id) fetchConversation();
-  }, [user, id]);
+  }, [user, id, fetchConversation]);
 
   useEffect(() => {
     const unsubscribe = handleNewMessage((data) => {

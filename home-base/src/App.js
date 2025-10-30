@@ -188,9 +188,9 @@ function App() {
               <div className="col-lg-3 col-md-6">
                 <h6 className="fw-semibold text-dark mb-3">Legal</h6>
                 <ul className="list-unstyled">
-                  <li className="mb-2"><a href="#" className="text-muted text-decoration-none small">Terms of Service</a></li>
-                  <li className="mb-2"><a href="#" className="text-muted text-decoration-none small">Privacy Policy</a></li>
-                  <li className="mb-2"><a href="#" className="text-muted text-decoration-none small">Cookie Policy</a></li>
+                  <li className="mb-2"><button type="button" className="btn btn-link text-muted text-decoration-none small p-0">Terms of Service</button></li>
+                  <li className="mb-2"><button type="button" className="btn btn-link text-muted text-decoration-none small p-0">Privacy Policy</button></li>
+                  <li className="mb-2"><button type="button" className="btn btn-link text-muted text-decoration-none small p-0">Cookie Policy</button></li>
                 </ul>
               </div>
             </div>
@@ -198,9 +198,9 @@ function App() {
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-center small text-muted">
               <p className="mb-2 mb-md-0">© 2025 HomeBase. All rights reserved.</p>
               <div className="d-flex gap-3">
-                <a href="#" className="text-muted"><i className="bi bi-facebook"></i></a>
-                <a href="#" className="text-muted"><i className="bi bi-twitter"></i></a>
-                <a href="#" className="text-muted"><i className="bi bi-instagram"></i></a>
+                <button type="button" className="btn btn-link text-muted p-0"><i className="bi bi-facebook"></i></button>
+                <button type="button" className="btn btn-link text-muted p-0"><i className="bi bi-twitter"></i></button>
+                <button type="button" className="btn btn-link text-muted p-0"><i className="bi bi-instagram"></i></button>
               </div>
             </div>
           </Container>

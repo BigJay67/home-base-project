@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Card, Button, Badge, Row, Col, Alert, Spinner } from 'react-bootstrap';
+import { Container, Card, Button, Badge, Alert, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import './Conversations.css';
 
@@ -10,7 +10,7 @@ function Conversations({ user }) {
 
   useEffect(() => {
     if (user) fetchConversations();
-  }, [user]);
+  }, [user, fetchConversations]);
 
   const fetchConversations = async () => {
     try {

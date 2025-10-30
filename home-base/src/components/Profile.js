@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Badge, Tab, Tabs, ListGroup, ProgressBar, InputGroup, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Camera, Edit2, Save, X, Shield, Calendar, Star, Home, MessageCircle, List, Clock, MapPin, DollarSign } from 'react-feather';
+import { User, Mail, Phone, Camera, Edit2, Save, X, Shield, Calendar, Star, Home, MessageCircle, List, Clock, } from 'react-feather';
 import './Profile.css';
 
 function Profile({ user, onProfileUpdate }) {
@@ -18,17 +18,6 @@ function Profile({ user, onProfileUpdate }) {
   const [activities, setActivities] = useState([]);
   const [activityLoading, setActivityLoading] = useState(true);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!user) {
-      setMessage('Please log in to view your profile.');
-      setTimeout(() => navigate('/login'), 2000);
-      return;
-    }
-    fetchProfile();
-    fetchUserStats();
-    fetchRecentActivity();
-  }, [user, navigate]);
 
   const fetchProfile = async () => {
     try {
@@ -106,6 +95,17 @@ function Profile({ user, onProfileUpdate }) {
       setActivityLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!user) {
+      setMessage('Please log in to view your profile.');
+      setTimeout(() => navigate('/login'), 2000);
+      return;
+    }
+    fetchProfile();
+    fetchUserStats();
+    fetchRecentActivity();
+  }, [user, navigate]);
 
   const setProfileData = (data) => {
     setDisplayName(data.displayName || user.displayName || '');
