@@ -1,153 +1,147 @@
-import React, { useState, useEffect } from 'react'
-import { Container, Card, Button, Badge, Row, Col, Alert, Spinner } from 'react-bootstrap'
-import { Link } from 'react-router-dom'
+import React, { useState, useEffect } from 'react';
+import { Container, Card, Button, Badge, Row, Col, Alert, Spinner } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+import './Conversations.css';
 
-function Conversations ({ user }) {
-  const [conversations, setConversations] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+function Conversations({ user }) {
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (user) {
-      fetchConversations()
-    }
-  }, [user])
+    if (user) fetchConversations();
+  }, [user]);
 
   const fetchConversations = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       const response = await fetch(`${backendUrl}/api/conversations`, {
-        headers: {
-          Authorization: user.uid
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch conversations')
-      }
-
-      const data = await response.json()
-      setConversations(data)
+        headers: { Authorization: user.uid }
+      });
+      if (!response.ok) throw new Error('Failed to fetch conversations');
+      const data = await response.json();
+      setConversations(data);
     } catch (err) {
-      console.error('Error fetching conversations:', err)
-      setError('Failed to load conversations')
+      console.error('Error:', err);
+      setError('Failed to load conversations');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const formatTime = (dateString) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInHours = (now - date) / (1000 * 60 * 60)
-
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    const hours = diff / (1000 * 60 * 60);
+    if (hours < 24) {
+      return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    } else if (hours < 168) {
+      return date.toLocaleDateString([], { weekday: 'short' });
     } else {
-      return date.toLocaleDateString()
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
     }
-  }
+  };
 
-  const getUnreadCount = (conversation, userId) => {
-    if (!conversation.unreadCounts) return 0
-
-    if (conversation.unreadCounts instanceof Map) {
-      return conversation.unreadCounts.get(userId) || 0
-    } else if (typeof conversation.unreadCounts === 'object') {
-      return conversation.unreadCounts[userId] || 0
-    }
-
-    return 0
-  }
+  const getUnreadCount = (conv, userId) => {
+    if (!conv.unreadCounts) return 0;
+    return conv.unreadCounts[userId] || 0;
+  };
 
   if (!user) {
     return (
-      <Container className="my-5">
-        <Alert variant="warning">Please log in to view your conversations.</Alert>
+      <Container className="my-5 text-center">
+        <Alert variant="warning">Please log in to view your messages.</Alert>
       </Container>
-    )
+    );
+  }
+
+  if (loading) {
+    return (
+      <Container className="my-5 text-center py-5">
+        <Spinner animation="border" variant="primary" />
+        <p className="mt-3 text-muted">Loading your conversations...</p>
+      </Container>
+    );
+  }
+
+  if (error) return <Container className="my-5"><Alert variant="danger">{error}</Alert></Container>;
+
+  if (conversations.length === 0) {
+    return (
+      <Container className="my-5 text-center py-5">
+        <div className="empty-inbox">
+          <svg width="64" height="64" fill="none" stroke="currentColor" className="text-muted mb-3">
+            <path d="M21 8H3v14h18V8zM21 8v14M3 8v14" strokeWidth="2" />
+            <path d="M8 13h8" strokeWidth="2" />
+          </svg>
+          <h4>No messages yet</h4>
+          <p className="text-muted">Start a conversation with a host to get help.</p>
+          <Button variant="primary" as={Link} to="/">Browse Listings</Button>
+        </div>
+      </Container>
+    );
   }
 
   return (
-    <Container className="my-5">
+    <Container className="my-4 my-md-5">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>My Conversations</h1>
-        <Button variant="outline-primary" onClick={fetchConversations}>
+        <h1 className="fw-bold mb-0">Messages</h1>
+        <Button variant="outline-primary" size="sm" onClick={fetchConversations}>
           Refresh
         </Button>
       </div>
 
-      {loading && (
-        <div className="text-center py-4">
-          <Spinner animation="border" />
-          <p className="mt-2">Loading conversations...</p>
-        </div>
-      )}
-
-      {error && <Alert variant="danger">{error}</Alert>}
-
-      {!loading && !error && conversations.length === 0 && (
-        <Alert variant="info">
-          You don't have any conversations yet. Message a listing owner to start a conversation!
-        </Alert>
-      )}
-
-      <Row>
-        {conversations.map((conversation) => {
-          const otherParticipant = conversation.participants.find(
-            p => p.userId !== user.uid
-          )
-          const unreadCount = getUnreadCount(conversation, user.uid)
-
+      <div className="conversation-list">
+        {conversations.map((conv) => {
+          const other = conv.participants.find(p => p.userId !== user.uid);
+          const unread = getUnreadCount(conv, user.uid);
           return (
-            <Col xs={12} key={conversation._id} className="mb-3">
-              <Card>
-                <Card.Body>
-                  <div className="d-flex justify-content-between align-items-start">
-                    <div className="flex-grow-1">
-                      <div className="d-flex align-items-center mb-2">
-                        <h5 className="mb-0 me-2">
-                          {otherParticipant?.displayName || otherParticipant?.email}
-                        </h5>
-                        {unreadCount > 0 && (
-                          <Badge bg="danger" pill>
-                            {unreadCount}
-                          </Badge>
-                        )}
-                      </div>
-
-                      <p className="text-muted mb-1">
-                        About: <strong>{conversation.listingName}</strong>
-                      </p>
-
-                      <p className="mb-2">
-                        {conversation.lastMessage}
-                      </p>
-
-                      <small className="text-muted">
-                        Last message: {formatTime(conversation.lastMessageAt)}
-                      </small>
-                    </div>
-
-                    <div className="ms-3">
-                      <Button
-                        as={Link}
-                        to={`/conversation/${conversation._id}`}
-                        variant={unreadCount > 0 ? 'primary' : 'outline-primary'}
-                        size="sm"
-                      >
-                        Open Chat
-                      </Button>
+            <Card key={conv._id} className="conversation-card mb-3 border-0 shadow-sm">
+              <Card.Body className="p-3">
+                <div className="d-flex">
+                  <div className="me-3">
+                    <div className="avatar-placeholder bg-light text-muted d-flex align-items-center justify-content-center rounded-circle">
+                      {other?.displayName?.[0] || other?.email[0].toUpperCase()}
                     </div>
                   </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          )
+                  <div className="flex-grow-1">
+                    <div className="d-flex justify-content-between align-items-start">
+                      <div>
+                        <h6 className="fw-semibold mb-0 text-truncate">
+                          {other?.displayName || other?.email}
+                        </h6>
+                        <p className="text-muted small mb-1">About: {conv.listingName}</p>
+                        <p className="text-dark mb-0 text-truncate" style={{ maxWidth: '300px' }}>
+                          {conv.lastMessage}
+                        </p>
+                      </div>
+                      <div className="text-end">
+                        <small className="text-muted d-block">{formatTime(conv.lastMessageAt)}</small>
+                        {unread > 0 && (
+                          <Badge bg="danger" pill className="mt-1">{unread}</Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="ms-3 d-flex align-items-center">
+                    <Button
+                      as={Link}
+                      to={`/conversation/${conv._id}`}
+                      variant={unread > 0 ? 'primary' : 'outline-primary'}
+                      size="sm"
+                    >
+                      Open
+                    </Button>
+                  </div>
+                </div>
+              </Card.Body>
+            </Card>
+          );
         })}
-      </Row>
+      </div>
     </Container>
-  )
+  );
 }
 
-export default Conversations
+export default Conversations;
