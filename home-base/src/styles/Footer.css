@@ -1,12 +1,14 @@
-html, body, #root {
-  height: 100%;
-}
 #root {
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
 }
-main, .container {
-  flex: 1 0 auto;
+
+main, .container-fluid, .container {
+  flex: 1;
+}
+html, body, #root {
+  height: 100%;
 }
 footer {
   flex-shrink: 0;
