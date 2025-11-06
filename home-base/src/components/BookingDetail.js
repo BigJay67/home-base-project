@@ -3,8 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Container, Card, Row, Col, Button, Badge, Alert, Spinner, Table, Modal } from 'react-bootstrap'
 import { ArrowLeft, Download, Printer, Share2, Calendar, MapPin, DollarSign, User, FileText, Mail, Shield } from 'react-feather'
 
-/* global process, fetch, console, window, document, alert */
-
 function BookingDetail ({ user: currentUser }) {
   const { id } = useParams()
   const navigate = useNavigate()

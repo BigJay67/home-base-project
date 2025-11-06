@@ -347,7 +347,7 @@ function UserListings ({ user }) {
                       <div className="position-relative">
                         <img
                           src={img.thumbnail || img}
-                          alt={`Image ${index + 1}`}
+                          alt={`Apartment Pictures ${index + 1}`}
                           className="img-fluid rounded"
                           style={{ height: '100px', objectFit: 'cover' }}
                         />
@@ -390,7 +390,7 @@ function UserListings ({ user }) {
                     <Col xs={4} key={index} className="mb-2">
                       <img
                         src={img}
-                        alt={`New Image ${index + 1}`}
+                        alt={`Apartment New Pictures ${index + 1}`}
                         className="img-fluid rounded"
                         style={{ height: '100px', objectFit: 'cover' }}
                       />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Badge, Tab, Tabs, ListGroup, ProgressBar, InputGroup, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, Camera, Edit2, Save, X, Shield, Calendar, Star, Home, MessageCircle, List, Clock, } from 'react-feather';
@@ -19,100 +19,103 @@ function Profile({ user, onProfileUpdate }) {
   const [activityLoading, setActivityLoading] = useState(true);
   const navigate = useNavigate();
 
+  const setProfileData = useCallback((data) => {
+    // Note: The setters (setDisplayName, setEmail, etc.) are stable and don't need to be in the dependency array for useCallback.
+    // The 'user' object is a prop and must be in the dependency array.
+    setDisplayName(data.displayName || user.displayName || '');
+    setEmail(data.email || user.email || '');
+    setPhoneNumber(data.phoneNumber || '');
+    setProfilePicture(data.profilePicture || '');
+  }, [user]);
+
   useEffect(() => {
     if (!user) {
       setMessage('Please log in to view your profile.');
       setTimeout(() => navigate('/login'), 2000);
       return;
     }
+
+    const fetchProfile = async () => {
+      try {
+        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+        const response = await fetch(`${backendUrl}/api/users/${user.uid}`);
+        if (response.status === 404) {
+          const createResponse = await fetch(`${backendUrl}/api/users/${user.uid}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              displayName: user.displayName || '',
+              profilePicture: '',
+              email: user.email || '',
+              phoneNumber: user.phoneNumber || ''
+            })
+          });
+          const createData = await createResponse.json();
+          setProfileData(createData);
+          return;
+        }
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const data = await response.json();
+        setProfileData(data);
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+        setMessage(`Failed to load profile: ${err.message}`);
+      }
+    };
+
+    const fetchUserStats = async () => {
+      try {
+        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+        const [listingsRes, bookingsRes, reviewsRes] = await Promise.all([
+          fetch(`${backendUrl}/api/listings?createdBy=${user.uid}`, { headers: { Authorization: `Bearer ${user.uid}` } }),
+          fetch(`${backendUrl}/api/bookings?userId=${user.uid}`, { headers: { Authorization: `Bearer ${user.uid}` } }),
+          fetch(`${backendUrl}/api/reviews?userId=${user.uid}`, { headers: { Authorization: `Bearer ${user.uid}` } })
+        ]);
+        const stats = {
+          listings: listingsRes.ok ? (await listingsRes.json()).length : 0,
+          bookings: bookingsRes.ok ? (await bookingsRes.json()).length : 0,
+          reviews: reviewsRes.ok ? (await reviewsRes.json()).length : 0
+        };
+        setUserStats(stats);
+      } catch (err) {
+        console.error('Error fetching stats:', err);
+        setUserStats({ listings: 0, bookings: 0, reviews: 0 });
+      }
+    };
+
+    const fetchRecentActivity = async () => {
+      setActivityLoading(true);
+      try {
+        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+        const [bookingsRes, listingsRes, messagesRes] = await Promise.all([
+          fetch(`${backendUrl}/api/bookings?userId=${user.uid}&limit=5`, { headers: { Authorization: `Bearer ${user.uid}` } }),
+          fetch(`${backendUrl}/api/listings?createdBy=${user.uid}&limit=5`, { headers: { Authorization: `Bearer ${user.uid}` } }),
+          fetch(`${backendUrl}/api/conversations?userId=${user.uid}&limit=5`, { headers: { Authorization: `Bearer ${user.uid}` } })
+        ]);
+
+        const bookings = bookingsRes.ok ? await bookingsRes.json() : [];
+        const listings = listingsRes.ok ? await listingsRes.json() : [];
+        const conversations = messagesRes.ok ? await messagesRes.json() : [];
+
+        const activity = [
+          ...bookings.map(b => ({ type: 'booking', ...b, timestamp: b.createdAt })),
+          ...listings.map(l => ({ type: 'listing', ...l, timestamp: l.createdAt })),
+          ...conversations.map(c => ({ type: 'message', ...c, timestamp: c.lastMessageAt }))
+        ];
+
+        activity.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        setActivities(activity.slice(0, 10));
+      } catch (err) {
+        console.error('Error fetching activity:', err);
+      } finally {
+        setActivityLoading(false);
+      }
+    };
+
     fetchProfile();
     fetchUserStats();
     fetchRecentActivity();
-  }, [user, navigate]);
-
-  const fetchProfile = async () => {
-    try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/users/${user.uid}`);
-      if (response.status === 404) {
-        const createResponse = await fetch(`${backendUrl}/api/users/${user.uid}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            displayName: user.displayName || '',
-            profilePicture: '',
-            email: user.email || '',
-            phoneNumber: user.phoneNumber || ''
-          })
-        });
-        const createData = await createResponse.json();
-        setProfileData(createData);
-        return;
-      }
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      setProfileData(data);
-    } catch (err) {
-      console.error('Error fetching profile:', err);
-      setMessage(`Failed to load profile: ${err.message}`);
-    }
-  };
-
-  const fetchUserStats = async () => {
-    try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const [listingsRes, bookingsRes, reviewsRes] = await Promise.all([
-        fetch(`${backendUrl}/api/listings?createdBy=${user.uid}`, { headers: { Authorization: `Bearer ${user.uid}` } }),
-        fetch(`${backendUrl}/api/bookings?userId=${user.uid}`, { headers: { Authorization: `Bearer ${user.uid}` } }),
-        fetch(`${backendUrl}/api/reviews?userId=${user.uid}`, { headers: { Authorization: `Bearer ${user.uid}` } })
-      ]);
-      const stats = {
-        listings: listingsRes.ok ? (await listingsRes.json()).length : 0,
-        bookings: bookingsRes.ok ? (await bookingsRes.json()).length : 0,
-        reviews: reviewsRes.ok ? (await reviewsRes.json()).length : 0
-      };
-      setUserStats(stats);
-    } catch (err) {
-      console.error('Error fetching stats:', err);
-      setUserStats({ listings: 0, bookings: 0, reviews: 0 });
-    }
-  };
-
-  const fetchRecentActivity = async () => {
-    setActivityLoading(true);
-    try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const [bookingsRes, listingsRes, messagesRes] = await Promise.all([
-        fetch(`${backendUrl}/api/bookings?userId=${user.uid}&limit=5`, { headers: { Authorization: `Bearer ${user.uid}` } }),
-        fetch(`${backendUrl}/api/listings?createdBy=${user.uid}&limit=5`, { headers: { Authorization: `Bearer ${user.uid}` } }),
-        fetch(`${backendUrl}/api/conversations?userId=${user.uid}&limit=5`, { headers: { Authorization: `Bearer ${user.uid}` } })
-      ]);
-
-      const bookings = bookingsRes.ok ? await bookingsRes.json() : [];
-      const listings = listingsRes.ok ? await listingsRes.json() : [];
-      const conversations = messagesRes.ok ? await messagesRes.json() : [];
-
-      const activity = [
-        ...bookings.map(b => ({ type: 'booking', ...b, timestamp: b.createdAt })),
-        ...listings.map(l => ({ type: 'listing', ...l, timestamp: l.createdAt })),
-        ...conversations.map(c => ({ type: 'message', ...c, timestamp: c.lastMessageAt }))
-      ];
-
-      activity.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      setActivities(activity.slice(0, 10));
-    } catch (err) {
-      console.error('Error fetching activity:', err);
-    } finally {
-      setActivityLoading(false);
-    }
-  };
-
-  const setProfileData = (data) => {
-    setDisplayName(data.displayName || user.displayName || '');
-    setEmail(data.email || user.email || '');
-    setPhoneNumber(data.phoneNumber || '');
-    setProfilePicture(data.profilePicture || '');
-  };
+  }, [user, navigate, setProfileData, setMessage]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];

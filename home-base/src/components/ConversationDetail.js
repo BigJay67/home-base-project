@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Card, Form, Button, Alert, Spinner, Badge } from 'react-bootstrap';
 import { useConversationSocket } from '../hooks/useConversationSocket';
@@ -23,9 +23,31 @@ function ConversationDetail({ user }) {
     handleNewMessage
   } = useConversationSocket(id, user);
 
+  const fetchConversation = useCallback(async () => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${backendUrl}/api/conversations/${id}`, {
+        headers: { Authorization: user.uid }
+      });
+      if (response.status === 404) {
+        setError('Conversation not found.');
+        setLoading(false);
+        return;
+      }
+      if (!response.ok) throw new Error('Failed to fetch conversation');
+      const data = await response.json();
+      setConversation(data);
+    } catch (err) {
+      console.error('Error fetching conversation:', err);
+      setError('Failed to load conversation details.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, id]);
+
   useEffect(() => {
     if (user && id) fetchConversation();
-  }, [user, id]);
+  }, [user, id, fetchConversation]); 
 
   useEffect(() => {
     const unsubscribe = handleNewMessage((data) => {
@@ -34,23 +56,6 @@ function ConversationDetail({ user }) {
     });
     return unsubscribe;
   }, [handleNewMessage]);
-
-  const fetchConversation = async () => {
-    try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/conversations/${id}`, {
-        headers: { Authorization: user.uid }
-      });
-      if (!response.ok) throw new Error('Failed to fetch');
-      const data = await response.json();
-      setConversation(data);
-      if (isConnected) markMessagesRead();
-    } catch (err) {
-      setError('Failed to load conversation');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

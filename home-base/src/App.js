@@ -181,8 +181,8 @@ function App() {
                 <h6 className="fw-semibold text-dark mb-3">Support</h6>
                 <ul className="list-unstyled">
                   <li className="mb-2"><Link to="/conversations" className="text-muted text-decoration-none small">Help Center</Link></li>
-                  <li className="mb-2"><a href="#" className="text-muted text-decoration-none small">Safety</a></li>
-                  <li className="mb-2"><a href="#" className="text-muted text-decoration-none small">Contact Us</a></li>
+                  <li className="mb-2"><button type="button" className="btn btn-link text-muted text-decoration-none small p-0">Safety</button></li>
+                  <li className="mb-2"><button type="button" className="btn btn-link text-muted text-decoration-none small p-0">Contact Us</button></li>
                 </ul>
               </div>
               <div className="col-lg-3 col-md-6">

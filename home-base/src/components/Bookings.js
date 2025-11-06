@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Container, Row, Col, Card, Alert, Button, Badge, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import './Bookings.css';
@@ -9,7 +9,7 @@ function Bookings({ user }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     if (!user) {
       navigate('/');
       return;
@@ -30,112 +30,122 @@ function Bookings({ user }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, navigate]);
 
   useEffect(() => {
     fetchBookings();
-  }, [user, navigate]);
-
-  const getStatusBadge = (status) => {
-    const variants = { completed: 'success', pending: 'warning', failed: 'danger', cancelled: 'secondary' };
-    return <Badge bg={variants[status] || 'secondary'} className="text-uppercase fw-semibold">{status}</Badge>;
-  };
+  }, [user, fetchBookings]); 
 
   const formatCurrency = (amount, currency = 'NGN') => {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency }).format(amount);
   };
 
-  const formatDate = (date) => new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-NG', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  const getStatusBadge = (status) => {
+    const variants = {
+      completed: 'success',
+      pending: 'warning',
+      failed: 'danger',
+      cancelled: 'secondary',
+    };
+    return <Badge bg={variants[status] || 'secondary'}>{status.toUpperCase()}</Badge>;
+  };
+
+  const listingsMap = bookings.reduce((acc, booking) => {
+    if (booking.listingId) {
+      acc[booking.listingId._id] = booking.listingId;
+    }
+    return acc;
+  }, {});
+
+  if (!user) {
+    return <Container className="my-5"><Alert variant="info">Redirecting to home...</Alert></Container>;
+  }
 
   if (loading) {
     return (
-      <Container className="my-5 text-center py-5">
+      <Container className="my-5 text-center">
         <Spinner animation="border" variant="primary" />
-        <p className="mt-3 text-muted">Loading your bookings...</p>
+        <p className="mt-3">Loading your bookings...</p>
       </Container>
     );
   }
 
-  if (error) return <Container className="my-5"><Alert variant="danger">{error}</Alert></Container>;
-
-  if (bookings.length === 0) {
+  if (error) {
     return (
-      <Container className="my-5 text-center py-5">
-        <div className="empty-state">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-muted mb-3">
-            <path d="M3 3h18v18H3z" strokeWidth="1.5" />
-            <path d="M9 9h6m-6 4h6m-6 4h4" strokeWidth="1.5" />
-          </svg>
-          <h4>No bookings yet</h4>
-          <p className="text-muted">Your completed stays will appear here after payment.</p>
-          <Button variant="primary" onClick={() => navigate('/')}>Explore Listings</Button>
-        </div>
+      <Container className="my-5">
+        <Alert variant="danger">{error}</Alert>
       </Container>
     );
   }
+
+  const completedBookings = bookings.filter(b => b.status === 'completed');
 
   return (
-    <Container className="my-5">
-      <div className="d-flex justify-content-between align-items-center mb-5">
-        <div>
-          <h1 className="fw-bold">My Bookings</h1>
-          <p className="text-muted">View all your confirmed stays</p>
-        </div>
-        <Button variant="outline-primary" size="sm" onClick={fetchBookings} className="d-flex align-items-center gap-2">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M4 4v5h5m10 10v-5h-5m-9 9h18" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          Refresh
-        </Button>
-      </div>
+    <Container className="my-4 my-md-5">
+      <h1 className="h3 mb-4">My Bookings</h1>
 
-      <Row xs={1} md={2} lg={3} className="g-4">
-        {bookings.map((booking) => {
-          const listing = booking.listingId || {};
-          return (
-            <Col key={booking._id}>
-              <Card
-                className="booking-card h-100 border-0 shadow-sm"
-                onClick={() => navigate(`/bookings/${booking._id}`)}
-              >
-                <Card.Body className="d-flex flex-column p-4">
-                  <div className="d-flex justify-content-between align-items-start mb-3">
-                    <h6 className="fw-bold text-truncate mb-0 flex-grow-1">
-                      {listing.name || 'Deleted Listing'}
-                    </h6>
-                    {getStatusBadge(booking.status)}
-                  </div>
+      {completedBookings.length === 0 ? (
+        <Alert variant="info" className="text-center py-5">
+          <h4 className="alert-heading">No Completed Bookings Found!</h4>
+          <p>Once you book a property and the payment is complete, it will appear here.</p>
+          <Button variant="primary" onClick={() => navigate('/')}>Find a Property</Button>
+        </Alert>
+      ) : (
+        <Row xs={1} md={2} lg={3} className="g-4">
+          {completedBookings.map(booking => {
+            const listing = listingsMap[booking.listingId._id] || {};
+            const listingImage = listing.images?.[0] || 'default-image-url';
 
-                  <p className="text-muted small mb-3">{listing.location || 'N/A'}</p>
-
-                  <div className="mt-auto">
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                      <span className="h6 fw-bold text-primary mb-0">
-                        {formatCurrency(booking.amount)}
-                      </span>
-                      <small className="text-muted">{formatDate(booking.createdAt)}</small>
+            return (
+              <Col key={booking._id}>
+                <Card
+                  className="h-100 shadow-sm booking-card"
+                  onClick={() => navigate(`/bookings/${booking._id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Card.Body className="d-flex flex-column">
+                    <div className="d-flex justify-content-between align-items-start mb-3">
+                      <h6 className="fw-bold text-truncate mb-0 flex-grow-1">
+                        {listing.name || 'Deleted Listing'}
+                      </h6>
+                      {getStatusBadge(booking.status)}
                     </div>
 
-                    <div className="d-flex gap-2">
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        className="flex-fill"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/bookings/${booking._id}`);
-                        }}
-                      >
-                        View Details
-                      </Button>
+                    <p className="text-muted small mb-3">{listing.location || 'N/A'}</p>
+
+                    <div className="mt-auto">
+                      <div className="d-flex justify-content-between align-items-center mb-3">
+                        <span className="h6 fw-bold text-primary mb-0">
+                          {formatCurrency(booking.amount)}
+                        </span>
+                        <small className="text-muted">{formatDate(booking.createdAt)}</small>
+                      </div>
+
+                      <div className="d-flex gap-2">
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          className="flex-fill"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/bookings/${booking._id}`);
+                          }}
+                        >
+                          View Details
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          );
-        })}
-      </Row>
+                  </Card.Body>
+                </Card>
+              </Col>
+            );
+          })}
+        </Row>
+      )}
     </Container>
   );
 }
