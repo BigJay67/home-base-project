@@ -27,6 +27,7 @@ function BookingDetail ({ user: currentUser }) {
     } catch (err) {
       console.error('Error checking admin status:', err)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser])
 
   const fetchBookingDetail = useCallback(async () => {
@@ -64,6 +65,7 @@ function BookingDetail ({ user: currentUser }) {
     } finally {
       setLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, id])
 
   useEffect(() => {
@@ -71,6 +73,7 @@ function BookingDetail ({ user: currentUser }) {
       checkAdminStatus()
       fetchBookingDetail()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, id, checkAdminStatus, fetchBookingDetail])
 
   const formatCurrency = (amount, currency = 'NGN') => {

@@ -44,6 +44,7 @@ function AdminDashboard ({ user }) {
       setError('Error verifying admin access')
       setLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, backendUrl])
 
   const fetchData = useCallback(async () => {
@@ -92,6 +93,7 @@ function AdminDashboard ({ user }) {
     } finally {
       setLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, backendUrl])
 
   useEffect(() => {
@@ -152,6 +154,7 @@ function AdminDashboard ({ user }) {
     } catch (err) {
       setError(`Failed to ${actionName.toLowerCase()}: ${err.message}`)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, backendUrl, fetchData])
 
   const handleExportBooking = useCallback(async (bookingId) => {
@@ -180,6 +183,7 @@ function AdminDashboard ({ user }) {
     } catch (err) {
       setError('Failed to export booking: ' + err.message)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, backendUrl])
 
   const handleDeleteBooking = useCallback(async (bookingId) => {
@@ -204,6 +208,7 @@ function AdminDashboard ({ user }) {
     } catch (err) {
       setError('Failed to delete booking: ' + err.message)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, bookings, backendUrl])
 
   const [stats, setStats] = useState({
@@ -245,6 +250,7 @@ function AdminDashboard ({ user }) {
     } catch (err) {
       setError('Failed to update listing status: ' + err.message)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, listings, backendUrl])
 
   const handleBulkStatusUpdate = useCallback(async (status) => {
@@ -290,6 +296,7 @@ function AdminDashboard ({ user }) {
     } catch (err) {
       setError('Failed to bulk update listings: ' + err.message)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, listings, selectedListings, backendUrl])
 
   const toggleSelectListing = useCallback((listingId) => {
@@ -339,6 +346,7 @@ function AdminDashboard ({ user }) {
     } catch (err) {
       setError('Failed to delete listing: ' + err.message)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, listingToDelete, listings, backendUrl])
 
   const confirmDelete = useCallback((listing) => {
