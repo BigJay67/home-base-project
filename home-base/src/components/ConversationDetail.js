@@ -44,7 +44,8 @@ function ConversationDetail({ user }) {
     } finally {
       setLoading(false);
     }
-  }, [user, id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   useEffect(() => {
     if (user && id) fetchConversation();

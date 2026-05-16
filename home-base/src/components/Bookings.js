@@ -99,8 +99,6 @@ function Bookings({ user }) {
         <Row xs={1} md={2} lg={3} className="g-4">
           {completedBookings.map(booking => {
             const listing = listingsMap[booking.listingId._id] || {};
-            const listingImage = listing.images?.[0] || 'default-image-url';
-
             return (
               <Col key={booking._id}>
                 <Card

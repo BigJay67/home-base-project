@@ -24,6 +24,7 @@ function Notifications({ user }) {
     return () => {
       socket.off('message_notification', handleMessageNotification);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, user]);
 
   useEffect(() => {

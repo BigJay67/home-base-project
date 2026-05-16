@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Button, Badge, Carousel, Spinner } from 'react-bootstrap'
+import { Card, Button, Badge, Carousel } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
 import './ListingCard.css'
 
 function ListingCard ({ listing, user, handlePayment, parsePrice, handleEdit, handleDelete }) {
   const [averageRating, setAverageRating] = useState(0)
   const [totalReviews, setTotalReviews] = useState(0)
-  const [imageLoaded, setImageLoaded] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [imageErrors, setImageErrors] = useState(new Set())
 
@@ -38,6 +37,7 @@ function ListingCard ({ listing, user, handlePayment, parsePrice, handleEdit, ha
     return image[size] || image.original || image
   }
 
+  // eslint-disable-next-line no-unused-vars
   const getPlaceholderImage = (width = 400, height = 300) => {
     return `data:image/svg+xml;base64,${btoa(`
       <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
@@ -63,6 +63,7 @@ function ListingCard ({ listing, user, handlePayment, parsePrice, handleEdit, ha
     return `₦${formattedNumeric}${terms}`
   }
 
+  // eslint-disable-next-line no-unused-vars
   const renderRatingStars = (rating) => {
     const fullStars = Math.floor(rating)
     const hasHalfStar = rating % 1 >= 0.5
@@ -105,7 +106,7 @@ function ListingCard ({ listing, user, handlePayment, parsePrice, handleEdit, ha
                   alt={`${listing.name} - ${index + 1}`}
                   className="d-block w-100 h-100"
                   style={{ objectFit: 'cover' }}
-                  onLoad={() => setImageLoaded(true)}
+                  
                   onError={() => handleImageError(index)}
                 />
               </Carousel.Item>

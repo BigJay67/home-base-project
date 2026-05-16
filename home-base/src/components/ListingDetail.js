@@ -221,7 +221,7 @@ function ListingDetail ({ user, handlePayment, parsePrice }) {
                   <div style={{ height: '400px', overflow: 'hidden', borderRadius: '0.375rem' }}>
                     <img
                       src={getImageUrl(image)}
-                      alt={`${listing.name} - Image ${index + 1}`}
+                      alt={`${listing.name} - view ${index + 1}`}
                       style={{
                         width: '100%',
                         height: '100%',
