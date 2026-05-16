@@ -7,3 +7,5 @@
 
 # Build output
 node_modules
+
+serviceAccountKey.json

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Table, Button, Badge, Alert, Spinner, Form, InputGroup, Dropdown, Modal } from 'react-bootstrap'
 import { Download, Search, FileText, Mail, Share2, Send, MoreVertical } from 'react-feather'
 import { useNavigate } from 'react-router-dom'
+import { getAuthToken } from '../hooks/useAuthToken';
 
 function PaymentHistory ({ user }) {
   const [payments, setPayments] = useState([])
@@ -29,7 +30,7 @@ function PaymentHistory ({ user }) {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/payments/history?status=${filter}`, {
         headers: {
-          Authorization: user.uid
+          Authorization: await getAuthToken()
         }
       })
 
@@ -60,7 +61,7 @@ function PaymentHistory ({ user }) {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/payments/${paymentId}/receipt?template=${template}`, {
         headers: {
-          Authorization: user.uid
+          Authorization: await getAuthToken()
         }
       })
 
@@ -102,7 +103,7 @@ function PaymentHistory ({ user }) {
       const response = await fetch(`${backendUrl}/api/payments/${paymentId}/email-receipt`, {
         method: 'POST',
         headers: {
-          Authorization: user.uid
+          Authorization: await getAuthToken()
         }
       })
 
@@ -137,7 +138,7 @@ function PaymentHistory ({ user }) {
       const response = await fetch(`${backendUrl}/api/payments/${paymentId}/share`, {
         method: 'POST',
         headers: {
-          Authorization: user.uid,
+          Authorization: await getAuthToken(),
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ expiresIn: '7d' })
@@ -190,7 +191,7 @@ function PaymentHistory ({ user }) {
         const response = await fetch(`${backendUrl}/api/payments/${paymentId}/email-receipt`, {
           method: 'POST',
           headers: {
-            Authorization: user.uid
+            Authorization: await getAuthToken()
           }
         })
 

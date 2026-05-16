@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Container, Row, Col, Card, Alert, Button, Badge, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import './Bookings.css';
+import { getAuthToken } from '../hooks/useAuthToken';
 
 function Bookings({ user }) {
   const [bookings, setBookings] = useState([]);
@@ -19,7 +20,7 @@ function Bookings({ user }) {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       const response = await fetch(`${backendUrl}/api/bookings?userId=${user.uid}`, {
-        headers: { Authorization: user.uid }
+        headers: { Authorization: await getAuthToken() }
       });
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();

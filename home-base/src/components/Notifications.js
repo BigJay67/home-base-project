@@ -3,6 +3,7 @@ import { Dropdown, Badge, ListGroup, Button, Modal, Row, Col } from 'react-boots
 import { Bell, Check, Trash2 } from 'react-feather';
 import { useSocket } from '../context/SocketContext';
 import { useNavigate } from 'react-router-dom';
+import { getAuthToken } from '../hooks/useAuthToken';
 
 function Notifications({ user }) {
   const { socket } = useSocket();
@@ -38,7 +39,7 @@ function Notifications({ user }) {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       const response = await fetch(`${backendUrl}/api/notifications`, {
         headers: {
-          Authorization: user.uid,
+          Authorization: await getAuthToken(),
         },
       });
 
@@ -59,7 +60,7 @@ function Notifications({ user }) {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       const response = await fetch(`${backendUrl}/api/conversations/unread-count`, {
         headers: {
-          Authorization: user.uid,
+          Authorization: await getAuthToken(),
         },
       });
 
@@ -91,7 +92,7 @@ function Notifications({ user }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: user.uid,
+          Authorization: await getAuthToken(),
         },
         body: JSON.stringify({
           type: 'system_announcement',
@@ -121,7 +122,7 @@ function Notifications({ user }) {
       const response = await fetch(`${backendUrl}/api/notifications/${notificationId}/read`, {
         method: 'PUT',
         headers: {
-          Authorization: user.uid,
+          Authorization: await getAuthToken(),
         },
       });
 
@@ -144,7 +145,7 @@ function Notifications({ user }) {
       const response = await fetch(`${backendUrl}/api/notifications/read-all`, {
         method: 'PUT',
         headers: {
-          Authorization: user.uid,
+          Authorization: await getAuthToken(),
         },
       });
 
@@ -165,7 +166,7 @@ function Notifications({ user }) {
       const response = await fetch(`${backendUrl}/api/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: {
-          Authorization: user.uid,
+          Authorization: await getAuthToken(),
         },
       });
 

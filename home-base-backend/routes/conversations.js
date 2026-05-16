@@ -7,7 +7,7 @@ const NotificationService = require('../services/notificationService');
 
 router.get('/', async (req, res) => {
   try {
-    const userId = req.headers.authorization;
+    const userId = req.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Authentication required' });
     }
@@ -36,7 +36,7 @@ router.get('/', async (req, res) => {
 
 router.get('/unread-count', async (req, res) => {
   try {
-    const userId = req.headers.authorization;
+    const userId = req.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Authentication required' });
     }
@@ -63,7 +63,7 @@ router.get('/unread-count', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { toUserId, message, listingId } = req.body;
-    const fromUserId = req.headers.authorization;
+    const fromUserId = req.userId;
     if (!fromUserId) {
       return res.status(401).json({ error: 'Authentication required' });
     }
@@ -164,7 +164,7 @@ router.post('/', async (req, res) => {
       message: err.message,
       stack: err.stack,
       requestBody: req.body,
-      userId: req.headers.authorization, // Use req.headers.authorization instead of fromUserId
+      userId: req.userId, // Use req.userId instead of fromUserId
     });
     res.status(500).json({ error: 'Server error', details: err.message });
   }
@@ -173,7 +173,7 @@ router.post('/', async (req, res) => {
 router.get('/:conversationId', async (req, res) => {
   try {
     const { conversationId } = req.params;
-    const userId = req.headers.authorization;
+    const userId = req.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Authentication required' });
     }
@@ -202,7 +202,7 @@ router.get('/:conversationId', async (req, res) => {
     console.error('Error fetching conversation:', {
       message: err.message,
       stack: err.stack,
-      userId: req.headers.authorization,
+      userId: req.userId,
     });
     res.status(500).json({ error: 'Server error', details: err.message });
   }
@@ -212,7 +212,7 @@ router.post('/:conversationId/messages', async (req, res) => {
   try {
     const { conversationId } = req.params;
     const { message } = req.body;
-    const fromUserId = req.headers.authorization;
+    const fromUserId = req.userId;
     if (!fromUserId) {
       return res.status(401).json({ error: 'Authentication required' });
     }
@@ -280,7 +280,7 @@ router.post('/:conversationId/messages', async (req, res) => {
       message: err.message,
       stack: err.stack,
       requestBody: req.body,
-      userId: req.headers.authorization, // Use req.headers.authorization instead of fromUserId
+      userId: req.userId, // Use req.userId instead of fromUserId
     });
     res.status(500).json({ error: 'Server error', details: err.message });
   }

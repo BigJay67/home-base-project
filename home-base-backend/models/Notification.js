@@ -7,14 +7,18 @@ const notificationSchema = new mongoose.Schema({
     required: true,
     enum: [
       'booking_created',
-      'booking_confirmed', 
+      'booking_confirmed',
       'booking_cancelled',
+      'booking_updated',
       'payment_success',
       'payment_failed',
       'new_review',
       'review_reply',
       'listing_approved',
       'listing_rejected',
+      'listing_suspended',
+      'new_message',
+      'admin_promotion',
       'system_announcement'
     ]
   },

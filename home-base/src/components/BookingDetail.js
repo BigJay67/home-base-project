@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Container, Card, Row, Col, Button, Badge, Alert, Spinner, Table, Modal } from 'react-bootstrap'
 import { ArrowLeft, Download, Printer, Share2, Calendar, MapPin, DollarSign, User, FileText, Mail, Shield } from 'react-feather'
+import { getAuthToken } from '../hooks/useAuthToken';
 
 function BookingDetail ({ user: currentUser }) {
   const { id } = useParams()
@@ -15,7 +16,10 @@ function BookingDetail ({ user: currentUser }) {
   const checkAdminStatus = useCallback(async () => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/users/${currentUser.uid}`)
+      const token = await getAuthToken();
+      const response = await fetch(`${backendUrl}/api/users/${currentUser.uid}`, {
+        headers: { Authorization: token }
+      })
       if (response.ok) {
         const userData = await response.json()
         setIsAdmin(userData.role === 'admin')
@@ -31,7 +35,7 @@ function BookingDetail ({ user: currentUser }) {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/bookings/${id}`, {
         headers: {
-          Authorization: currentUser.uid
+          Authorization: await getAuthToken()
         }
       })
 
@@ -39,7 +43,7 @@ function BookingDetail ({ user: currentUser }) {
         if (response.status === 403 || response.status === 404) {
           const adminResponse = await fetch(`${backendUrl}/api/admin/bookings/${id}`, {
             headers: {
-              Authorization: currentUser.uid
+              Authorization: await getAuthToken()
             }
           })
 
@@ -103,7 +107,7 @@ function BookingDetail ({ user: currentUser }) {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/payments/${booking._id}/receipt`, {
         headers: {
-          Authorization: currentUser.uid
+          Authorization: await getAuthToken()
         }
       })
 

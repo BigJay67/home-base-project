@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
     if (createdBy) query.createdBy = createdBy;
     
     console.log('Querying listings with:', query);
-    const listings = await Listing.find(query);
+    const listings = await Listing.find(query).limit(50);
     res.json(listings);
   } catch (err) {
     console.error('Error fetching listings:', err.message, err.stack);
@@ -195,27 +195,6 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    console.log('Fetching listing ID:', id);
-    
-    if (!id || id === ':id' || !mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid listing ID' });
-    }
-    
-    const listing = await Listing.findById(id);
-    if (!listing) {
-      return res.status(404).json({ error: 'Listing not found' });
-    }
-    
-    res.json(listing);
-  } catch (err) {
-    console.error('Error fetching listing:', err.message, err.stack);
-    res.status(500).json({ error: 'Server error', details: err.message });
-  }
-});
-
 router.get('/search', async (req, res) => {
   try {
     const { type, location, maxPrice, amenities, minRating, reviewKeyword } = req.query;
@@ -286,5 +265,28 @@ router.get('/search', async (req, res) => {
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
+
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('Fetching listing ID:', id);
+    
+    if (!id || id === ':id' || !mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid listing ID' });
+    }
+    
+    const listing = await Listing.findById(id);
+    if (!listing) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+    
+    res.json(listing);
+  } catch (err) {
+    console.error('Error fetching listing:', err.message, err.stack);
+    res.status(500).json({ error: 'Server error', details: err.message });
+  }
+});
+
+
 
 module.exports = router;

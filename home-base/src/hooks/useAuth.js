@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { signOut } from 'firebase/auth'
-
 import { auth } from '../firebase'
+import { getAuthToken } from './useAuthToken'
 
 function useAuth () {
   const [user, setUser] = useState(null)
@@ -12,8 +12,9 @@ function useAuth () {
     if (user) {
       try {
         const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+        const token = await getAuthToken()
         const response = await fetch(`${backendUrl}/api/users/${user.uid}`, {
-          headers: { Authorization: user.uid }
+          headers: { Authorization: token }
         })
         if (response.ok) {
           const profileData = await response.json()

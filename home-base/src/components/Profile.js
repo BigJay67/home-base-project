@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Form, Button, Alert, Badge, Tab, Tabs, ListG
 import { useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, Camera, Edit2, Save, X, Shield, Calendar, Star, Home, MessageCircle, List, Clock, } from 'react-feather';
 import './Profile.css';
+import { getAuthToken } from '../hooks/useAuthToken';
 
 function Profile({ user, onProfileUpdate }) {
   const [displayName, setDisplayName] = useState('');
@@ -38,11 +39,14 @@ function Profile({ user, onProfileUpdate }) {
     const fetchProfile = async () => {
       try {
         const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-        const response = await fetch(`${backendUrl}/api/users/${user.uid}`);
+        const token = await getAuthToken();
+        const response = await fetch(`${backendUrl}/api/users/${user.uid}`, {
+          headers: { Authorization: token }
+        });
         if (response.status === 404) {
           const createResponse = await fetch(`${backendUrl}/api/users/${user.uid}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Authorization: token },
             body: JSON.stringify({
               displayName: user.displayName || '',
               profilePicture: '',
@@ -67,9 +71,9 @@ function Profile({ user, onProfileUpdate }) {
       try {
         const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
         const [listingsRes, bookingsRes, reviewsRes] = await Promise.all([
-          fetch(`${backendUrl}/api/listings?createdBy=${user.uid}`, { headers: { Authorization: `Bearer ${user.uid}` } }),
-          fetch(`${backendUrl}/api/bookings?userId=${user.uid}`, { headers: { Authorization: `Bearer ${user.uid}` } }),
-          fetch(`${backendUrl}/api/reviews?userId=${user.uid}`, { headers: { Authorization: `Bearer ${user.uid}` } })
+          fetch(`${backendUrl}/api/listings?createdBy=${user.uid}`, { headers: { Authorization: await getAuthToken() } }),
+          fetch(`${backendUrl}/api/bookings?userId=${user.uid}`, { headers: { Authorization: await getAuthToken() } }),
+          fetch(`${backendUrl}/api/reviews?userId=${user.uid}`, { headers: { Authorization: await getAuthToken() } })
         ]);
         const stats = {
           listings: listingsRes.ok ? (await listingsRes.json()).length : 0,
@@ -88,9 +92,9 @@ function Profile({ user, onProfileUpdate }) {
       try {
         const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
         const [bookingsRes, listingsRes, messagesRes] = await Promise.all([
-          fetch(`${backendUrl}/api/bookings?userId=${user.uid}&limit=5`, { headers: { Authorization: `Bearer ${user.uid}` } }),
-          fetch(`${backendUrl}/api/listings?createdBy=${user.uid}&limit=5`, { headers: { Authorization: `Bearer ${user.uid}` } }),
-          fetch(`${backendUrl}/api/conversations?userId=${user.uid}&limit=5`, { headers: { Authorization: `Bearer ${user.uid}` } })
+          fetch(`${backendUrl}/api/bookings?userId=${user.uid}&limit=5`, { headers: { Authorization: await getAuthToken() } }),
+          fetch(`${backendUrl}/api/listings?createdBy=${user.uid}&limit=5`, { headers: { Authorization: await getAuthToken() } }),
+          fetch(`${backendUrl}/api/conversations?userId=${user.uid}&limit=5`, { headers: { Authorization: await getAuthToken() } })
         ]);
 
         const bookings = bookingsRes.ok ? await bookingsRes.json() : [];
@@ -135,9 +139,10 @@ function Profile({ user, onProfileUpdate }) {
     setMessage('');
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const token = await getAuthToken();
       const response = await fetch(`${backendUrl}/api/users/${user.uid}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: token },
         body: JSON.stringify({ displayName, email, phoneNumber, profilePicture: newProfilePicture })
       });
       const data = await response.json();

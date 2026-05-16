@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Container, Row, Col, Card, Table, Button, Alert, Badge, Form, Modal, Dropdown } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
 import { MoreVertical, ToggleLeft, ToggleRight, Mail, User, DollarSign, Check, X, RefreshCw, Download, Trash2 } from 'react-feather'
+import { getAuthToken } from '../hooks/useAuthToken';
 
 function AdminDashboard ({ user }) {
   const [listings, setListings] = useState([])
@@ -30,7 +31,8 @@ function AdminDashboard ({ user }) {
 
   const checkAdminStatus = useCallback(async () => {
     try {
-      const response = await window.fetch(`${backendUrl}/api/users/${user?.uid}`)
+      const token = await getAuthToken();
+      const response = await window.fetch(`${backendUrl}/api/users/${user?.uid}`, { headers: { Authorization: token } })
       if (response.ok) {
         const userData = await response.json()
         if (userData.role !== 'admin') {
@@ -48,7 +50,7 @@ function AdminDashboard ({ user }) {
     try {
       const listingsResponse = await window.fetch(`${backendUrl}/api/admin/listings`, {
         headers: {
-          Authorization: user?.uid
+          Authorization: await getAuthToken()
         }
       })
 
@@ -58,7 +60,7 @@ function AdminDashboard ({ user }) {
 
       const usersResponse = await window.fetch(`${backendUrl}/api/admin/users`, {
         headers: {
-          Authorization: user?.uid
+          Authorization: await getAuthToken()
         }
       })
       let usersData = []
@@ -69,7 +71,7 @@ function AdminDashboard ({ user }) {
 
       const bookingsResponse = await window.fetch(`${backendUrl}/api/admin/bookings`, {
         headers: {
-          Authorization: user?.uid
+          Authorization: await getAuthToken()
         }
       })
       let bookingsData = []
@@ -136,7 +138,7 @@ function AdminDashboard ({ user }) {
         method,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: user?.uid
+          Authorization: await getAuthToken()
         },
         body: body ? JSON.stringify(body) : undefined
       })
@@ -156,7 +158,7 @@ function AdminDashboard ({ user }) {
     try {
       const response = await window.fetch(`${backendUrl}/api/admin/bookings/${bookingId}/export`, {
         headers: {
-          Authorization: user?.uid
+          Authorization: await getAuthToken()
         }
       })
 
@@ -189,7 +191,7 @@ function AdminDashboard ({ user }) {
       const response = await window.fetch(`${backendUrl}/api/admin/bookings/${bookingId}`, {
         method: 'DELETE',
         headers: {
-          Authorization: user?.uid
+          Authorization: await getAuthToken()
         }
       })
 
@@ -218,7 +220,7 @@ function AdminDashboard ({ user }) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: user?.uid
+          Authorization: await getAuthToken()
         },
         body: JSON.stringify({ status: newStatus })
       })
@@ -256,7 +258,7 @@ function AdminDashboard ({ user }) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: user?.uid
+          Authorization: await getAuthToken()
         },
         body: JSON.stringify({
           listingIds: Array.from(selectedListings),
@@ -317,7 +319,7 @@ function AdminDashboard ({ user }) {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: user?.uid
+          Authorization: await getAuthToken()
         }
       })
 

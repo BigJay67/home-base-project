@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Card, Form, Button, Alert, Spinner, Badge } from 'react-bootstrap';
 import { useConversationSocket } from '../hooks/useConversationSocket';
 import './ConversationDetail.css';
+import { getAuthToken } from '../hooks/useAuthToken';
 
 function ConversationDetail({ user }) {
   const { id } = useParams();
@@ -27,7 +28,7 @@ function ConversationDetail({ user }) {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       const response = await fetch(`${backendUrl}/api/conversations/${id}`, {
-        headers: { Authorization: user.uid }
+        headers: { Authorization: await getAuthToken() }
       });
       if (response.status === 404) {
         setError('Conversation not found.');
@@ -84,7 +85,7 @@ function ConversationDetail({ user }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: user.uid
+          Authorization: await getAuthToken()
         },
         body: JSON.stringify({ toUserId, message: message.trim(), listingId })
       });

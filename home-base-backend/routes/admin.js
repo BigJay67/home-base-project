@@ -168,7 +168,7 @@ router.put('/users/:userId', adminAuth, async (req, res) => {
   try {
     const { userId } = req.params;
     const { displayName, email, phoneNumber, status, role } = req.body;
-    const currentAdminId = req.headers.authorization;
+    const currentAdminId = req.userId;
 
     
     const currentAdmin = await User.findOne({ userId: currentAdminId });
@@ -215,7 +215,7 @@ router.put('/users/:userId', adminAuth, async (req, res) => {
 router.delete('/users/:userId', adminAuth, async (req, res) => {
   try {
     const { userId } = req.params;
-    const currentAdminId = req.headers.authorization;
+    const currentAdminId = req.userId;
 
     
     if (userId === currentAdminId) {
@@ -258,7 +258,7 @@ router.delete('/users/:userId', adminAuth, async (req, res) => {
 router.post('/users/:userId/make-admin', adminAuth, async (req, res) => {
   try {
     const { userId } = req.params;
-    const currentAdminId = req.headers.authorization;
+    const currentAdminId = req.userId;
 
     const user = await User.findOne({ userId });
     if (!user) {

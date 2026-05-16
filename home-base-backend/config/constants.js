@@ -14,7 +14,7 @@ const allowedOrigins = [
 
 const getCallbackUrl = () => {
   if (process.env.NODE_ENV === 'production') {
-    return 'https://yourapp.com/payment-callback';
+    return `${process.env.FRONTEND_URL}/payment-callback`;
   }
   if (process.env.FRONTEND_URL) {
     return `${process.env.FRONTEND_URL}/payment-callback`;

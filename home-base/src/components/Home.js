@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 
 import ListingCard from './ListingCard'
 import ReviewModal from './ReviewModal'
+import { getAuthToken } from '../hooks/useAuthToken';
 
 function Home ({ user, listings, error, loading, typeFilter, setTypeFilter, locationFilter, setLocationFilter, maxPriceFilter, setMaxPriceFilter, paymentMessage, setPaymentMessage, handleSearch, handlePayment, parsePrice, fetchListings, handleSignOut }) {
   const [showEditModal, setShowEditModal] = useState(false)
@@ -89,7 +90,7 @@ function Home ({ user, listings, error, loading, typeFilter, setTypeFilter, loca
 
       const response = await fetch(`${backendUrl}/api/listings/${editingListing._id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: user.uid },
+        headers: { 'Content-Type': 'application/json', Authorization: await getAuthToken() },
         body: JSON.stringify(updateData)
       })
 
@@ -121,7 +122,7 @@ function Home ({ user, listings, error, loading, typeFilter, setTypeFilter, loca
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/listings/${listingId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', Authorization: user.uid },
+        headers: { 'Content-Type': 'application/json', Authorization: await getAuthToken() },
         body: JSON.stringify({ userId: user.uid })
       })
       if (!response.ok) {
@@ -152,7 +153,7 @@ function Home ({ user, listings, error, loading, typeFilter, setTypeFilter, loca
     const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
     const response = await fetch(`${backendUrl}/api/reviews`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: user.uid },
+      headers: { 'Content-Type': 'application/json', Authorization: await getAuthToken() },
       body: JSON.stringify({
         ...reviewData,
         userId: user.uid,

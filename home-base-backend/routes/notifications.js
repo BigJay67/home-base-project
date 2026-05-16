@@ -5,7 +5,7 @@ const Notification = require('../models/Notification');
 
 router.get('/', async (req, res) => {
   try {
-    const userId = req.headers.authorization;
+    const userId = req.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Authentication required' });
     }
@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
     console.error('Error fetching notifications:', {
       message: err.message,
       stack: err.stack,
-      userId: req.headers.authorization
+      userId: req.userId
     });
     res.status(500).json({ error: 'Server error', details: err.message });
   }
@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const userId = req.headers.authorization;
+    const userId = req.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Authentication required' });
     }
@@ -64,7 +64,7 @@ router.post('/', async (req, res) => {
       message: err.message,
       stack: err.stack,
       requestBody: req.body,
-      userId: req.headers.authorization,
+      userId: req.userId,
       mongoDbStatus: mongoose.connection.readyState
     });
     res.status(500).json({ error: 'Server error', details: err.message });
@@ -74,7 +74,7 @@ router.post('/', async (req, res) => {
 router.put('/:id/read', async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.headers.authorization;
+    const userId = req.userId;
 
     const notification = await Notification.findOneAndUpdate(
       { _id: id, userId },
@@ -91,7 +91,7 @@ router.put('/:id/read', async (req, res) => {
     console.error('Error marking notification as read:', {
       message: err.message,
       stack: err.stack,
-      userId: req.headers.authorization
+      userId: req.userId
     });
     res.status(500).json({ error: 'Server error', details: err.message });
   }
@@ -99,7 +99,7 @@ router.put('/:id/read', async (req, res) => {
 
 router.put('/read-all', async (req, res) => {
   try {
-    const userId = req.headers.authorization;
+    const userId = req.userId;
     await Notification.updateMany(
       { userId, isRead: false },
       { isRead: true }
@@ -110,7 +110,7 @@ router.put('/read-all', async (req, res) => {
     console.error('Error marking all as read:', {
       message: err.message,
       stack: err.stack,
-      userId: req.headers.authorization
+      userId: req.userId
     });
     res.status(500).json({ error: 'Server error', details: err.message });
   }
@@ -119,7 +119,7 @@ router.put('/read-all', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.headers.authorization;
+    const userId = req.userId;
 
     const notification = await Notification.findOneAndDelete({ 
       _id: id, 
@@ -135,7 +135,7 @@ router.delete('/:id', async (req, res) => {
     console.error('Error deleting notification:', {
       message: err.message,
       stack: err.stack,
-      userId: req.headers.authorization
+      userId: req.userId
     });
     res.status(500).json({ error: 'Server error', details: err.message });
   }

@@ -71,7 +71,7 @@ router.post('/paystack/initialize', async (req, res) => {
 router.get('/paystack/verify/:reference', async (req, res) => {
   try {
     const { reference } = req.params;
-    const userId = req.headers.authorization;
+    const userId = req.userId;
 
     const booking = await Booking.findOne({ paymentReference: reference }).populate(
       'listingId',
@@ -130,7 +130,7 @@ router.get('/paystack/verify/:reference', async (req, res) => {
 
 router.get('/history', async (req, res) => {
   try {
-    const userId = req.headers.authorization;
+    const userId = req.userId;
     const { status } = req.query;
 
     if (!userId) {
@@ -156,7 +156,7 @@ router.get('/history', async (req, res) => {
 router.get('/:paymentId/receipt', async (req, res) => {
   try {
     const { paymentId } = req.params;
-    const userId = req.headers.authorization;
+    const userId = req.userId;
     const { format = 'pdf', template = 'auto' } = req.query;
 
     if (!userId) {
@@ -214,7 +214,7 @@ router.get('/:paymentId/receipt', async (req, res) => {
 router.post('/:paymentId/email-receipt', async (req, res) => {
   try {
     const { paymentId } = req.params;
-    const userId = req.headers.authorization;
+    const userId = req.userId;
 
     if (!userId) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -263,7 +263,7 @@ router.post('/:paymentId/email-receipt', async (req, res) => {
 router.post('/:paymentId/share', async (req, res) => {
   try {
     const { paymentId } = req.params;
-    const userId = req.headers.authorization;
+    const userId = req.userId;
     const { expiresIn = '7d' } = req.body;
 
     if (!userId) {
@@ -332,7 +332,7 @@ router.get('/shared-receipt/:token', async (req, res) => {
 router.get('/:paymentId/analytics', async (req, res) => {
   try {
     const { paymentId } = req.params;
-    const userId = req.headers.authorization;
+    const userId = req.userId;
 
     if (!userId) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -360,7 +360,7 @@ router.get('/:paymentId/analytics', async (req, res) => {
 router.get('/:paymentId/expiry', async (req, res) => {
   try {
     const { paymentId } = req.params;
-    const userId = req.headers.authorization;
+    const userId = req.userId;
 
     if (!userId) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -398,7 +398,7 @@ router.get('/:paymentId/expiry', async (req, res) => {
 router.post('/:paymentId/extend-expiry', async (req, res) => {
   try {
     const { paymentId } = req.params;
-    const userId = req.headers.authorization;
+    const userId = req.userId;
 
     if (!userId) {
       return res.status(401).json({ error: 'Authentication required' });

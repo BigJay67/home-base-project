@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Button, Modal, Form, Alert, Spinner } from 'react-bootstrap'
+import { getAuthToken } from '../hooks/useAuthToken';
 
 function MessageButton ({ listing, user, variant = 'outline-primary', size = 'sm', className = '' }) {
   const [showModal, setShowModal] = useState(false)
@@ -38,7 +39,7 @@ function MessageButton ({ listing, user, variant = 'outline-primary', size = 'sm
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: user.uid
+          Authorization: await getAuthToken()
         },
         body: JSON.stringify({
           toUserId,

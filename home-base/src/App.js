@@ -136,7 +136,7 @@ function App() {
             }
           />
           <Route path="/bookings" element={<Bookings user={user} />} />
-          <Route path="/payment-callback" element={<PaymentCallback />} />
+          <Route path="/payment-callback" element={<PaymentCallback user={user} />} />
           <Route path="/new-listing" element={<NewListing user={user} />} />
           <Route path="/profile" element={<Profile user={user} onProfileUpdate={refreshUserProfile} />} />
           <Route path="/listing/:id" element={<ListingDetail user={user} handlePayment={handlePayment} parsePrice={parsePrice} />} />

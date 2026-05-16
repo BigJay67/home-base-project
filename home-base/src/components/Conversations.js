@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Card, Button, Badge, Alert, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import './Conversations.css';
+import { getAuthToken } from '../hooks/useAuthToken';
 
 function Conversations({ user }) {
   const [conversations, setConversations] = useState([]);
@@ -12,7 +13,7 @@ function Conversations({ user }) {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       const response = await fetch(`${backendUrl}/api/conversations`, {
-        headers: { Authorization: user.uid }
+        headers: { Authorization: await getAuthToken() }
       });
       if (!response.ok) throw new Error('Failed to fetch conversations');
       const data = await response.json();

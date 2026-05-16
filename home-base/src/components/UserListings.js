@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Container, Row, Col, Card, Button, Badge, Modal, Alert, Spinner, Form } from 'react-bootstrap'
+import { getAuthToken } from '../hooks/useAuthToken';
 
 function UserListings ({ user }) {
   const [listings, setListings] = useState([])
@@ -18,7 +19,7 @@ function UserListings ({ user }) {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/listings?createdBy=${user.uid}`, {
         headers: {
-          Authorization: user.uid
+          Authorization: await getAuthToken()
         }
       })
       if (!response.ok) {
@@ -46,7 +47,7 @@ function UserListings ({ user }) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: user.uid
+          Authorization: await getAuthToken()
         },
         body: JSON.stringify({ status: newStatus, userId: user.uid })
       })
@@ -117,7 +118,7 @@ function UserListings ({ user }) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: user.uid
+          Authorization: await getAuthToken()
         },
         body: JSON.stringify({
           ...editForm,
@@ -151,7 +152,7 @@ function UserListings ({ user }) {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: user.uid
+          Authorization: await getAuthToken()
         },
         body: JSON.stringify({ userId: user.uid })
       })

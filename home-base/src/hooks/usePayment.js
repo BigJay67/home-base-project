@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { getAuthToken } from './useAuthToken'
 
 function usePayment (user, setPaymentMessage) {
   const handlePayment = useCallback(async (listingId, amount) => {
@@ -8,11 +9,12 @@ function usePayment (user, setPaymentMessage) {
     }
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+      const token = await getAuthToken()
       const response = await fetch(`${backendUrl}/api/payments/paystack/initialize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: user.uid
+          Authorization: token
         },
         body: JSON.stringify({ listingId, userId: user.uid, userEmail: user.email, amount })
       })

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Container, Card, Badge, Button, Row, Col, Spinner, Alert } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
+import { getAuthToken } from '../hooks/useAuthToken';
 
 function MessagesList ({ user, onRefreshUnread }) {
   const [conversations, setConversations] = useState([])
@@ -21,7 +22,7 @@ function MessagesList ({ user, onRefreshUnread }) {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/conversations`, {
         headers: {
-          Authorization: user.uid
+          Authorization: await getAuthToken()
         }
       })
 
