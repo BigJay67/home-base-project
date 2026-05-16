@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Container, Card, Row, Col, Button, Alert, Badge, Form, Modal, Spinner, Table } from 'react-bootstrap'
 import { ArrowLeft, User, Mail, Phone, Calendar, Shield, Trash2, Edit, Save, X } from 'react-feather'
+import { getAuthToken } from '../hooks/useAuthToken';
 
 function UserDetail ({ user: currentAdmin }) {
   const { userId } = useParams()
@@ -27,7 +28,7 @@ function UserDetail ({ user: currentAdmin }) {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/admin/users/${userId}`, {
         headers: {
-          Authorization: currentAdmin.uid
+          Authorization: await getAuthToken()
         }
       })
 
@@ -60,7 +61,7 @@ function UserDetail ({ user: currentAdmin }) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: currentAdmin.uid
+          Authorization: await getAuthToken()
         },
         body: JSON.stringify(editForm)
       })
@@ -88,7 +89,7 @@ function UserDetail ({ user: currentAdmin }) {
       const response = await fetch(`${backendUrl}/api/admin/users/${userId}/make-admin`, {
         method: 'POST',
         headers: {
-          Authorization: currentAdmin.uid
+          Authorization: await getAuthToken()
         }
       })
 
@@ -114,7 +115,7 @@ function UserDetail ({ user: currentAdmin }) {
       const response = await fetch(`${backendUrl}/api/admin/users/${userId}`, {
         method: 'DELETE',
         headers: {
-          Authorization: currentAdmin.uid
+          Authorization: await getAuthToken()
         }
       })
 

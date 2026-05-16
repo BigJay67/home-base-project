@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Container, Form, Button, Alert, Card, Row, Col, InputGroup } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
 import { Home, MapPin, List, Image } from 'react-feather'
+import { getAuthToken } from '../hooks/useAuthToken';
 
 function NewListing ({ user }) {
   const [type, setType] = useState('')
@@ -106,7 +107,7 @@ function NewListing ({ user }) {
 
       const response = await fetch(`${backendUrl}/api/listings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: await getAuthToken() },
         body: JSON.stringify({
           type,
           name,

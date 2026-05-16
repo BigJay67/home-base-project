@@ -1,3 +1,4 @@
+const { verifyToken } = require('../middleware/auth');
 const express = require('express');
 const mongoose = require('mongoose');
 const Listing = require('../models/Listing');
@@ -29,10 +30,11 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
   try {
     console.log('POST /api/listings received:', JSON.stringify(req.body, null, 2));
-    const { type, name, price, priceValue, location, amenities, distance, payment, images, createdBy } = req.body;
+    const { type, name, price, priceValue, location, amenities, distance, payment, images } = req.body;
+    const createdBy = req.userId;
     if (!type || !name || !price || !priceValue || !location || !createdBy) {
       console.log('Missing required fields:', { type, name, price, priceValue, location, createdBy });
       return res.status(400).json({ error: 'Missing required fields' });
@@ -89,11 +91,11 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId, type, name, price, priceValue, location, amenities, distance, payment, images, imagesToRemove } = req.body;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized: userId required' });
+    const { type, name, price, priceValue, location, amenities, distance, payment, images, imagesToRemove } = req.body;
+    const userId = req.userId;
 
     const listing = await Listing.findById(id);
     if (!listing) {
@@ -152,11 +154,11 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.put('/:id/status', async (req, res) => {
+router.put('/:id/status', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, userId } = req.body;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized: userId required' });
+    const { status } = req.body;
+    const userId = req.userId;
     if (!['active', 'inactive'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
 
     const listing = await Listing.findById(id);
@@ -173,11 +175,10 @@ router.put('/:id/status', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId } = req.body;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized: userId required' });
+    const userId = req.userId;
 
     const listing = await Listing.findById(id);
     if (!listing) {

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Container, Row, Col, Card, Button, Badge, Alert, Spinner, Carousel, Modal, Form } from 'react-bootstrap'
 
 import MessageButton from './MessageButton'
+import { getAuthToken } from '../hooks/useAuthToken';
 
 function ListingDetail ({ user, handlePayment, parsePrice }) {
   const { id } = useParams()
@@ -123,7 +124,8 @@ function ListingDetail ({ user, handlePayment, parsePrice }) {
       const response = await fetch(`${backendUrl}/api/reviews`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: await getAuthToken()
         },
         body: JSON.stringify({
           listingId: id,

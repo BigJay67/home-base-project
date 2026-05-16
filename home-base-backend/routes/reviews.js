@@ -1,3 +1,4 @@
+const { verifyToken } = require('../middleware/auth');
 const express = require('express');
 const mongoose = require('mongoose');
 const Review = require('../models/Review');
@@ -137,10 +138,11 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId, rating, comment } = req.body;
+    const { rating, comment } = req.body;
+    const userId = req.userId;
     
     const review = await Review.findById(id);
     if (!review) {
@@ -164,10 +166,10 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId } = req.body;
+    const userId = req.userId;
     
     const review = await Review.findById(id);
     if (!review) {
