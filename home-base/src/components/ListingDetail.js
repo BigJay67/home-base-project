@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Container, Row, Col, Card, Button, Badge, Alert, Spinner, Carousel, Modal, Form } from 'react-bootstrap'
 
 import MessageButton from './MessageButton'
-import { getAuthToken } from '../hooks/useAuthToken';
 
 function ListingDetail ({ user, handlePayment, parsePrice }) {
   const { id } = useParams()
@@ -30,11 +29,12 @@ function ListingDetail ({ user, handlePayment, parsePrice }) {
     }
     fetchListing()
     fetchReviews()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   const fetchListing = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://192.168.0.192:5000'
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const url = `${backendUrl}/api/listings/${id}`
 
       const response = await fetch(url)
@@ -57,7 +57,7 @@ function ListingDetail ({ user, handlePayment, parsePrice }) {
 
   const fetchReviews = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://192.168.0.192:5000'
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const url = `${backendUrl}/api/reviews/${id}`
 
       const response = await fetch(url)
@@ -120,12 +120,11 @@ function ListingDetail ({ user, handlePayment, parsePrice }) {
 
     setSubmittingReview(true)
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://192.168.0.192:5000'
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
       const response = await fetch(`${backendUrl}/api/reviews`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: await getAuthToken()
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           listingId: id,

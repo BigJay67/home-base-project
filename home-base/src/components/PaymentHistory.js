@@ -22,6 +22,7 @@ function PaymentHistory ({ user }) {
     if (user) {
       fetchPaymentHistory()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, filter])
 
   const fetchPaymentHistory = async () => {

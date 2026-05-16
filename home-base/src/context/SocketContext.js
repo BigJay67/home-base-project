@@ -82,6 +82,7 @@ export const SocketProvider = ({ children, user }) => {
         setIsConnected(false)
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   const value = {
