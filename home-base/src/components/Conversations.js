@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Container, Card, Button, Badge, Alert, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+import { MessageCircle } from 'react-feather';
 import './Conversations.css';
 import { getAuthToken } from '../hooks/useAuthToken';
 
@@ -16,10 +16,8 @@ function Conversations({ user }) {
         headers: { Authorization: await getAuthToken() }
       });
       if (!response.ok) throw new Error('Failed to fetch conversations');
-      const data = await response.json();
-      setConversations(data);
+      setConversations(await response.json());
     } catch (err) {
-      console.error('Error:', err);
       setError('Failed to load conversations');
     } finally {
       setLoading(false);
@@ -29,100 +27,104 @@ function Conversations({ user }) {
 
   useEffect(() => {
     if (user) fetchConversations();
-  }, [user, fetchConversations]); 
-  
+  }, [user, fetchConversations]);
+
   const formatTime = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
     const diff = now - date;
     const hours = diff / (1000 * 60 * 60);
-    if (hours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else if (hours < 168) { // 7 days
-      return date.toLocaleDateString([], { weekday: 'short' });
-    } else {
-      return date.toLocaleDateString();
-    }
+    if (hours < 24) return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    if (hours < 168) return date.toLocaleDateString([], { weekday: 'short' });
+    return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
+  };
+
+  const getInitials = (name) => {
+    if (!name) return '?';
+    return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   };
 
   if (!user) {
     return (
-      <Container className="my-5">
-        <Alert variant="warning" className="text-center">Please log in to view your messages.</Alert>
-      </Container>
+      <div className="cv-empty-page">
+        <MessageCircle size={40} />
+        <p>Please log in to view your messages.</p>
+      </div>
     );
   }
 
   if (loading) {
     return (
-      <Container className="my-5 text-center">
-        <Spinner animation="border" variant="primary" />
-        <p className="mt-3">Loading conversations...</p>
-      </Container>
+      <div className="cv-empty-page">
+        <div className="cv-spinner" />
+        <p>Loading conversations…</p>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Container className="my-5">
-        <Alert variant="danger">{error}</Alert>
-      </Container>
+      <div className="cv-empty-page">
+        <p className="cv-error">{error}</p>
+      </div>
     );
   }
 
   return (
-    <Container className="my-4 my-md-5 conversation-list-container">
-      <h1 className="h3 mb-4">Messages ({conversations.length})</h1>
-
-      <div className="d-grid gap-3">
-        {conversations.length === 0 ? (
-          <Alert variant="info" className="text-center">
-            You have no active conversations. Find a property to start chatting!
-          </Alert>
-        ) : conversations.map((conv) => {
-          const other = conv.participants.find(p => p.userId !== user.uid);
-          const unread = conv.readStatus?.[user.uid]?.unreadCount || 0;
-
-          return (
-            <Card key={conv._id} className={`conversation-card shadow-sm ${unread > 0 ? 'unread-card' : ''}`}>
-              <Card.Body className="py-3 px-3">
-                <div className="d-flex align-items-center">
-                  <div className="flex-grow-1">
-                    <div className="d-flex justify-content-between align-items-start">
-                      <div>
-                        <h6 className="fw-semibold mb-0 text-truncate">
-                          {other?.displayName || other?.email}
-                        </h6>
-                        <p className="text-muted small mb-1">About: {conv.listingName}</p>
-                        <p className="text-dark mb-0 text-truncate" style={{ maxWidth: '300px' }}>
-                          {conv.lastMessage}
-                        </p>
-                      </div>
-                      <div className="text-end">
-                        <small className="text-muted d-block">{formatTime(conv.lastMessageAt)}</small>
-                        {unread > 0 && (
-                          <Badge bg="danger" pill className="mt-1">{unread}</Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="ms-3 d-flex align-items-center">
-                    <Button
-                      as={Link}
-                      to={`/conversation/${conv._id}`}
-                      variant={unread > 0 ? 'primary' : 'outline-primary'}
-                      size="sm"
-                    >
-                      Open
-                    </Button>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-          );
-        })}
+    <div className="cv-page">
+      <div className="cv-header">
+        <h1 className="cv-title">Messages</h1>
+        <span className="cv-count">{conversations.length}</span>
       </div>
-    </Container>
+
+      {conversations.length === 0 ? (
+        <div className="cv-empty-page">
+          <MessageCircle size={40} />
+          <p>No conversations yet.</p>
+          <span>Find a property and start chatting with a host.</span>
+          <Link to="/" className="cv-empty-btn">Browse Properties</Link>
+        </div>
+      ) : (
+        <div className="cv-list">
+          {conversations.map((conv) => {
+            const other = conv.participants.find(p => p.userId !== user.uid);
+            const unread = conv.readStatus?.[user.uid]?.unreadCount || 0;
+            const name = other?.displayName || other?.email || 'User';
+
+            return (
+              <Link
+                key={conv._id}
+                to={`/conversation/${conv._id}`}
+                className={`cv-row ${unread > 0 ? 'unread' : ''}`}
+              >
+                {/* Avatar */}
+                <div className="cv-avatar">
+                  {other?.profilePicture ? (
+                    <img src={other.profilePicture} alt={name} />
+                  ) : (
+                    <span>{getInitials(name)}</span>
+                  )}
+                  {unread > 0 && <span className="cv-dot" />}
+                </div>
+
+                {/* Text content */}
+                <div className="cv-content">
+                  <div className="cv-row-top">
+                    <span className="cv-name">{name}</span>
+                    <span className="cv-time">{formatTime(conv.lastMessageAt)}</span>
+                  </div>
+                  <div className="cv-row-bottom">
+                    <span className="cv-preview">{conv.lastMessage}</span>
+                    {unread > 0 && <span className="cv-badge">{unread}</span>}
+                  </div>
+                  <span className="cv-listing">Re: {conv.listingName}</span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 

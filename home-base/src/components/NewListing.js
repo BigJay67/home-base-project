@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
-import { Container, Form, Button, Alert, Card, Row, Col, InputGroup } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
-import { Home, MapPin, List, Image } from 'react-feather'
-import { getAuthToken } from '../hooks/useAuthToken';
+import { Home, MapPin, List, Image, X } from 'react-feather'
+import { getAuthToken } from '../hooks/useAuthToken'
+import './NewListing.css'
 
-function NewListing ({ user }) {
+function NewListing({ user }) {
   const [type, setType] = useState('')
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
@@ -19,47 +19,28 @@ function NewListing ({ user }) {
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files)
-    if (files.length > 5) {
-      setMessage('Maximum 5 images allowed.')
-      setImages([])
-      return
-    }
+    if (files.length > 5) { setMessage('Maximum 5 images allowed.'); setImages([]); return }
 
     const validFiles = files.filter(file => {
-      if (file.size > 1024 * 1024) {
-        setMessage(`File ${file.name} is too large (max 1MB each).`)
-        return false
-      }
-      if (!file.type.startsWith('image/')) {
-        setMessage(`File ${file.name} is not an image.`)
-        return false
-      }
+      if (file.size > 1024 * 1024) { setMessage(`File ${file.name} is too large (max 1MB each).`); return false }
+      if (!file.type.startsWith('image/')) { setMessage(`File ${file.name} is not an image.`); return false }
       return true
     })
 
-    const imagePromises = validFiles.map((file) => {
-      return new Promise((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          resolve(reader.result)
-        }
-        reader.onerror = () => {
-          setMessage(`Failed to read file: ${file.name}`)
-          resolve(null)
-        }
-        reader.readAsDataURL(file)
-      })
-    })
+    const imagePromises = validFiles.map(file => new Promise(resolve => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result)
+      reader.onerror = () => { setMessage(`Failed to read file: ${file.name}`); resolve(null) }
+      reader.readAsDataURL(file)
+    }))
 
-    Promise.all(imagePromises).then((imageData) => {
-      setImages(imageData.filter(img => img !== null))
-    })
+    Promise.all(imagePromises).then(imageData => setImages(imageData.filter(Boolean)))
   }
 
+  const removeImage = (index) => setImages(images.filter((_, i) => i !== index))
+
   const formatPrice = (value) => {
-    // Remove non-numeric characters except for commas and periods
     const numericValue = value.replace(/[^0-9,.]/g, '')
-    // Format with commas for thousands
     const formatted = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
     return formatted ? `₦${formatted}` : ''
   }
@@ -71,11 +52,7 @@ function NewListing ({ user }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!user) {
-      setMessage('Please log in to create a listing.')
-      return
-    }
-
+    if (!user) { setMessage('Please log in to create a listing.'); return }
     if (!type || !name || !price || !location) {
       setMessage('Please fill in all required fields: Type, Name, Price, and Location.')
       return
@@ -84,287 +61,211 @@ function NewListing ({ user }) {
     setLoading(true)
     try {
       const priceValue = parseInt(price.replace(/[^0-9]/g, '')) || 0
-      if (priceValue <= 0) {
-        setMessage('Please enter a valid price.')
-        setLoading(false)
-        return
-      }
+      if (priceValue <= 0) { setMessage('Please enter a valid price.'); setLoading(false); return }
 
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-
-      console.log('Sending data to backend:', {
-        type,
-        name,
-        price,
-        priceValue,
-        location,
-        amenities: amenities.split(',').map((item) => item.trim()).filter(Boolean),
-        distance,
-        payment,
-        images,
-        createdBy: user.uid
-      })
-
       const response = await fetch(`${backendUrl}/api/listings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: await getAuthToken() },
         body: JSON.stringify({
-          type,
-          name,
-          price,
-          priceValue,
-          location,
-          amenities: amenities.split(',').map((item) => item.trim()).filter(Boolean),
-          distance,
-          payment,
-          images,
-          createdBy: user.uid
+          type, name, price, priceValue, location,
+          amenities: amenities.split(',').map(i => i.trim()).filter(Boolean),
+          distance, payment, images
         })
       })
 
       const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create listing')
-      }
+      if (!response.ok) throw new Error(data.error || 'Failed to create listing')
 
-      setMessage('Listing created successfully!')
-      setTimeout(() => navigate('/listings'), 2000)
+      setMessage('success:Listing created successfully!')
+      setTimeout(() => navigate('/listings'), 1800)
     } catch (err) {
-      console.error('Error creating listing:', err)
       setMessage(`Failed to create listing: ${err.message}`)
     } finally {
       setLoading(false)
     }
   }
 
-  return (
-    <Container className="my-4 my-md-5">
-      <Card className="shadow-sm border-0">
-        <Card.Header className="bg-gradient-primary text-white">
-          <h4 className="mb-0">
-            <Home size={24} className="me-2" />
-            Create New Listing
-          </h4>
-        </Card.Header>
-        <Card.Body className="p-4">
-          {message && (
-            <Alert
-              variant={message.includes('successfully') ? 'success' : 'danger'}
-              className="mb-4"
-              dismissible
-              onClose={() => setMessage('')}
-            >
-              {message}
-            </Alert>
-          )}
+  const isSuccess = message.startsWith('success:')
+  const displayMsg = isSuccess ? message.slice(8) : message
 
-          <Form onSubmit={handleSubmit}>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label className="fw-semibold">Type *</Form.Label>
-                  <InputGroup>
-                    <InputGroup.Text>
-                      <Home size={16} />
-                    </InputGroup.Text>
-                    <Form.Control
-                      as="select"
-                      value={type}
-                      onChange={(e) => setType(e.target.value)}
-                      required
-                      style={{ backgroundColor: '#f8f9fa' }}
-                    >
+  return (
+    <div className="nl-page">
+      <div className="nl-wrap">
+
+        {/* Header */}
+        <div className="nl-header">
+          <span className="nl-eyebrow">List a Property</span>
+          <h1 className="nl-title">Add your <em>space</em></h1>
+          <p className="nl-sub">Fill in the details below to publish your listing to thousands of renters.</p>
+        </div>
+
+        {/* Message */}
+        {displayMsg && (
+          <div className={`nl-msg ${isSuccess ? 'nl-msg-ok' : 'nl-msg-err'}`}>
+            {displayMsg}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="nl-form">
+
+          {/* Section: Basics */}
+          <div className="nl-section">
+            <span className="nl-section-num">01</span>
+            <div className="nl-section-body">
+              <h2 className="nl-section-title">The Basics</h2>
+              <div className="nl-row">
+                <div className="nl-field">
+                  <label>Type *</label>
+                  <div className="nl-input-wrap">
+                    <Home size={15} className="nl-icon" />
+                    <select value={type} onChange={e => setType(e.target.value)} required>
                       <option value="">Select Type</option>
                       <option value="hostel">Hostel</option>
                       <option value="apartment">Apartment</option>
-                    </Form.Control>
-                  </InputGroup>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label className="fw-semibold">Name *</Form.Label>
-                  <InputGroup>
-                    <InputGroup.Text>
-                      <Home size={16} />
-                    </InputGroup.Text>
-                    <Form.Control
+                    </select>
+                  </div>
+                </div>
+                <div className="nl-field">
+                  <label>Name *</label>
+                  <div className="nl-input-wrap">
+                    <Home size={15} className="nl-icon" />
+                    <input
                       type="text"
-                      placeholder="Enter listing name (e.g., Cozy Student Hostel)"
+                      placeholder="Cozy Student Hostel"
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={e => setName(e.target.value)}
                       required
-                      style={{ backgroundColor: '#f8f9fa' }}
                     />
-                  </InputGroup>
-                </Form.Group>
-              </Col>
-            </Row>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label className="fw-semibold">Price (e.g., ₦40,000/month) *</Form.Label>
-                  <InputGroup>
-                    <InputGroup.Text>₦</InputGroup.Text>
-                    <Form.Control
+          {/* Section: Pricing & Location */}
+          <div className="nl-section">
+            <span className="nl-section-num">02</span>
+            <div className="nl-section-body">
+              <h2 className="nl-section-title">Pricing & Location</h2>
+              <div className="nl-row">
+                <div className="nl-field">
+                  <label>Price *</label>
+                  <div className="nl-input-wrap">
+                    <span className="nl-icon-text">₦</span>
+                    <input
                       type="text"
                       placeholder="40,000/month"
                       value={price}
                       onChange={handlePriceChange}
                       required
-                      style={{ backgroundColor: '#f8f9fa' }}
                     />
-                  </InputGroup>
-                  <Form.Text className="text-muted">
-                    Enter price in Naira (e.g., ₦40,000/month).
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label className="fw-semibold">Location *</Form.Label>
-                  <InputGroup>
-                    <InputGroup.Text>
-                      <MapPin size={16} />
-                    </InputGroup.Text>
-                    <Form.Control
+                  </div>
+                  <span className="nl-hint">e.g. ₦40,000/month</span>
+                </div>
+                <div className="nl-field">
+                  <label>Location *</label>
+                  <div className="nl-input-wrap">
+                    <MapPin size={15} className="nl-icon" />
+                    <input
                       type="text"
-                      placeholder="Enter location (e.g., Osogbo)"
+                      placeholder="Osogbo"
                       value={location}
-                      onChange={(e) => setLocation(e.target.value)}
+                      onChange={e => setLocation(e.target.value)}
                       required
-                      style={{ backgroundColor: '#f8f9fa' }}
                     />
-                  </InputGroup>
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold">Amenities (comma-separated, e.g., WiFi, Parking)</Form.Label>
-              <InputGroup>
-                <InputGroup.Text>
-                  <List size={16} />
-                </InputGroup.Text>
-                <Form.Control
-                  type="text"
-                  placeholder="Enter amenities"
-                  value={amenities}
-                  onChange={(e) => setAmenities(e.target.value)}
-                  style={{ backgroundColor: '#f8f9fa' }}
-                />
-              </InputGroup>
-              <Form.Text className="text-muted">
-                Separate amenities with commas (e.g., WiFi, Parking, Water).
-              </Form.Text>
-            </Form.Group>
-
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label className="fw-semibold">Distance (e.g., 2km from UNIOSUN)</Form.Label>
-                  <InputGroup>
-                    <InputGroup.Text>
-                      <MapPin size={16} />
-                    </InputGroup.Text>
-                    <Form.Control
+                  </div>
+                </div>
+              </div>
+              <div className="nl-row">
+                <div className="nl-field">
+                  <label>Distance</label>
+                  <div className="nl-input-wrap">
+                    <MapPin size={15} className="nl-icon" />
+                    <input
                       type="text"
-                      placeholder="Enter distance"
+                      placeholder="2km from UNIOSUN"
                       value={distance}
-                      onChange={(e) => setDistance(e.target.value)}
-                      style={{ backgroundColor: '#f8f9fa' }}
+                      onChange={e => setDistance(e.target.value)}
                     />
-                  </InputGroup>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label className="fw-semibold">Payment Terms (e.g., Monthly)</Form.Label>
-                  <InputGroup>
-                    <InputGroup.Text>₦</InputGroup.Text>
-                    <Form.Control
+                  </div>
+                </div>
+                <div className="nl-field">
+                  <label>Payment Terms</label>
+                  <div className="nl-input-wrap">
+                    <span className="nl-icon-text">₦</span>
+                    <input
                       type="text"
-                      placeholder="Enter payment terms"
+                      placeholder="Monthly"
                       value={payment}
-                      onChange={(e) => setPayment(e.target.value)}
-                      style={{ backgroundColor: '#f8f9fa' }}
+                      onChange={e => setPayment(e.target.value)}
                     />
-                  </InputGroup>
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold">Images (max 5, each less than 1MB)</Form.Label>
-              <InputGroup>
-                <InputGroup.Text>
-                  <Image size={16} />
-                </InputGroup.Text>
-                <Form.Control
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageChange}
-                  style={{ backgroundColor: '#f8f9fa' }}
-                />
-              </InputGroup>
-              <Form.Text className="text-muted">
-                Upload up to 5 images (max 1MB each).
-              </Form.Text>
-            </Form.Group>
-
-            {images.length > 0 && (
-              <Card className="mb-4">
-                <Card.Header>Image Preview</Card.Header>
-                <Card.Body>
-                  <Row className="g-2">
-                    {images.map((img, index) => (
-                      <Col xs={6} md={4} lg={3} key={index}>
-                        <img
-                          src={img}
-                          alt={`Preview ${index + 1}`}
-                          className="img-fluid rounded shadow-sm"
-                          style={{ maxHeight: '100px', objectFit: 'cover', width: '100%' }}
-                        />
-                      </Col>
-                    ))}
-                  </Row>
-                </Card.Body>
-              </Card>
-            )}
-
-            <div className="d-flex gap-2">
-              <Button
-                variant="primary"
-                type="submit"
-                disabled={loading || !user}
-                style={{
-                  padding: '0.75rem 2rem',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-              >
-                {loading ? 'Creating...' : 'Create Listing'}
-              </Button>
-              <Button
-                variant="outline-secondary"
-                onClick={() => navigate('/listings')}
-                style={{
-                  padding: '0.75rem 2rem',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-              >
-                Cancel
-              </Button>
+                  </div>
+                </div>
+              </div>
             </div>
-          </Form>
-        </Card.Body>
-      </Card>
-    </Container>
+          </div>
+
+          {/* Section: Amenities */}
+          <div className="nl-section">
+            <span className="nl-section-num">03</span>
+            <div className="nl-section-body">
+              <h2 className="nl-section-title">Amenities</h2>
+              <div className="nl-field nl-field-full">
+                <label>Amenities (comma separated)</label>
+                <div className="nl-input-wrap">
+                  <List size={15} className="nl-icon" />
+                  <input
+                    type="text"
+                    placeholder="WiFi, Parking, Water"
+                    value={amenities}
+                    onChange={e => setAmenities(e.target.value)}
+                  />
+                </div>
+                <span className="nl-hint">Separate each amenity with a comma</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Images */}
+          <div className="nl-section">
+            <span className="nl-section-num">04</span>
+            <div className="nl-section-body">
+              <h2 className="nl-section-title">Photos</h2>
+              <label className="nl-upload">
+                <Image size={20} />
+                <span>Click to upload images</span>
+                <span className="nl-upload-hint">Up to 5 images, max 1MB each</span>
+                <input type="file" accept="image/*" multiple onChange={handleImageChange} hidden />
+              </label>
+
+              {images.length > 0 && (
+                <div className="nl-previews">
+                  {images.map((img, i) => (
+                    <div key={i} className="nl-preview">
+                      <img src={img} alt={`Preview ${i + 1}`} />
+                      <button type="button" className="nl-preview-remove" onClick={() => removeImage(i)}>
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="nl-actions">
+            <button type="submit" className="nl-submit" disabled={loading || !user}>
+              {loading ? 'Creating…' : 'Publish Listing'}
+            </button>
+            <button type="button" className="nl-cancel" onClick={() => navigate('/listings')}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }
 

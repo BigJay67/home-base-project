@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Table, Button, Alert, Badge, Form, Modal, Dr
 import { useNavigate } from 'react-router-dom'
 import { MoreVertical, ToggleLeft, ToggleRight, Mail, User, DollarSign, Check, X, RefreshCw, Download, Trash2 } from 'react-feather'
 import { getAuthToken } from '../hooks/useAuthToken';
+import './AdminDashboard.css'
 
 function AdminDashboard ({ user }) {
   const [listings, setListings] = useState([])

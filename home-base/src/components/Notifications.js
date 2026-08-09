@@ -1,29 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { Dropdown, Badge, ListGroup, Button, Modal, Row, Col } from 'react-bootstrap';
-import { Bell, Check, Trash2 } from 'react-feather';
+import React, { useState, useEffect, useRef } from 'react';
+import { Bell, Check, Trash2, X } from 'react-feather';
 import { useSocket } from '../context/SocketContext';
 import { useNavigate } from 'react-router-dom';
 import { getAuthToken } from '../hooks/useAuthToken';
+import './Notifications.css';
 
 function Notifications({ user }) {
   const { socket } = useSocket();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [showModal, setShowModal] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const dropdownRef = useRef(null);
   const navigate = useNavigate();
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   useEffect(() => {
     if (!socket || !user) return;
-
-    const handleMessageNotification = () => {
-      fetchUnreadMessageCount();
-    };
-
-    socket.on('message_notification', handleMessageNotification);
-
-    return () => {
-      socket.off('message_notification', handleMessageNotification);
-    };
+    const handleMsg = () => fetchUnreadMessageCount();
+    socket.on('message_notification', handleMsg);
+    return () => socket.off('message_notification', handleMsg);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, user]);
 
@@ -39,345 +45,206 @@ function Notifications({ user }) {
   const fetchNotifications = async () => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/notifications`, {
-        headers: {
-          Authorization: await getAuthToken(),
-        },
+      const res = await fetch(`${backendUrl}/api/notifications`, {
+        headers: { Authorization: await getAuthToken() }
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setNotifications(data.notifications || []);
-        setUnreadCount((data.notifications || []).filter(n => !n.isRead).length);
-      } else {
-        console.error('Error fetching notifications:', await response.json());
+      if (res.ok) {
+        const data = await res.json();
+        const notifs = data.notifications || [];
+        setNotifications(notifs);
+        setUnreadCount(notifs.filter(n => !n.isRead).length);
       }
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    }
+    } catch (err) {}
   };
 
   const fetchUnreadMessageCount = async () => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/conversations/unread-count`, {
-        headers: {
-          Authorization: await getAuthToken(),
-        },
+      const res = await fetch(`${backendUrl}/api/conversations/unread-count`, {
+        headers: { Authorization: await getAuthToken() }
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        const messageCount = data.unreadCount || 0;
-        setUnreadCount(prev => {
-          const notificationUnread = notifications.filter(n => !n.isRead).length;
-          return notificationUnread + messageCount;
-        });
-        const existingMessageNotifications = notifications.filter(
-          n => n.type === 'system_announcement' && !n.isRead
-        ).length;
-        if (messageCount > 0 && messageCount > existingMessageNotifications) {
-          createMessageNotification(messageCount);
-        }
-      } else {
-        console.error('Error fetching unread count:', await response.json());
+      if (res.ok) {
+        const data = await res.json();
+        const msgCount = data.unreadCount || 0;
+        const notifUnread = notifications.filter(n => !n.isRead).length;
+        setUnreadCount(notifUnread + msgCount);
       }
-    } catch (error) {
-      console.error('Error fetching unread message count:', error);
-    }
+    } catch (err) {}
   };
 
-  const createMessageNotification = async (count) => {
+  const markAsRead = async (id) => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/notifications`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: await getAuthToken(),
-        },
-        body: JSON.stringify({
-          type: 'system_announcement',
-          title: 'New Message',
-          message: `You have ${count} new message${count > 1 ? 's' : ''}`,
-          priority: 'medium',
-          relatedModel: null,
-        }),
+      const res = await fetch(`${backendUrl}/api/notifications/${id}/read`, {
+        method: 'PUT', headers: { Authorization: await getAuthToken() }
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setNotifications(prev =>
-          [...prev, data.notification].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        );
-      } else {
-        console.error('Error creating notification:', await response.json());
-      }
-    } catch (err) {
-      console.error('Error creating message notification:', err);
-    }
-  };
-
-  const markAsRead = async (notificationId) => {
-    try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/notifications/${notificationId}/read`, {
-        method: 'PUT',
-        headers: {
-          Authorization: await getAuthToken(),
-        },
-      });
-
-      if (response.ok) {
-        setNotifications(prev =>
-          prev.map(n => (n._id === notificationId ? { ...n, isRead: true } : n))
-        );
+      if (res.ok) {
+        setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
         setUnreadCount(prev => Math.max(0, prev - 1));
-      } else {
-        console.error('Error marking as read:', await response.json());
       }
-    } catch (err) {
-      console.error('Error marking notification as read:', err);
-    }
+    } catch (err) {}
   };
 
   const markAllAsRead = async () => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/notifications/read-all`, {
-        method: 'PUT',
-        headers: {
-          Authorization: await getAuthToken(),
-        },
+      const res = await fetch(`${backendUrl}/api/notifications/read-all`, {
+        method: 'PUT', headers: { Authorization: await getAuthToken() }
       });
-
-      if (response.ok) {
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-        setUnreadCount(0);
-      } else {
-        console.error('Error marking all as read:', await response.json());
-      }
-    } catch (err) {
-      console.error('Error marking all notifications as read:', err);
-    }
+      if (res.ok) { setNotifications(prev => prev.map(n => ({ ...n, isRead: true }))); setUnreadCount(0); }
+    } catch (err) {}
   };
 
-  const deleteNotification = async (notificationId) => {
+  const deleteNotification = async (id, e) => {
+    e.stopPropagation();
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/notifications/${notificationId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: await getAuthToken(),
-        },
+      await fetch(`${backendUrl}/api/notifications/${id}`, {
+        method: 'DELETE', headers: { Authorization: await getAuthToken() }
       });
-
-      if (response.ok) {
-        setNotifications(prev => prev.filter(n => n._id !== notificationId));
-        setUnreadCount(prev => {
-          const deletedNotification = notifications.find(n => n._id === notificationId);
-          return deletedNotification && !deletedNotification.isRead ? Math.max(0, prev - 1) : prev;
-        });
-      } else {
-        console.error('Error deleting notification:', await response.json());
-      }
-    } catch (err) {
-      console.error('Error deleting notification:', err);
-    }
+      setNotifications(prev => {
+        const deleted = prev.find(n => n._id === id);
+        if (deleted && !deleted.isRead) setUnreadCount(c => Math.max(0, c - 1));
+        return prev.filter(n => n._id !== id);
+      });
+    } catch (err) {}
   };
 
-  const handleNotificationClick = (notification) => {
-    if (
-      ['booking_created', 'booking_confirmed', 'booking_cancelled', 'payment_success', 'payment_failed'].includes(
-        notification.type
-      )
-    ) {
+  const handleClick = (notification) => {
+    if (!notification.isRead) markAsRead(notification._id);
+    setOpen(false);
+    const t = notification.type;
+    if (['booking_created','booking_confirmed','booking_cancelled','payment_success','payment_failed'].includes(t)) {
       navigate('/bookings');
-    } else if (notification.type === 'system_announcement' && notification.relatedId) {
+    } else if (t === 'system_announcement' && notification.relatedId) {
       navigate(`/conversation/${notification.relatedId}`);
-    } else if (notification.type === 'system_announcement') {
+    } else if (t === 'system_announcement') {
       navigate('/conversations');
     }
-
-    if (!notification.isRead) {
-      markAsRead(notification._id);
-    }
-
-    setShowModal(true);
   };
 
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case 'booking_created':
-      case 'booking_confirmed':
-      case 'booking_cancelled':
-      case 'payment_success':
-      case 'payment_failed':
-        return <Bell size={16} />;
-      case 'new_review':
-      case 'review_reply':
-        return <i className="bi bi-star" />;
-      case 'listing_approved':
-      case 'listing_rejected':
-        return <i className="bi bi-house" />;
-      case 'system_announcement':
-        return <i className="bi bi-megaphone" />;
-      default:
-        return <Bell size={16} />;
-    }
+  const getTypeLabel = (type) => ({
+    booking_created:    { label: 'Booking',  color: '#7eb3e8' },
+    booking_confirmed:  { label: 'Confirmed', color: '#6ec98a' },
+    booking_cancelled:  { label: 'Cancelled', color: '#e07060' },
+    payment_success:    { label: 'Payment',   color: '#6ec98a' },
+    payment_failed:     { label: 'Failed',    color: '#e07060' },
+    new_review:         { label: 'Review',    color: 'var(--hb-gold)' },
+    system_announcement:{ label: 'Message',   color: 'var(--hb-gold)' },
+  }[type] || { label: 'Notice', color: 'var(--hb-muted)' });
+
+  const formatTime = (d) => {
+    const diff = (Date.now() - new Date(d)) / 1000;
+    if (diff < 60)    return 'Just now';
+    if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
   };
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high':
-        return 'danger';
-      case 'medium':
-        return 'warning';
-      case 'low':
-        return 'info';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const NotificationDropdown = () => (
-    <Dropdown align="end">
-      <Dropdown.Toggle
-        variant="link"
-        id="notifications-dropdown"
-        className="text-decoration-none position-relative p-0"
-      >
-        <Bell size={20} className="text-dark" />
-        {unreadCount > 0 && (
-          <Badge
-            bg="danger"
-            className="position-absolute top-0 start-100 translate-middle rounded-pill"
-            style={{ fontSize: '0.7rem' }}
-          >
-            {unreadCount}
-          </Badge>
-        )}
-      </Dropdown.Toggle>
-      <Dropdown.Menu className="p-0" style={{ minWidth: '300px' }}>
-        <div className="p-3 border-bottom">
-          <h6 className="mb-0">Notifications</h6>
-          {unreadCount > 0 && <small className="text-muted">{unreadCount} unread</small>}
-        </div>
-        <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-          {notifications.slice(0, 5).map(notification => (
-            <Dropdown.Item
-              key={notification._id}
-              className={`${!notification.isRead ? 'bg-light' : ''} small py-2`}
-              onClick={() => handleNotificationClick(notification)}
-            >
-              <div className="d-flex justify-content-between align-items-start">
-                <div>
-                  <strong>{notification.title}</strong>
-                  <div>{notification.message}</div>
-                  <small className="text-muted">
-                    {new Date(notification.createdAt).toLocaleString()}
-                  </small>
-                </div>
-                <Badge bg={getPriorityColor(notification.priority)} className="ms-2">
-                  {notification.priority}
-                </Badge>
-              </div>
-            </Dropdown.Item>
-          ))}
-          {notifications.length === 0 && (
-            <div className="text-center text-muted p-3">
-              <Bell size={24} className="mb-2" />
-              <p className="mb-0">No notifications</p>
-            </div>
-          )}
-        </div>
-        <div className="p-2 border-top text-center">
-          <Button variant="link" className="text-decoration-none" onClick={() => setShowModal(true)}>
-            View all notifications
-          </Button>
-        </div>
-      </Dropdown.Menu>
-    </Dropdown>
-  );
-
-  const NotificationsModal = () => (
-    <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
-      <Modal.Header closeButton>
-        <Modal.Title>Notifications</Modal.Title>
-        {unreadCount > 0 && (
-          <Button variant="outline-primary" size="sm" onClick={markAllAsRead}>
-            Mark all as read
-          </Button>
-        )}
-      </Modal.Header>
-      <Modal.Body style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-        <ListGroup variant="flush">
-          {notifications.map(notification => (
-            <ListGroup.Item
-              key={notification._id}
-              className={`${!notification.isRead ? 'bg-light' : ''}`}
-              onClick={() => handleNotificationClick(notification)}
-            >
-              <Row className="align-items-center">
-                <Col xs={1}>
-                  <span style={{ fontSize: '1.2em' }}>{getNotificationIcon(notification.type)}</span>
-                </Col>
-                <Col xs={8}>
-                  <div className="d-flex justify-content-between align-items-start">
-                    <h6 className="mb-1 small">{notification.title}</h6>
-                    <Badge bg={getPriorityColor(notification.priority)} className="small">
-                      {notification.priority}
-                    </Badge>
-                  </div>
-                  <p className="mb-1 small">{notification.message}</p>
-                  <small className="text-muted">{new Date(notification.createdAt).toLocaleString()}</small>
-                </Col>
-                <Col xs={3} className="text-end">
-                  {!notification.isRead && (
-                    <Button
-                      variant="outline-success"
-                      size="sm"
-                      className="me-1"
-                      onClick={e => {
-                        e.stopPropagation();
-                        markAsRead(notification._id);
-                      }}
-                    >
-                      <Check size={14} />
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    onClick={e => {
-                      e.stopPropagation();
-                      deleteNotification(notification._id);
-                    }}
-                  >
-                    <Trash2 size={14} />
-                  </Button>
-                </Col>
-              </Row>
-            </ListGroup.Item>
-          ))}
-        </ListGroup>
-        {notifications.length === 0 && (
-          <div className="text-center text-muted py-4">
-            <Bell size={48} className="mb-2" />
-            <p>No notifications yet</p>
-          </div>
-        )}
-      </Modal.Body>
-    </Modal>
-  );
 
   if (!user) return null;
 
+  const displayed = showAll ? notifications : notifications.slice(0, 6);
+
   return (
-    <>
-      <NotificationDropdown />
-      <NotificationsModal />
-    </>
+    <div className="ntf-wrap" ref={dropdownRef}>
+      {/* Bell trigger */}
+      <button
+        className="ntf-bell"
+        onClick={() => setOpen(o => !o)}
+        aria-label="Notifications"
+      >
+        <Bell size={19} />
+        {unreadCount > 0 && (
+          <span className="ntf-count">{unreadCount > 9 ? '9+' : unreadCount}</span>
+        )}
+      </button>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div className="ntf-panel">
+          {/* Header */}
+          <div className="ntf-panel-hd">
+            <span className="ntf-panel-title">Notifications</span>
+            <div className="ntf-panel-actions">
+              {unreadCount > 0 && (
+                <button className="ntf-action-btn" onClick={markAllAsRead}>
+                  <Check size={13} /> All read
+                </button>
+              )}
+              <button className="ntf-close" onClick={() => setOpen(false)}>
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* List */}
+          <div className="ntf-list">
+            {notifications.length === 0 ? (
+              <div className="ntf-empty">
+                <Bell size={28} />
+                <p>No notifications yet</p>
+              </div>
+            ) : (
+              <>
+                {displayed.map(n => {
+                  const { label, color } = getTypeLabel(n.type);
+                  return (
+                    <div
+                      key={n._id}
+                      className={`ntf-item ${!n.isRead ? 'unread' : ''}`}
+                      onClick={() => handleClick(n)}
+                    >
+                      {/* Unread dot */}
+                      {!n.isRead && <span className="ntf-dot" />}
+
+                      <div className="ntf-item-body">
+                        <div className="ntf-item-top">
+                          <span className="ntf-type-tag" style={{ color }}>
+                            {label}
+                          </span>
+                          <span className="ntf-time">{formatTime(n.createdAt)}</span>
+                        </div>
+                        <p className="ntf-item-title">{n.title}</p>
+                        <p className="ntf-item-msg">{n.message}</p>
+                      </div>
+
+                      {/* Actions on hover */}
+                      <div className="ntf-item-acts">
+                        {!n.isRead && (
+                          <button
+                            className="ntf-act-btn"
+                            onClick={e => { e.stopPropagation(); markAsRead(n._id); }}
+                            title="Mark as read"
+                          >
+                            <Check size={13} />
+                          </button>
+                        )}
+                        <button
+                          className="ntf-act-btn del"
+                          onClick={e => deleteNotification(n._id, e)}
+                          title="Delete"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {notifications.length > 6 && (
+                  <button
+                    className="ntf-show-more"
+                    onClick={() => setShowAll(s => !s)}
+                  >
+                    {showAll ? 'Show less' : `Show all ${notifications.length}`}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

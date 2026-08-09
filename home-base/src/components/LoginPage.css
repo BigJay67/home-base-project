@@ -1,0 +1,398 @@
+/* ============================================================
+   LoginPage — cinematic split-screen login
+   ============================================================ */
+
+/* ── Full page layout ───────────────────────────────────────── */
+.lp-page {
+  min-height: 100svh;
+  display: flex;
+  background: var(--hb-black);
+}
+
+/* ── Left decorative panel (desktop only) ───────────────────── */
+.lp-side {
+  position: relative;
+  width: 45%;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+
+.lp-side-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 90% 70% at 30% 20%, rgba(200,168,75,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 90%, rgba(80,60,20,0.18) 0%, transparent 50%),
+    linear-gradient(160deg, #0f0d08 0%, #080808 100%);
+}
+
+/* Vertical lines on the left panel */
+.lp-side::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--hb-border) 0px,
+    var(--hb-border) 1px,
+    transparent 1px,
+    transparent calc(100% / 5)
+  );
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.lp-side-content {
+  position: relative;
+  z-index: 2;
+  padding: 3.5rem;
+}
+
+.lp-side-logo {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hb-white);
+  margin-bottom: 3rem;
+  display: block;
+}
+
+.lp-side-logo em { font-style: normal; color: var(--hb-gold); }
+
+.lp-side-h2 {
+  font-size: clamp(2.5rem, 4vw, 3.8rem);
+  font-weight: 300;
+  line-height: 1.05;
+  margin-bottom: 1.25rem;
+  color: var(--hb-white);
+}
+
+.lp-side-h2 em { font-style: italic; color: var(--hb-gold); }
+
+.lp-side-p {
+  font-size: 0.88rem;
+  color: var(--hb-muted);
+  line-height: 1.75;
+  max-width: 300px;
+  margin-bottom: 2.5rem;
+}
+
+.lp-side-stats {
+  display: flex;
+  gap: 2rem;
+}
+
+.lp-side-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.lp-side-num {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 300;
+  color: var(--hb-gold);
+  line-height: 1;
+}
+
+.lp-side-lbl {
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--hb-muted);
+}
+
+/* ── Right form panel ───────────────────────────────────────── */
+.lp-form-side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  border-left: 1px solid var(--hb-border);
+}
+
+.lp-box {
+  width: 100%;
+  max-width: 420px;
+  animation: lpFadeUp 0.8s var(--ease-film) both;
+}
+
+@keyframes lpFadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile logo — only visible when left panel is hidden */
+.lp-mobile-logo {
+  display: none;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hb-white);
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.lp-mobile-logo em { font-style: normal; color: var(--hb-gold); }
+
+.lp-title {
+  font-size: 2rem;
+  font-weight: 300;
+  margin-bottom: 0.35rem;
+  color: var(--hb-white);
+}
+
+.lp-sub {
+  font-size: 0.85rem;
+  color: var(--hb-muted);
+  margin-bottom: 1.75rem;
+}
+
+/* ── Message ────────────────────────────────────────────────── */
+.lp-msg {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid;
+}
+
+.lp-msg-ok  { background: rgba(60,160,90,0.1); border-color: rgba(60,160,90,0.3); color: #6ec98a; }
+.lp-msg-err { background: rgba(204,79,66,0.1); border-color: rgba(204,79,66,0.3); color: #e07060; }
+
+/* ── Tabs ───────────────────────────────────────────────────── */
+.lp-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--hb-border);
+  margin-bottom: 1.75rem;
+  gap: 0;
+}
+
+.lp-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.65rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hb-muted);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.lp-tab:hover { color: var(--hb-muted2); }
+
+.lp-tab.active {
+  color: var(--hb-white);
+  border-bottom-color: var(--hb-gold);
+}
+
+/* ── Form ───────────────────────────────────────────────────── */
+.lp-form { display: flex; flex-direction: column; gap: 0; }
+
+.lp-field {
+  margin-bottom: 1.1rem;
+}
+
+.lp-field label {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hb-muted);
+  margin-bottom: 0.45rem;
+  font-family: var(--font-body);
+}
+
+.lp-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lp-input-icon {
+  position: absolute;
+  left: 0.9rem;
+  color: var(--hb-muted);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.lp-input-wrap input {
+  width: 100%;
+  padding: 0.78rem 0.9rem 0.78rem 2.5rem;
+  background: var(--hb-dark);
+  border: 1px solid var(--hb-border);
+  border-radius: 8px;
+  color: var(--hb-white);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.lp-input-wrap input:focus {
+  border-color: var(--hb-gold);
+  box-shadow: 0 0 0 3px var(--hb-gold-dim);
+}
+
+.lp-input-wrap input::placeholder { color: var(--hb-muted); }
+
+.lp-eye {
+  position: absolute;
+  right: 0.9rem;
+  background: none;
+  border: none;
+  color: var(--hb-muted);
+  cursor: pointer;
+  display: flex;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.lp-eye:hover { color: var(--hb-white); }
+
+.lp-hint {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--hb-muted);
+  margin-top: 0.35rem;
+}
+
+/* ── Submit button ──────────────────────────────────────────── */
+.lp-submit {
+  width: 100%;
+  padding: 0.85rem;
+  background: var(--hb-gold);
+  border: none;
+  border-radius: 8px;
+  color: var(--hb-black);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  margin-top: 0.25rem;
+}
+
+.lp-submit:hover:not(:disabled) {
+  background: #dbbe62;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px var(--hb-gold-glow);
+}
+
+.lp-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Ghost button (change number) ───────────────────────────── */
+.lp-ghost-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background: transparent;
+  border: 1px solid var(--hb-border);
+  border-radius: 8px;
+  color: var(--hb-muted);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  cursor: pointer;
+  margin-top: 0.6rem;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.lp-ghost-btn:hover { border-color: var(--hb-border2); color: var(--hb-white); }
+
+/* ── Divider ────────────────────────────────────────────────── */
+.lp-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  color: var(--hb-muted);
+}
+
+.lp-divider::before,
+.lp-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--hb-border);
+}
+
+.lp-divider span { font-size: 0.72rem; letter-spacing: 0.1em; }
+
+/* ── Google button ──────────────────────────────────────────── */
+.lp-google {
+  width: 100%;
+  padding: 0.8rem;
+  background: transparent;
+  border: 1px solid var(--hb-border2);
+  border-radius: 8px;
+  color: var(--hb-white);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.lp-google:hover:not(:disabled) {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.25);
+}
+
+.lp-google:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Footer text ────────────────────────────────────────────── */
+.lp-footer-text {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.82rem;
+  color: var(--hb-muted);
+}
+
+.lp-link {
+  background: none;
+  border: none;
+  color: var(--hb-gold);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-family: var(--font-body);
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.lp-link:hover { opacity: 0.8; }
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .lp-side { display: none; }
+  .lp-form-side { border-left: none; padding: 1.5rem 1.25rem; }
+  .lp-mobile-logo { display: block; }
+  .lp-page { align-items: flex-start; padding-top: 4rem; }
+}
+
+@media (max-width: 480px) {
+  .lp-box { max-width: 100%; }
+  .lp-title { font-size: 1.7rem; }
+}

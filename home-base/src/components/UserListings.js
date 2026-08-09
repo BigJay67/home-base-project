@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Container, Row, Col, Card, Button, Badge, Modal, Alert, Spinner, Form } from 'react-bootstrap'
 import { getAuthToken } from '../hooks/useAuthToken';
+import './UserListings.css'
 
 function UserListings ({ user }) {
   const [listings, setListings] = useState([])

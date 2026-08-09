@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Card, Form, Button, Alert, Spinner, Badge } from 'react-bootstrap';
+import { ArrowLeft, Send } from 'react-feather';
 import { useConversationSocket } from '../hooks/useConversationSocket';
 import './ConversationDetail.css';
 import { getAuthToken } from '../hooks/useAuthToken';
@@ -30,26 +30,18 @@ function ConversationDetail({ user }) {
       const response = await fetch(`${backendUrl}/api/conversations/${id}`, {
         headers: { Authorization: await getAuthToken() }
       });
-      if (response.status === 404) {
-        setError('Conversation not found.');
-        setLoading(false);
-        return;
-      }
+      if (response.status === 404) { setError('Conversation not found.'); setLoading(false); return; }
       if (!response.ok) throw new Error('Failed to fetch conversation');
-      const data = await response.json();
-      setConversation(data);
+      setConversation(await response.json());
     } catch (err) {
-      console.error('Error fetching conversation:', err);
-      setError('Failed to load conversation details.');
+      setError('Failed to load conversation.');
     } finally {
       setLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  useEffect(() => {
-    if (user && id) fetchConversation();
-  }, [user, id, fetchConversation]); 
+  useEffect(() => { if (user && id) fetchConversation(); }, [user, id, fetchConversation]);
 
   useEffect(() => {
     const unsubscribe = handleNewMessage((data) => {
@@ -59,13 +51,8 @@ function ConversationDetail({ user }) {
     return unsubscribe;
   }, [handleNewMessage]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [conversation?.messages]);
+  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  useEffect(() => { scrollToBottom(); }, [conversation?.messages]);
 
   const handleInputChange = (e) => {
     setMessage(e.target.value);
@@ -84,15 +71,11 @@ function ConversationDetail({ user }) {
       const listingId = conversation.listingId?._id;
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/conversations`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: await getAuthToken()
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: await getAuthToken() },
         body: JSON.stringify({ toUserId, message: message.trim(), listingId })
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed');
-      const data = await res.json();
-      setConversation(data);
+      setConversation(await res.json());
       setMessage('');
       if (isConnected) markMessagesRead();
     } catch (err) {
@@ -104,92 +87,117 @@ function ConversationDetail({ user }) {
 
   const formatTime = (d) => new Date(d).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
-  if (!user) return <Container className="my-5"><Alert variant="warning">Please log in.</Alert></Container>;
-  if (loading) return <Container className="my-5 text-center"><Spinner animation="border" /></Container>;
-  if (error && !conversation) return <Container className="my-5"><Alert variant="danger">{error}</Alert></Container>;
-  if (!conversation) return <Container className="my-5"><Alert variant="warning">Not found.</Alert></Container>;
+  const getInitials = (name) => {
+    if (!name) return '?';
+    return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  };
+
+  // Group messages by date for date separators
+  const getDateLabel = (d) => {
+    const date = new Date(d);
+    const today = new Date();
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+    if (date.toDateString() === today.toDateString()) return 'Today';
+    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return date.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
+  if (!user) return <div className="cd-state"><p>Please log in.</p></div>;
+  if (loading) return <div className="cd-state"><div className="cd-spinner" /></div>;
+  if (error && !conversation) return <div className="cd-state"><p className="cd-error">{error}</p></div>;
+  if (!conversation) return <div className="cd-state"><p>Conversation not found.</p></div>;
 
   const other = conversation.participants.find(p => p.userId !== user.uid);
+  const otherName = other?.displayName || other?.email || 'User';
+
+  let lastDate = null;
 
   return (
-    <Container fluid className="chat-container">
-      <div className="chat-header border-bottom p-3 d-flex align-items-center">
-        <Button variant="link" onClick={() => navigate('/conversations')} className="p-0 me-3">
-          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M19 12H5m7-7l-7 7 7 7" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </Button>
-        <div className="flex-grow-1">
-          <h5 className="mb-0 fw-semibold">{other?.displayName || other?.email}</h5>
-          <small className="text-muted">About: {conversation.listingName}</small>
+    <div className="cd-page">
+
+      {/* ── Header ─────────────────────────────────────────── */}
+      <div className="cd-header">
+        <button className="cd-back" onClick={() => navigate('/conversations')}>
+          <ArrowLeft size={20} />
+        </button>
+
+        <div className="cd-avatar">
+          {other?.profilePicture ? (
+            <img src={other.profilePicture} alt={otherName} />
+          ) : (
+            <span>{getInitials(otherName)}</span>
+          )}
         </div>
-        <Badge bg={isConnected ? 'success' : 'secondary'} className="small">
+
+        <div className="cd-header-info">
+          <span className="cd-header-name">{otherName}</span>
+          <span className="cd-header-listing">Re: {conversation.listingName}</span>
+        </div>
+
+        <span className={`cd-status ${isConnected ? 'online' : ''}`}>
           {isConnected ? 'Online' : 'Offline'}
-        </Badge>
+        </span>
       </div>
 
-      <div className="chat-messages p-3" style={{ height: 'calc(100vh - 260px)', overflowY: 'auto' }}>
+      {/* ── Messages ───────────────────────────────────────── */}
+      <div className="cd-messages">
         {conversation.messages.length === 0 ? (
-          <div className="text-center text-muted py-5">
-            <p>No messages yet. Say hello!</p>
+          <div className="cd-empty">
+            <p>No messages yet.</p>
+            <span>Say hello to {otherName.split(' ')[0]} 👋</span>
           </div>
         ) : (
-          conversation.messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`d-flex mb-3 ${msg.senderId === user.uid ? 'justify-content-end' : 'justify-content-start'}`}
-            >
-              <div
-                className={`p-3 rounded-3 ${
-                  msg.senderId === user.uid ? 'bg-primary text-white' : 'bg-light'
-                }`}
-                style={{ maxWidth: '75%' }}
-              >
-                <p className="mb-1">{msg.content}</p>
-                <small className={msg.senderId === user.uid ? 'text-white-50' : 'text-muted'}>
-                  {formatTime(msg.createdAt)}
-                </small>
-              </div>
-            </div>
-          ))
+          conversation.messages.map((msg, i) => {
+            const isMine = msg.senderId === user.uid;
+            const dateLabel = getDateLabel(msg.createdAt);
+            const showDateSep = dateLabel !== lastDate;
+            lastDate = dateLabel;
+
+            return (
+              <React.Fragment key={i}>
+                {showDateSep && (
+                  <div className="cd-date-sep"><span>{dateLabel}</span></div>
+                )}
+                <div className={`cd-msg-row ${isMine ? 'mine' : 'theirs'}`}>
+                  <div className={`cd-bubble ${isMine ? 'mine' : 'theirs'}`}>
+                    <p>{msg.content}</p>
+                    <span className="cd-bubble-time">{formatTime(msg.createdAt)}</span>
+                  </div>
+                </div>
+              </React.Fragment>
+            );
+          })
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      <Card className="chat-input-card border-0 rounded-0">
-        <Card.Body className="p-3">
-          {!isConnected && <Alert variant="warning" className="small py-2 mb-2">Reconnecting...</Alert>}
-          <Form onSubmit={handleSendMessage}>
-            <Form.Control
-              as="textarea"
-              rows={2}
-              value={message}
-              onChange={handleInputChange}
-              placeholder={isConnected ? "Type a message..." : "Connecting..."}
-              disabled={sending || !isConnected}
-              className="border-0 shadow-sm"
-              style={{ resize: 'none' }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey && isConnected) {
-                  e.preventDefault();
-                  handleSendMessage(e);
-                }
-              }}
-            />
-            <div className="d-flex justify-content-end mt-2">
-              <Button
-                variant="primary"
-                type="submit"
-                disabled={sending || !message.trim() || !isConnected}
-                size="sm"
-              >
-                {sending ? 'Sending...' : 'Send'}
-              </Button>
-            </div>
-          </Form>
-        </Card.Body>
-      </Card>
-    </Container>
+      {/* ── Input ──────────────────────────────────────────── */}
+      <div className="cd-input-bar">
+        {!isConnected && <div className="cd-reconnect">Reconnecting…</div>}
+        <form onSubmit={handleSendMessage} className="cd-form">
+          <textarea
+            rows={1}
+            value={message}
+            onChange={handleInputChange}
+            placeholder={isConnected ? 'Type a message…' : 'Connecting…'}
+            disabled={sending || !isConnected}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && isConnected) {
+                e.preventDefault();
+                handleSendMessage(e);
+              }
+            }}
+          />
+          <button
+            type="submit"
+            className="cd-send-btn"
+            disabled={sending || !message.trim() || !isConnected}
+          >
+            <Send size={17} />
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }
 

@@ -1,34 +1,125 @@
-.booking-card {
-  border-radius: 16px !important;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  cursor: pointer;
-  background: #fff;
+/* ============================================================
+   Bookings — cinematic dark theme override
+   ============================================================ */
+
+/* Page wrapper */
+.container {
+  color: var(--hb-white);
+  padding-top: 1.5rem;
 }
 
-.booking-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1) !important;
+.container h1, .container h2, .container h3 {
+  font-family: var(--font-display);
+  font-weight: 300;
 }
 
-.booking-card .card-body {
-  padding: 1.5rem;
+/* Booking cards */
+.card {
+  background: var(--hb-card) !important;
+  border: 1px solid var(--hb-border) !important;
+  border-radius: var(--r-card) !important;
+  color: var(--hb-white) !important;
+  box-shadow: var(--shadow-card) !important;
+  transition: transform 0.3s var(--ease-film), border-color 0.3s, box-shadow 0.3s var(--ease-film);
 }
 
-.booking-card h6 {
-  font-size: 1.1rem;
-  line-height: 1.4;
+.card:hover {
+  transform: translateY(-3px);
+  border-color: var(--hb-border2) !important;
+  box-shadow: var(--shadow-lift) !important;
 }
 
-.booking-card .text-primary {
-  font-size: 1.25rem;
+.card-body { padding: 1.5rem !important; }
+
+.card-title {
+  font-family: var(--font-display) !important;
+  font-weight: 400 !important;
+  font-size: 1.2rem !important;
+  color: var(--hb-white) !important;
 }
 
-.empty-state svg {
-  opacity: 0.5;
+.card-subtitle, .card-text.text-muted {
+  color: var(--hb-muted) !important;
 }
 
-@media (max-width: 768px) {
-  .booking-card .card-body {
-    padding: 1.25rem;
-  }
+/* Card images inside booking cards */
+.card-img, .card-img-top {
+  border-radius: var(--r-card) var(--r-card) 0 0 !important;
 }
+
+/* Badges (status pills) */
+.badge {
+  font-family: var(--font-body) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.65rem !important;
+  border-radius: var(--r-pill) !important;
+  padding: 0.4em 0.85em !important;
+}
+
+.badge.bg-success { background: rgba(110,201,138,0.18) !important; color: #6ec98a !important; }
+.badge.bg-warning { background: rgba(200,168,75,0.18) !important; color: var(--hb-gold) !important; }
+.badge.bg-danger  { background: rgba(204,79,66,0.18) !important; color: #e07060 !important; }
+.badge.bg-secondary { background: var(--hb-card2) !important; color: var(--hb-muted2) !important; border: 1px solid var(--hb-border2); }
+.badge.bg-info { background: rgba(80,140,200,0.18) !important; color: #7eb3e8 !important; }
+.badge.bg-primary { background: var(--hb-gold) !important; color: var(--hb-black) !important; }
+
+/* Buttons */
+.btn-primary {
+  background: var(--hb-gold) !important;
+  border-color: var(--hb-gold) !important;
+  color: var(--hb-black) !important;
+  font-weight: 500 !important;
+  border-radius: var(--r-pill) !important;
+  font-size: 0.8rem !important;
+  letter-spacing: 0.05em;
+  padding: 0.55rem 1.4rem !important;
+}
+.btn-primary:hover { background: #dbbe62 !important; border-color: #dbbe62 !important; }
+
+.btn-outline-primary {
+  border-color: var(--hb-border2) !important;
+  color: var(--hb-white) !important;
+  border-radius: var(--r-pill) !important;
+  font-size: 0.8rem !important;
+}
+.btn-outline-primary:hover { background: var(--hb-white) !important; color: var(--hb-black) !important; }
+
+.btn-outline-secondary {
+  border-color: var(--hb-border) !important;
+  color: var(--hb-muted) !important;
+  border-radius: var(--r-pill) !important;
+}
+.btn-outline-secondary:hover {
+  border-color: var(--hb-border2) !important;
+  color: var(--hb-white) !important;
+  background: rgba(255,255,255,0.05) !important;
+}
+
+/* Alerts */
+.alert {
+  border-radius: 8px !important;
+  font-size: 0.85rem !important;
+  border: 1px solid !important;
+}
+.alert-danger  { background: rgba(204,79,66,0.1) !important;  border-color: rgba(204,79,66,0.3) !important;  color: #e07060 !important; }
+.alert-info    { background: rgba(200,168,75,0.1) !important; border-color: rgba(200,168,75,0.3) !important; color: var(--hb-gold) !important; }
+.alert-warning { background: rgba(200,168,75,0.1) !important; border-color: rgba(200,168,75,0.3) !important; color: var(--hb-gold) !important; }
+
+/* Text colors */
+.text-muted { color: var(--hb-muted) !important; }
+.text-primary { color: var(--hb-gold) !important; }
+
+/* Spinner */
+.spinner-border { color: var(--hb-gold) !important; }
+
+/* Empty state */
+.text-center.py-5, .text-center.my-5 {
+  color: var(--hb-muted);
+}
+
+hr { border-color: var(--hb-border) !important; opacity: 1 !important; }
+
+/* Row gutter spacing feels tighter and more editorial */
+.row.g-4 > [class*="col"] { padding: 0.6rem; }

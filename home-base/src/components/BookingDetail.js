@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Container, Card, Row, Col, Button, Badge, Alert, Spinner, Table, Modal } from 'react-bootstrap'
 import { ArrowLeft, Download, Printer, Share2, Calendar, MapPin, DollarSign, User, FileText, Mail, Shield } from 'react-feather'
 import { getAuthToken } from '../hooks/useAuthToken';
+import './BookingDetail.css'
 
 function BookingDetail ({ user: currentUser }) {
   const { id } = useParams()

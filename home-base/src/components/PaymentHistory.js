@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Table, Button, Badge, Alert, Spinner, Form, 
 import { Download, Search, FileText, Mail, Share2, Send, MoreVertical } from 'react-feather'
 import { useNavigate } from 'react-router-dom'
 import { getAuthToken } from '../hooks/useAuthToken';
+import './PaymentHistory.css'
 
 function PaymentHistory ({ user }) {
   const [payments, setPayments] = useState([])

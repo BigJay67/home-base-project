@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Container, Card, Row, Col, Button, Alert, Badge, Form, Modal, Spinner, Table } from 'react-bootstrap'
 import { ArrowLeft, User, Mail, Phone, Calendar, Shield, Trash2, Edit, Save, X } from 'react-feather'
+import './UserDetail.css'
 
 function UserDetail ({ user: currentAdmin }) {
   const { userId } = useParams()

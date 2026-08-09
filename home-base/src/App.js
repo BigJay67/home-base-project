@@ -1,6 +1,6 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate } from 'react-router-dom';
-import { Container, Navbar, Nav, NavDropdown, Button } from 'react-bootstrap';
+import { NavDropdown } from 'react-bootstrap';
 import { ChevronDown } from 'react-feather';
 import Home from './components/Home';
 import Bookings from './components/Bookings';
@@ -20,97 +20,172 @@ import { SocketProvider } from './context/SocketContext';
 import useListings from './hooks/useListings';
 import useAuth from './hooks/useAuth';
 import usePayment from './hooks/usePayment';
-import './styles/mobile.css';
-import './styles/responsive.css';
 import ProfileAvatar from './components/ProfileAvatar';
 import UserListings from './components/UserListings';
-import './styles/Navbar.css';
-import './styles/Footer.css';
+import './styles/cinematic.css';
 
 function App() {
   const [notificationRefresh, setNotificationRefresh] = useState(0);
-  const [expanded, setExpanded] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   const {
-    listings,
-    error,
-    loading,
-    typeFilter,
-    setTypeFilter,
-    locationFilter,
-    setLocationFilter,
-    maxPriceFilter,
-    setMaxPriceFilter,
+    listings, error, loading,
+    typeFilter, setTypeFilter,
+    locationFilter, setLocationFilter,
+    maxPriceFilter, setMaxPriceFilter,
     fetchListings,
   } = useListings();
+
   const { user, userProfile, paymentMessage, setPaymentMessage, refreshUserProfile, handleSignOut } = useAuth();
   const { handlePayment, parsePrice } = usePayment(user, setPaymentMessage);
-  const handleSearch = e => {
-    e.preventDefault();
-    fetchListings();
-  };
-  const refreshNotifications = useCallback(() => {
-    setNotificationRefresh(prev => prev + 1);
+
+  const handleSearch = e => { e.preventDefault(); fetchListings(); };
+  const refreshNotifications = useCallback(() => setNotificationRefresh(p => p + 1), []);
+
+  // Detect scroll → switch navbar to frosted glass
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
-  const closeNavbar = () => setExpanded(false);
+
+  // Close mobile menu on navigation
+  const closeMobile = () => setMobileOpen(false);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
 
   return (
     <SocketProvider user={user}>
       <Router>
-        <Navbar bg="white" expand="lg" expanded={expanded} onToggle={setExpanded} className="border-bottom shadow-sm py-2">
-          <Container fluid>
-            <Navbar.Brand as={Link} to="/" className="fw-bold text-primary fs-4">
-              HomeBase
-            </Navbar.Brand>
-            <Navbar.Toggle aria-controls="main-nav" className="border-0 p-2" />
-            <Navbar.Collapse id="main-nav">
-              <Nav className="mx-auto align-items-lg-center gap-2 gap-lg-4 flex-grow-1 justify-content-center">
-                {user && (
-                  <>
-                    <Nav.Link as={NavLink} to="/bookings" onClick={closeNavbar} className="nav-link-lg">Bookings</Nav.Link>
-                    <Nav.Link as={NavLink} to="/new-listing" onClick={closeNavbar} className="nav-link-lg">Host</Nav.Link>
-                    {userProfile?.role === 'admin' && (
-                      <Nav.Link as={NavLink} to="/admin" onClick={closeNavbar} className="nav-link-lg">Admin</Nav.Link>
-                    )}
-                    <Nav.Link as={NavLink} to="/payment-history" onClick={closeNavbar} className="nav-link-lg">History</Nav.Link>
-                  </>
-                )}
-              </Nav>
-              <Nav className="align-items-center gap-3">
-                {user && (
-                  <div className="d-flex align-items-center">
-                    <Notifications user={user} refresh={notificationRefresh} />
-                  </div>
-                )}
-                {user ? (
-                  <NavDropdown
-                    title={
-                      <div className="d-flex align-items-center bg-light rounded-pill px-3 py-1 shadow-sm">
-                        <ProfileAvatar user={user} userProfile={userProfile} size={32} />
-                        <span className="ms-2 text-dark fw-medium text-truncate" style={{ maxWidth: '120px' }}>
-                          {user.displayName || user.email.split('@')[0]}
-                        </span>
-                        <ChevronDown size={16} className="ms-1 text-muted" />
-                      </div>
-                    }
-                    id="user-menu"
-                    align="end"
-                    className="dropdown-menu-end"
-                  >
-                    <NavDropdown.Item as={NavLink} to="/profile" onClick={closeNavbar}>My Profile</NavDropdown.Item>
-                    <NavDropdown.Divider />
-                    <NavDropdown.Item onClick={() => { handleSignOut(); closeNavbar(); }} className="text-danger">Log Out</NavDropdown.Item>
-                  </NavDropdown>
-                ) : (
-                  <Button variant="outline-primary" size="sm" as={NavLink} to="/login" onClick={closeNavbar} className="rounded-pill px-4">
-                    Login
-                  </Button>
-                )}
-              </Nav>
-            </Navbar.Collapse>
-          </Container>
-        </Navbar>
+
+        {/* ── Navbar ───────────────────────────────────────── */}
+        <nav className={`hb-navbar${scrolled ? ' scrolled' : ''}`}>
+          <div className="hb-navbar-inner">
+
+            {/* Logo */}
+            <Link to="/" className="hb-logo" onClick={closeMobile}>
+              Home<em>Base</em>
+            </Link>
+
+            {/* Center nav links (desktop only) */}
+            <ul className="hb-nav-links">
+              {user && (
+                <>
+                  <li>
+                    <NavLink to="/bookings" className={({ isActive }) => 'hb-nav-a' + (isActive ? ' active' : '')}>
+                      Bookings
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink to="/new-listing" className={({ isActive }) => 'hb-nav-a' + (isActive ? ' active' : '')}>
+                      Host
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink to="/payment-history" className={({ isActive }) => 'hb-nav-a' + (isActive ? ' active' : '')}>
+                      History
+                    </NavLink>
+                  </li>
+                  {userProfile?.role === 'admin' && (
+                    <li>
+                      <NavLink to="/admin" className={({ isActive }) => 'hb-nav-a' + (isActive ? ' active' : '')}>
+                        Admin
+                      </NavLink>
+                    </li>
+                  )}
+                </>
+              )}
+            </ul>
+
+            {/* Right side */}
+            <div className="hb-nav-right">
+              {/* Notifications bell */}
+              {user && <Notifications user={user} refresh={notificationRefresh} />}
+
+              {/* User menu or login button */}
+              {user ? (
+                <NavDropdown
+                  title={
+                    <div className="hb-user-pill">
+                      <ProfileAvatar user={user} userProfile={userProfile} size={28} />
+                      <span className="hb-user-name">
+                        {user.displayName || user.email.split('@')[0]}
+                      </span>
+                      <ChevronDown size={13} style={{ color: 'var(--hb-muted)', flexShrink: 0 }} />
+                    </div>
+                  }
+                  id="user-menu"
+                  align="end"
+                >
+                  <NavDropdown.Item as={NavLink} to="/profile" onClick={closeMobile}>
+                    My Profile
+                  </NavDropdown.Item>
+                  <NavDropdown.Item as={NavLink} to="/bookings" onClick={closeMobile}>
+                    My Bookings
+                  </NavDropdown.Item>
+                  <NavDropdown.Item as={NavLink} to="/conversations" onClick={closeMobile}>
+                    Messages
+                  </NavDropdown.Item>
+                  <NavDropdown.Divider />
+                  <NavDropdown.Item onClick={() => { handleSignOut(); closeMobile(); }} className="text-danger">
+                    Log Out
+                  </NavDropdown.Item>
+                </NavDropdown>
+              ) : (
+                <NavLink to="/login" className="hb-nav-btn hb-nav-btn-gold">
+                  Enter
+                </NavLink>
+              )}
+
+              {/* Hamburger (mobile) */}
+              <button
+                className={`hb-mobile-toggle${mobileOpen ? ' open' : ''}`}
+                onClick={() => setMobileOpen(o => !o)}
+                aria-label="Menu"
+              >
+                <span /><span /><span />
+              </button>
+            </div>
+          </div>
+        </nav>
+
+        {/* ── Mobile full-screen menu ───────────────────────── */}
+        <div className={`hb-mobile-menu${mobileOpen ? ' open' : ''}`}>
+          <Link to="/" className="hb-mobile-link" onClick={closeMobile}>Home</Link>
+          {user ? (
+            <>
+              <NavLink to="/bookings"        className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>Bookings</NavLink>
+              <NavLink to="/new-listing"     className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>Host a Property</NavLink>
+              <NavLink to="/payment-history" className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>Payment History</NavLink>
+              <NavLink to="/conversations"   className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>Messages</NavLink>
+              <NavLink to="/profile"         className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>My Profile</NavLink>
+              {userProfile?.role === 'admin' && (
+                <NavLink to="/admin" className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>Admin</NavLink>
+              )}
+            </>
+          ) : (
+            <NavLink to="/login" className="hb-mobile-link" onClick={closeMobile}>Sign In</NavLink>
+          )}
+          {user && (
+            <div className="hb-mobile-actions">
+              <button
+                onClick={() => { handleSignOut(); closeMobile(); }}
+                style={{ background: 'none', border: '1px solid var(--hb-border2)', borderRadius: 'var(--r-pill)', color: 'var(--hb-red)', padding: '0.7rem 1.5rem', fontFamily: 'var(--font-body)', fontSize: '0.8rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
+              >
+                Log Out
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ── Routes ───────────────────────────────────────── */}
         <Routes>
-          <Route path="/login" element={<LoginPage setPaymentMessage={setPaymentMessage} />} />
+          <Route path="/login"              element={<LoginPage setPaymentMessage={setPaymentMessage} />} />
           <Route
             path="/"
             element={
@@ -135,78 +210,76 @@ function App() {
               />
             }
           />
-          <Route path="/bookings" element={<Bookings user={user} />} />
-          <Route path="/payment-callback" element={<PaymentCallback user={user} />} />
-          <Route path="/new-listing" element={<NewListing user={user} />} />
-          <Route path="/profile" element={<Profile user={user} onProfileUpdate={refreshUserProfile} />} />
-          <Route path="/listing/:id" element={<ListingDetail user={user} handlePayment={handlePayment} parsePrice={parsePrice} />} />
-          <Route path="/listings/:id" element={<Navigate to="/listing/:id" replace />} />
-          <Route path="/admin" element={<AdminDashboard user={user} />} />
-          <Route path="/conversations" element={<Conversations user={user} />} />
-          <Route path="/conversation/:id" element={<ConversationDetail user={user} onMessageSent={refreshNotifications} />} />
-          <Route path="/payment-history" element={<PaymentHistory user={user} />} />
-          <Route path="/bookings/:id" element={<BookingDetail user={user} />} />
+          <Route path="/bookings"            element={<Bookings user={user} />} />
+          <Route path="/payment-callback"    element={<PaymentCallback user={user} />} />
+          <Route path="/new-listing"         element={<NewListing user={user} />} />
+          <Route path="/profile"             element={<Profile user={user} onProfileUpdate={refreshUserProfile} />} />
+          <Route path="/listing/:id"         element={<ListingDetail user={user} handlePayment={handlePayment} parsePrice={parsePrice} />} />
+          <Route path="/listings/:id"        element={<Navigate to="/listing/:id" replace />} />
+          <Route path="/admin"               element={<AdminDashboard user={user} />} />
+          <Route path="/conversations"       element={<Conversations user={user} />} />
+          <Route path="/conversation/:id"    element={<ConversationDetail user={user} onMessageSent={refreshNotifications} />} />
+          <Route path="/payment-history"     element={<PaymentHistory user={user} />} />
+          <Route path="/bookings/:id"        element={<BookingDetail user={user} />} />
           <Route path="/admin/users/:userId" element={<UserDetail user={user} />} />
-          <Route path="/listings" element={<UserListings user={user} />} />
+          <Route path="/listings"            element={<UserListings user={user} />} />
         </Routes>
+
+        {/* ── Floating chat ────────────────────────────────── */}
         {user && (
-          <Link
-            to="/conversations"
-            className="floating-chat-btn"
-            title="Messages"
-          >
-            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <Link to="/conversations" className="floating-chat-btn" title="Messages">
+            <svg width="21" height="21" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </Link>
         )}
-        <footer className="bg-light border-top mt-auto">
-          <Container className="py-5">
-            <div className="row g-4">
-              <div className="col-lg-3 col-md-6">
-                <h5 className="fw-bold text-dark mb-3">HomeBase</h5>
-                <p className="text-muted small">
-                  Find your perfect home away from home. Book apartments, studios, and more across Nigeria.
+
+        {/* ── Footer ───────────────────────────────────────── */}
+        <footer className="hb-footer">
+          <div className="hb-footer-inner">
+            <div className="hb-footer-grid">
+              <div>
+                <span className="hb-footer-logo">Home<em>Base</em></span>
+                <p className="hb-footer-desc">
+                  Premium accommodations across Nigeria. Apartments, studios and hostels — book with confidence.
                 </p>
               </div>
-              <div className="col-lg-3 col-md-6">
-                <h6 className="fw-semibold text-dark mb-3">Explore</h6>
-                <ul className="list-unstyled">
-                  <li className="mb-2"><Link to="/" className="text-muted text-decoration-none small">Home</Link></li>
-                  <li className="mb-2"><Link to="/bookings" className="text-muted text-decoration-none small">My Bookings</Link></li>
-                  <li className="mb-2"><Link to="/new-listing" className="text-muted text-decoration-none small">Host a Property</Link></li>
+              <div className="hb-footer-col">
+                <h6>Explore</h6>
+                <ul>
+                  <li><Link to="/">Listings</Link></li>
+                  <li><Link to="/bookings">My Bookings</Link></li>
+                  <li><Link to="/new-listing">Host a Property</Link></li>
+                  <li><Link to="/payment-history">Payment History</Link></li>
                 </ul>
               </div>
-              <div className="col-lg-3 col-md-6">
-                <h6 className="fw-semibold text-dark mb-3">Support</h6>
-                <ul className="list-unstyled">
-                  <li className="mb-2"><Link to="/conversations" className="text-muted text-decoration-none small">Help Center</Link></li>
-                  <li className="mb-2"><button type="button" className="btn btn-link text-muted text-decoration-none small p-0">Safety</button></li>
-                  <li className="mb-2"><button type="button" className="btn btn-link text-muted text-decoration-none small p-0">Contact Us</button></li>
+              <div className="hb-footer-col">
+                <h6>Support</h6>
+                <ul>
+                  <li><Link to="/conversations">Help Center</Link></li>
+                  <li><button type="button">Safety</button></li>
+                  <li><button type="button">Contact Us</button></li>
                 </ul>
               </div>
-              <div className="col-lg-3 col-md-6">
-                <h6 className="fw-semibold text-dark mb-3">Legal</h6>
-                <ul className="list-unstyled">
-                  <li className="mb-2"><button type="button" className="btn btn-link text-muted text-decoration-none small p-0">Terms of Service</button></li>
-                  <li className="mb-2"><button type="button" className="btn btn-link text-muted text-decoration-none small p-0">Privacy Policy</button></li>
-                  <li className="mb-2"><button type="button" className="btn btn-link text-muted text-decoration-none small p-0">Cookie Policy</button></li>
+              <div className="hb-footer-col">
+                <h6>Legal</h6>
+                <ul>
+                  <li><button type="button">Terms of Service</button></li>
+                  <li><button type="button">Privacy Policy</button></li>
+                  <li><button type="button">Cookie Policy</button></li>
                 </ul>
               </div>
             </div>
-            <hr className="my-4" />
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-center small text-muted">
-              <p className="mb-2 mb-md-0">© 2025 HomeBase. All rights reserved.</p>
-              <div className="d-flex gap-3">
-                <button type="button" className="btn btn-link text-muted p-0"><i className="bi bi-facebook"></i></button>
-                <button type="button" className="btn btn-link text-muted p-0"><i className="bi bi-twitter"></i></button>
-                <button type="button" className="btn btn-link text-muted p-0"><i className="bi bi-instagram"></i></button>
-              </div>
+            <div className="hb-footer-bottom">
+              <span className="hb-footer-copy">© {new Date().getFullYear()} HomeBase. All rights reserved.</span>
+              <span className="hb-footer-copy">Built for Nigeria.</span>
             </div>
-          </Container>
+          </div>
         </footer>
+
       </Router>
     </SocketProvider>
   );
 }
+
 export default App;
