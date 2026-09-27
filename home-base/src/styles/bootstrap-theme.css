@@ -290,3 +290,29 @@ h1, h2, h3, h4, h5, h6 {
 hr { border-color: var(--hb-border) !important; opacity: 1 !important; }
 .text-center.py-5, .text-center.my-5 { color: var(--hb-muted2); }
 .row.g-4 > [class*="col"] { padding: 0.6rem; }
+
+/* ── Plain bg-* utility classes (missed in the first pass — these render
+   as solid Bootstrap white/gray by default if left unstyled) ─────────── */
+.bg-light {
+  background: var(--glass-1) !important;
+  border: 1px solid var(--hb-border) !important;
+}
+.bg-white {
+  background: var(--hb-card2) !important;
+}
+.bg-secondary {
+  background: var(--hb-card2) !important;
+}
+
+/* Tinted icon-circle backgrounds (Profile.js stat icons: bg-primary/success/warning bg-opacity-10) */
+.bg-primary.bg-opacity-10 { background: rgba(200,168,75,0.12) !important; }
+.bg-success.bg-opacity-10 { background: rgba(110,201,138,0.12) !important; }
+.bg-warning.bg-opacity-10 { background: rgba(200,168,75,0.12) !important; }
+.bg-info.bg-opacity-10    { background: rgba(80,140,200,0.12) !important; }
+.bg-danger.bg-opacity-10  { background: rgba(204,79,66,0.12) !important; }
+
+/* Solid bg-primary used as a plain background (not the opacity-10 variant above) */
+.bg-primary:not(.bg-opacity-10) {
+  background: var(--hb-gold) !important;
+  color: var(--hb-black) !important;
+}
