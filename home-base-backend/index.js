@@ -8,7 +8,7 @@ const http = require('http');
 require('./config/firebase');
 
 const { initializeWebSocket } = require('./server/websocket');
-const { requiredEnvVars, allowedOrigins } = require('./config/constants');
+const { requiredEnvVars, isAllowedOrigin } = require('./config/constants');
 const { errorHandler } = require('./middleware/errorHandler');
 const { requestLogger } = require('./middleware/logger');
 const { verifyToken } = require('./middleware/auth');
@@ -47,9 +47,10 @@ app.set('io', io);
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
     } else {
+      console.warn('Blocked CORS request from origin:', origin);
       callback(new Error('The CORS policy for this site does not allow access from the specified Origin.'));
     }
   },

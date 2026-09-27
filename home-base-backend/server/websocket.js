@@ -1,7 +1,7 @@
 const { Server } = require('socket.io');
 const admin = require('firebase-admin');
 const mongoose = require('mongoose');
-const { allowedOrigins } = require('../config/constants');
+const { isAllowedOrigin } = require('../config/constants');
 const Conversation = require('../models/Conversation');
 const User = require('../models/User');
 const NotificationService = require('../services/notificationService');
@@ -12,7 +12,10 @@ const MAX_MESSAGE_LENGTH = 1000;
 const initializeWebSocket = (server) => {
   const io = new Server(server, {
     cors: {
-      origin: allowedOrigins,
+      origin: (origin, callback) => {
+        if (isAllowedOrigin(origin)) callback(null, true);
+        else callback(new Error('CORS not allowed'));
+      },
       methods: ['GET', 'POST'],
       credentials: true
     }
