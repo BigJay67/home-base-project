@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
       stack: err.stack,
       userId: req.userId
     });
-    res.status(500).json({ error: 'Server error', details: err.message });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -67,7 +67,7 @@ router.post('/', async (req, res) => {
       userId: req.userId,
       mongoDbStatus: mongoose.connection.readyState
     });
-    res.status(500).json({ error: 'Server error', details: err.message });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -93,7 +93,7 @@ router.put('/:id/read', async (req, res) => {
       stack: err.stack,
       userId: req.userId
     });
-    res.status(500).json({ error: 'Server error', details: err.message });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -112,7 +112,7 @@ router.put('/read-all', async (req, res) => {
       stack: err.stack,
       userId: req.userId
     });
-    res.status(500).json({ error: 'Server error', details: err.message });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -137,7 +137,7 @@ router.delete('/:id', async (req, res) => {
       stack: err.stack,
       userId: req.userId
     });
-    res.status(500).json({ error: 'Server error', details: err.message });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

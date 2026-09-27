@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { Carousel } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
+import { api } from '../api/client'
 import './ListingCard.css'
 
-function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, handleDelete, index = 0 }) {
+function ListingCard({ listing, user, handleEdit, handleDelete, index = 0 }) {
   const [averageRating, setAverageRating] = useState(0)
   const [totalReviews, setTotalReviews] = useState(0)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -11,18 +12,15 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    const fetchRating = async () => {
-      try {
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-        const response = await fetch(`${backendUrl}/api/reviews/${listing._id}/average`)
-        if (response.ok) {
-          const data = await response.json()
-          setAverageRating(data.averageRating)
-          setTotalReviews(data.totalReviews)
-        }
-      } catch (_) {}
-    }
-    fetchRating()
+    let cancelled = false
+    api.get(`/api/reviews/${listing._id}/average`, { auth: false })
+      .then(data => {
+        if (cancelled) return
+        setAverageRating(data.averageRating)
+        setTotalReviews(data.totalReviews)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
   }, [listing._id])
 
   const getImageUrl = (image) => {
@@ -45,7 +43,7 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
     return `₦${num}${match[2] || ''}`
   }
 
-  const isOwner = user && user.uid === listing.userId
+  const isOwner = user && user.uid === listing.createdBy
 
   return (
     <div
@@ -143,12 +141,9 @@ function ListingCard({ listing, user, handlePayment, parsePrice, handleEdit, han
           ) : (
             <>
               {user ? (
-                <button
-                  className="hb-card-act hb-act-book"
-                  onClick={() => handlePayment(listing._id, parsePrice(listing.price))}
-                >
+                <Link className="hb-card-act hb-act-book" to={`/listing/${listing._id}`}>
                   Book Now
-                </button>
+                </Link>
               ) : (
                 <Link className="hb-card-act hb-act-book" to="/login">
                   Log in to Book

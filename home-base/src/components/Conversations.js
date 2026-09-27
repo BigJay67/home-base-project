@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle } from 'react-feather';
 import './Conversations.css';
-import { getAuthToken } from '../hooks/useAuthToken';
+import { api } from '../api/client';
 
 function Conversations({ user }) {
   const [conversations, setConversations] = useState([]);
@@ -11,18 +11,12 @@ function Conversations({ user }) {
 
   const fetchConversations = useCallback(async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/conversations`, {
-        headers: { Authorization: await getAuthToken() }
-      });
-      if (!response.ok) throw new Error('Failed to fetch conversations');
-      setConversations(await response.json());
+      setConversations(await api.get('/api/conversations'));
     } catch (err) {
       setError('Failed to load conversations');
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -43,15 +37,6 @@ function Conversations({ user }) {
     if (!name) return '?';
     return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   };
-
-  if (!user) {
-    return (
-      <div className="cv-empty-page">
-        <MessageCircle size={40} />
-        <p>Please log in to view your messages.</p>
-      </div>
-    );
-  }
 
   if (loading) {
     return (
@@ -88,7 +73,7 @@ function Conversations({ user }) {
         <div className="cv-list">
           {conversations.map((conv) => {
             const other = conv.participants.find(p => p.userId !== user.uid);
-            const unread = conv.readStatus?.[user.uid]?.unreadCount || 0;
+            const unread = conv.unreadCounts?.[user.uid] || 0;
             const name = other?.displayName || other?.email || 'User';
 
             return (

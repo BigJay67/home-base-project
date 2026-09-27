@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Button, Modal, Form, Alert, Spinner } from 'react-bootstrap'
-import { getAuthToken } from '../hooks/useAuthToken';
+import { api } from '../api/client'
 
 function MessageButton ({ listing, user, variant = 'outline-primary', size = 'sm', className = '' }) {
   const [showModal, setShowModal] = useState(false)
@@ -9,9 +9,8 @@ function MessageButton ({ listing, user, variant = 'outline-primary', size = 'sm
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-    const handleSendMessage = async (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-      console.log('Listing:', listing);
     if (!user) {
       setError('Please log in to send messages');
       return;
@@ -32,26 +31,11 @@ function MessageButton ({ listing, user, variant = 'outline-primary', size = 'sm
     setSuccess('');
 
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const toUserId = listing.createdBy 
-
-      const response = await fetch(`${backendUrl}/api/conversations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: await getAuthToken()
-        },
-        body: JSON.stringify({
-          toUserId,
-          message: message.trim(),
-          listingId: listing._id
-        })
+      await api.post('/api/conversations', {
+        toUserId: listing.createdBy,
+        message: message.trim(),
+        listingId: listing._id
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send message');
-      }
 
       setSuccess('Message sent successfully!');
       setMessage('');

@@ -1,48 +1,36 @@
 import { useCallback } from 'react'
-import { getAuthToken } from './useAuthToken'
+import { api } from '../api/client'
 
-function usePayment (user, setPaymentMessage) {
-  const handlePayment = useCallback(async (listingId, amount) => {
+function usePayment (user, notify) {
+  const handlePayment = useCallback(async (listingId, moveInDate) => {
     if (!user) {
-      setPaymentMessage('Please log in to proceed with payment.')
+      notify('Please log in to proceed with payment.')
+      return
+    }
+    if (!moveInDate) {
+      notify('Please choose your move-in date first.')
       return
     }
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const token = await getAuthToken()
-      const response = await fetch(`${backendUrl}/api/payments/paystack/initialize`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: token
-        },
-        body: JSON.stringify({ listingId, userId: user.uid, userEmail: user.email, amount })
+      const data = await api.post('/api/payments/paystack/initialize', {
+        listingId,
+        moveInDate,
+        userEmail: user.email || undefined
       })
-      if (!response.ok) {
-        const text = await response.text()
-        try {
-          const errorData = JSON.parse(text)
-          throw new Error(errorData.error || `Payment failed: ${errorData.details || 'Unknown server error'}`)
-        } catch (error) {
-          console.error('Non-JSON response:', text)
-          throw new Error(`HTTP error! Status: ${response.status}, Response: ${text.substring(0, 100)}`)
-        }
-      }
-      const data = await response.json()
       if (data.authorization_url) {
         window.location.href = data.authorization_url
       } else {
-        setPaymentMessage('Payment initialization failed: ' + (data.error || 'No authorization URL returned'))
+        notify('Could not start payment. No payment link was returned.')
       }
     } catch (err) {
       console.error('Error initializing payment:', err)
-      setPaymentMessage(`Payment initialization failed: ${err.message}. Please try again or contact support.`)
+      notify(`Could not start payment. ${err.message}`)
     }
-  }, [user, setPaymentMessage])
+  }, [user, notify])
 
+  // Kept for any remaining callers
   const parsePrice = useCallback((price) => {
-    const numeric = price.replace(/[^0-9,]/g, '').replace(',', '')
-    return parseInt(numeric)
+    return parseInt(String(price || '').replace(/[^0-9]/g, ''), 10) || 0
   }, [])
 
   return { handlePayment, parsePrice }

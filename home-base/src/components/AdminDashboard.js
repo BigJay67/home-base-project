@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Container, Row, Col, Card, Table, Button, Alert, Badge, Form, Modal, Dropdown } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
 import { MoreVertical, ToggleLeft, ToggleRight, Mail, User, DollarSign, Check, X, RefreshCw, Download, Trash2 } from 'react-feather'
-import { getAuthToken } from '../hooks/useAuthToken';
-import './AdminDashboard.css'
+import { api } from '../api/client'
 
 function AdminDashboard ({ user }) {
   const [listings, setListings] = useState([])
@@ -20,7 +19,6 @@ function AdminDashboard ({ user }) {
   const [selectedListings, setSelectedListings] = useState(new Set())
 
   const navigate = useNavigate()
-  const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
 
   const filteredListings = useMemo(() => {
   return listings.filter((listing) => {
@@ -32,55 +30,34 @@ function AdminDashboard ({ user }) {
 
   const checkAdminStatus = useCallback(async () => {
     try {
-      const token = await getAuthToken();
-      const response = await window.fetch(`${backendUrl}/api/users/${user?.uid}`, { headers: { Authorization: token } })
-      if (response.ok) {
-        const userData = await response.json()
-        if (userData.role !== 'admin') {
-          setError('Access denied. Admin privileges required.')
-          setLoading(false)
-        }
+      const userData = await api.get(`/api/users/${user?.uid}`)
+      if (userData.role !== 'admin') {
+        setError('Access denied. Admin privileges required.')
+        setLoading(false)
       }
     } catch (err) {
       setError('Error verifying admin access')
       setLoading(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, backendUrl])
+  }, [user?.uid])
 
   const fetchData = useCallback(async () => {
     try {
-      const listingsResponse = await window.fetch(`${backendUrl}/api/admin/listings`, {
-        headers: {
-          Authorization: await getAuthToken()
-        }
-      })
-
-      if (!listingsResponse.ok) throw new Error('Failed to fetch listings')
-      const listingsData = await listingsResponse.json()
+      const listingsData = await api.get('/api/admin/listings')
       setListings(listingsData)
 
-      const usersResponse = await window.fetch(`${backendUrl}/api/admin/users`, {
-        headers: {
-          Authorization: await getAuthToken()
-        }
-      })
       let usersData = []
-      if (usersResponse.ok) {
-        usersData = await usersResponse.json()
+      try {
+        usersData = await api.get('/api/admin/users')
         setUsers(usersData)
-      }
+      } catch (_) {}
 
-      const bookingsResponse = await window.fetch(`${backendUrl}/api/admin/bookings`, {
-        headers: {
-          Authorization: await getAuthToken()
-        }
-      })
       let bookingsData = []
-      if (bookingsResponse.ok) {
-        bookingsData = await bookingsResponse.json()
+      try {
+        bookingsData = await api.get('/api/admin/bookings')
         setBookings(bookingsData)
-      }
+      } catch (_) {}
 
       setStats({
         totalListings: listingsData.length,
@@ -95,13 +72,10 @@ function AdminDashboard ({ user }) {
       setLoading(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, backendUrl])
+  }, [user?.uid])
 
   useEffect(() => {
-    if (!user) {
-      navigate('/')
-      return
-    }
+    if (!user) return
 
     const initialize = async () => {
       await checkAdminStatus()
@@ -109,13 +83,12 @@ function AdminDashboard ({ user }) {
     }
 
     initialize()
-  }, [user, navigate, checkAdminStatus, fetchData])
+  }, [user, checkAdminStatus, fetchData])
 
   const handleBookingAction = useCallback(async (bookingId, action, actionName) => {
     try {
       let endpoint = ''
-      const method = 'PUT'
-      let body = null
+      let body
 
       switch (action) {
         case 'refund':
@@ -132,45 +105,25 @@ function AdminDashboard ({ user }) {
           break
         case 'retry':
           endpoint = `/api/admin/bookings/${bookingId}/retry`
+          body = {}
           break
         default:
           return
       }
 
-      const response = await window.fetch(`${backendUrl}${endpoint}`, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: await getAuthToken()
-        },
-        body: body ? JSON.stringify(body) : undefined
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to ${actionName.toLowerCase()}`)
-      }
+      await api.put(endpoint, body)
 
       await fetchData()
       setMessage(`${actionName} successful`)
     } catch (err) {
-      setError(`Failed to ${actionName.toLowerCase()}: ${err.message}`)
+      setError(err.message || `Failed to ${actionName.toLowerCase()}`)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, backendUrl, fetchData])
+  }, [user?.uid, fetchData])
 
   const handleExportBooking = useCallback(async (bookingId) => {
     try {
-      const response = await window.fetch(`${backendUrl}/api/admin/bookings/${bookingId}/export`, {
-        headers: {
-          Authorization: await getAuthToken()
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to export booking')
-      }
-
-      const blob = await response.blob()
+      const blob = await api.getBlob(`/api/admin/bookings/${bookingId}/export`)
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
@@ -185,7 +138,7 @@ function AdminDashboard ({ user }) {
       setError('Failed to export booking: ' + err.message)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, backendUrl])
+  }, [user?.uid])
 
   const handleDeleteBooking = useCallback(async (bookingId) => {
     if (!window.confirm('Are you sure you want to delete this booking? This action cannot be undone.')) {
@@ -193,24 +146,14 @@ function AdminDashboard ({ user }) {
     }
 
     try {
-      const response = await window.fetch(`${backendUrl}/api/admin/bookings/${bookingId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: await getAuthToken()
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to delete booking')
-      }
-
+      await api.delete(`/api/admin/bookings/${bookingId}`)
       setBookings(bookings.filter((booking) => booking._id !== bookingId))
       setMessage('Booking deleted successfully')
     } catch (err) {
       setError('Failed to delete booking: ' + err.message)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, bookings, backendUrl])
+  }, [user?.uid, bookings])
 
   const [stats, setStats] = useState({
     totalListings: 0,
@@ -222,16 +165,7 @@ function AdminDashboard ({ user }) {
 
   const toggleListingStatus = useCallback(async (listingId, newStatus) => {
     try {
-      const response = await window.fetch(`${backendUrl}/api/admin/listings/${listingId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: await getAuthToken()
-        },
-        body: JSON.stringify({ status: newStatus })
-      })
-
-      if (!response.ok) throw new Error('Failed to update listing status')
+      await api.put(`/api/admin/listings/${listingId}/status`, { status: newStatus })
 
       setListings(listings.map((listing) =>
         listing._id === listingId ? { ...listing, status: newStatus } : listing
@@ -252,7 +186,7 @@ function AdminDashboard ({ user }) {
       setError('Failed to update listing status: ' + err.message)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, listings, backendUrl])
+  }, [user?.uid, listings])
 
   const handleBulkStatusUpdate = useCallback(async (status) => {
     if (selectedListings.size === 0) {
@@ -261,21 +195,10 @@ function AdminDashboard ({ user }) {
     }
 
     try {
-      const response = await window.fetch(`${backendUrl}/api/admin/listings/bulk-status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: await getAuthToken()
-        },
-        body: JSON.stringify({
-          listingIds: Array.from(selectedListings),
-          status
-        })
+      const data = await api.put('/api/admin/listings/bulk-status', {
+        listingIds: Array.from(selectedListings),
+        status
       })
-
-      if (!response.ok) throw new Error('Failed to bulk update listings')
-
-      const data = await response.json()
 
       setListings(listings.map((listing) =>
         selectedListings.has(listing._id) ? { ...listing, status } : listing
@@ -298,7 +221,7 @@ function AdminDashboard ({ user }) {
       setError('Failed to bulk update listings: ' + err.message)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, listings, selectedListings, backendUrl])
+  }, [user?.uid, listings, selectedListings])
 
   const toggleSelectListing = useCallback((listingId) => {
     const newSelected = new Set(selectedListings)
@@ -323,15 +246,7 @@ function AdminDashboard ({ user }) {
     if (!listingToDelete) return
 
     try {
-      const response = await window.fetch(`${backendUrl}/api/admin/listings/${listingToDelete._id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: await getAuthToken()
-        }
-      })
-
-      if (!response.ok) throw new Error('Failed to delete listing')
+      await api.delete(`/api/admin/listings/${listingToDelete._id}`)
 
       setListings(listings.filter((listing) => listing._id !== listingToDelete._id))
       setMessage('Listing deleted successfully')
@@ -348,7 +263,7 @@ function AdminDashboard ({ user }) {
       setError('Failed to delete listing: ' + err.message)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, listingToDelete, listings, backendUrl])
+  }, [user?.uid, listingToDelete, listings])
 
   const confirmDelete = useCallback((listing) => {
     setListingToDelete(listing)
@@ -371,8 +286,6 @@ function AdminDashboard ({ user }) {
       </Badge>
     )
   }, [])
-
-  
 
   const BulkActionsToolbar = () => {
     if (selectedListings.size === 0) return null
@@ -660,24 +573,24 @@ function AdminDashboard ({ user }) {
                     </tr>
                       )
                     : (
-                        users.map((user) => (
-                      <tr key={user.userId}>
+                        users.map((u) => (
+                      <tr key={u.userId}>
                         <td>
-                          <small className="font-monospace">{user.userId.substring(0, 10)}...</small>
+                          <small className="font-monospace">{u.userId.substring(0, 10)}...</small>
                         </td>
-                        <td>{user.email}</td>
-                        <td className="d-none d-md-table-cell">{user.displayName || 'N/A'}</td>
+                        <td>{u.email}</td>
+                        <td className="d-none d-md-table-cell">{u.displayName || 'N/A'}</td>
                         <td>
-                          <Badge bg={user.role === 'admin' ? 'danger' : 'secondary'}>
-                            {user.role}
+                          <Badge bg={u.role === 'admin' ? 'danger' : 'secondary'}>
+                            {u.role}
                           </Badge>
                         </td>
-                        <td className="d-none d-sm-table-cell">{formatDate(user.createdAt)}</td>
+                        <td className="d-none d-sm-table-cell">{formatDate(u.createdAt)}</td>
                         <td>
                           <Button
                             variant="outline-info"
                             size="sm"
-                            onClick={() => navigate(`/admin/users/${user.userId}`)}
+                            onClick={() => navigate(`/admin/users/${u.userId}`)}
                           >
                             <span className="d-none d-sm-inline">Manage</span>
                             <span className="d-sm-none">•••</span>

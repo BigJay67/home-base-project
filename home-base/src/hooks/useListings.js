@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { api } from '../api/client'
 
 function useListings () {
   const [listings, setListings] = useState([])
@@ -8,59 +9,50 @@ function useListings () {
   const [locationFilter, setLocationFilter] = useState('')
   const [maxPriceFilter, setMaxPriceFilter] = useState('')
 
+  const requestId = useRef(0)
+  const firstLoad = useRef(true)
+
   const fetchListings = useCallback(async () => {
+    const myId = ++requestId.current
     setLoading(true)
     setError(null)
+
+    const query = new URLSearchParams({ status: 'active' })
+    if (typeFilter) query.append('type', typeFilter)
+    if (locationFilter) query.append('location', locationFilter)
+    if (maxPriceFilter) query.append('maxPrice', maxPriceFilter)
+    const path = `/api/listings?${query.toString()}`
+
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const query = new URLSearchParams()
-      if (typeFilter) query.append('type', typeFilter)
-      if (locationFilter) query.append('location', locationFilter)
-      if (maxPriceFilter) query.append('maxPrice', maxPriceFilter)
-      query.append('status', 'active')
-
-       console.log('Fetching listings from:', `${backendUrl}/api/listings?${query.toString()}`) 
-
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000)
-
+      let data
       try {
-        const response = await fetch(`${backendUrl}/api/listings?${query.toString()}`, {
-          signal: controller.signal
-        })
-        clearTimeout(timeoutId)
-
-         console.log('Response status:', response.status) 
-
-        if (!response.ok) {
-          const text = await response.text()
-          console.error('Error response:', text)
-          try {
-            const errorData = JSON.parse(text)
-            throw new Error(errorData.error || `HTTP error! Status: ${response.status}`)
-          } catch (error) {
-            throw new Error(`HTTP error! Status: ${response.status}, Response: ${text.substring(0, 100)}`)
-          }
-        }
-        const data = await response.json()
-        console.log('Listings loaded:', data.length)
-        setListings(data)
-      } catch (fetchErr) {
-        if (fetchErr.name === 'AbortError') {
-          throw new Error('Request timed out after 10 seconds')
-        }
-        throw fetchErr
+        data = await api.get(path, { auth: false, timeoutMs: 30000 })
+      } catch (firstErr) {
+        // A sleeping server often needs a second try. Do not retry 4xx errors.
+        if (firstErr.status && firstErr.status < 500 && firstErr.status !== 0) throw firstErr
+        data = await api.get(path, { auth: false, timeoutMs: 30000 })
+      }
+      if (myId === requestId.current) {
+        setListings(Array.isArray(data) ? data : [])
       }
     } catch (err) {
       console.error('Error fetching listings:', err)
-      setError(`Failed to load listings: ${err.message}`)
+      if (myId === requestId.current) {
+        setError(err.message)
+      }
     } finally {
-      setLoading(false)
+      if (myId === requestId.current) setLoading(false)
     }
-  }, [typeFilter, locationFilter, maxPriceFilter,])
+  }, [typeFilter, locationFilter, maxPriceFilter])
 
   useEffect(() => {
-    fetchListings()
+    if (firstLoad.current) {
+      firstLoad.current = false
+      fetchListings()
+      return undefined
+    }
+    const timer = setTimeout(fetchListings, 350)
+    return () => clearTimeout(timer)
   }, [fetchListings])
 
   return {

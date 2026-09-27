@@ -2,20 +2,24 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const requiredEnvVars = [
-  'MONGO_URI', 'PAYSTACK_SECRET_KEY', 
+  'MONGO_URI', 'PAYSTACK_SECRET_KEY',
   'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY'
 ];
 
 const allowedOrigins = [
-  'http://localhost:3000',
-  'http://192.168.0.192:3000',
-  'https://home-base-project.vercel.app'
+  ...new Set(
+    [
+      'http://localhost:3000',
+      'https://home-base-project.vercel.app',
+      process.env.FRONTEND_URL,
+      ...(process.env.EXTRA_ORIGINS || '').split(',')
+    ]
+      .map(origin => (origin || '').trim().replace(/\/$/, ''))
+      .filter(Boolean)
+  )
 ];
 
 const getCallbackUrl = () => {
-  if (process.env.NODE_ENV === 'production') {
-    return `${process.env.FRONTEND_URL}/payment-callback`;
-  }
   if (process.env.FRONTEND_URL) {
     return `${process.env.FRONTEND_URL}/payment-callback`;
   }

@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useParams } from 'react-router-dom';
 import { NavDropdown } from 'react-bootstrap';
-import { ChevronDown } from 'react-feather';
+import { ChevronDown, Search } from 'react-feather';
 import Home from './components/Home';
 import Bookings from './components/Bookings';
 import PaymentCallback from './components/PaymentCallback';
@@ -17,17 +17,39 @@ import BookingDetail from './components/BookingDetail';
 import UserDetail from './components/UserDetail';
 import LoginPage from './components/LoginPage';
 import { SocketProvider } from './context/SocketContext';
+import { ToastProvider, useToast } from './context/ToastContext';
 import useListings from './hooks/useListings';
 import useAuth from './hooks/useAuth';
 import usePayment from './hooks/usePayment';
 import ProfileAvatar from './components/ProfileAvatar';
 import UserListings from './components/UserListings';
 import './styles/cinematic.css';
+import './styles/bootstrap-theme.css';
+import CommandPalette from './components/CommandPalette';
 
-function App() {
+function RequireAuth({ user, authLoading, children }) {
+  if (authLoading) {
+    return (
+      <div className="hb-auth-loading">
+        <div className="hb-auth-spinner" />
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+}
+
+function LegacyListingRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/listing/${id}`} replace />;
+}
+
+function AppShell() {
   const [notificationRefresh, setNotificationRefresh] = useState(0);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [cmdkOpen, setCmdkOpen] = useState(false);
+  const toast = useToast();
 
   const {
     listings, error, loading,
@@ -37,8 +59,20 @@ function App() {
     fetchListings,
   } = useListings();
 
-  const { user, userProfile, paymentMessage, setPaymentMessage, refreshUserProfile, handleSignOut } = useAuth();
-  const { handlePayment, parsePrice } = usePayment(user, setPaymentMessage);
+  // Every existing setPaymentMessage(...) call in the app now shows a toast instead of a permanent banner
+  const setPaymentMessage = useCallback((message) => {
+    if (!message) return;
+    const isError = /fail|error|denied|invalid|expired|could not|unable|maximum|must be/i.test(message);
+    const isSuccess = /success|logged out|deleted|updated|created/i.test(message);
+    toast.show(message, isError ? 'error' : isSuccess ? 'success' : 'info', isError ? 7000 : 4500);
+  }, [toast]);
+
+  const { user, userProfile, authLoading, refreshUserProfile, handleSignOut } = useAuth(setPaymentMessage);
+  const { handlePayment } = usePayment(user, setPaymentMessage);
+
+  const guard = (element) => (
+    <RequireAuth user={user} authLoading={authLoading}>{element}</RequireAuth>
+  );
 
   const handleSearch = e => { e.preventDefault(); fetchListings(); };
   const refreshNotifications = useCallback(() => setNotificationRefresh(p => p + 1), []);
@@ -48,6 +82,18 @@ function App() {
     const onScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Cmd/Ctrl+K opens the command palette from anywhere
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCmdkOpen(o => !o);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
   // Close mobile menu on navigation
@@ -104,6 +150,12 @@ function App() {
 
             {/* Right side */}
             <div className="hb-nav-right">
+              {/* Command palette trigger */}
+              <button className="hb-cmdk-trigger" onClick={() => setCmdkOpen(true)} aria-label="Search">
+                <Search size={15} />
+                <span className="hb-cmdk-trigger-label">Search</span>
+                <kbd className="hb-cmdk-kbd">⌘K</kbd>
+              </button>
               {/* Notifications bell */}
               {user && <Notifications user={user} refresh={notificationRefresh} />}
 
@@ -185,7 +237,7 @@ function App() {
 
         {/* ── Routes ───────────────────────────────────────── */}
         <Routes>
-          <Route path="/login"              element={<LoginPage setPaymentMessage={setPaymentMessage} />} />
+          <Route path="/login" element={<LoginPage setPaymentMessage={setPaymentMessage} />} />
           <Route
             path="/"
             element={
@@ -200,29 +252,26 @@ function App() {
                 setLocationFilter={setLocationFilter}
                 maxPriceFilter={maxPriceFilter}
                 setMaxPriceFilter={setMaxPriceFilter}
-                paymentMessage={paymentMessage}
                 setPaymentMessage={setPaymentMessage}
                 handleSearch={handleSearch}
-                handlePayment={handlePayment}
-                parsePrice={parsePrice}
                 fetchListings={fetchListings}
                 handleSignOut={handleSignOut}
               />
             }
           />
-          <Route path="/bookings"            element={<Bookings user={user} />} />
+          <Route path="/bookings"            element={guard(<Bookings user={user} />)} />
           <Route path="/payment-callback"    element={<PaymentCallback user={user} />} />
-          <Route path="/new-listing"         element={<NewListing user={user} />} />
-          <Route path="/profile"             element={<Profile user={user} onProfileUpdate={refreshUserProfile} />} />
-          <Route path="/listing/:id"         element={<ListingDetail user={user} handlePayment={handlePayment} parsePrice={parsePrice} />} />
-          <Route path="/listings/:id"        element={<Navigate to="/listing/:id" replace />} />
-          <Route path="/admin"               element={<AdminDashboard user={user} />} />
-          <Route path="/conversations"       element={<Conversations user={user} />} />
-          <Route path="/conversation/:id"    element={<ConversationDetail user={user} onMessageSent={refreshNotifications} />} />
-          <Route path="/payment-history"     element={<PaymentHistory user={user} />} />
-          <Route path="/bookings/:id"        element={<BookingDetail user={user} />} />
-          <Route path="/admin/users/:userId" element={<UserDetail user={user} />} />
-          <Route path="/listings"            element={<UserListings user={user} />} />
+          <Route path="/new-listing"         element={guard(<NewListing user={user} />)} />
+          <Route path="/profile"             element={guard(<Profile user={user} onProfileUpdate={refreshUserProfile} />)} />
+          <Route path="/listing/:id"         element={<ListingDetail user={user} handlePayment={handlePayment} />} />
+          <Route path="/listings/:id"        element={<LegacyListingRedirect />} />
+          <Route path="/admin"               element={guard(<AdminDashboard user={user} />)} />
+          <Route path="/conversations"       element={guard(<Conversations user={user} />)} />
+          <Route path="/conversation/:id"    element={guard(<ConversationDetail user={user} onMessageSent={refreshNotifications} />)} />
+          <Route path="/payment-history"     element={guard(<PaymentHistory user={user} />)} />
+          <Route path="/bookings/:id"        element={guard(<BookingDetail user={user} />)} />
+          <Route path="/admin/users/:userId" element={guard(<UserDetail user={user} />)} />
+          <Route path="/listings"            element={guard(<UserListings user={user} />)} />
         </Routes>
 
         {/* ── Floating chat ────────────────────────────────── */}
@@ -277,8 +326,23 @@ function App() {
           </div>
         </footer>
 
+        <CommandPalette
+          open={cmdkOpen}
+          onClose={() => setCmdkOpen(false)}
+          user={user}
+          userProfile={userProfile}
+          handleSignOut={handleSignOut}
+        />
       </Router>
     </SocketProvider>
+  );
+}
+
+function App() {
+  return (
+    <ToastProvider>
+      <AppShell />
+    </ToastProvider>
   );
 }
 

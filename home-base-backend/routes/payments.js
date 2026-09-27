@@ -1,130 +1,167 @@
 const express = require('express');
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
 const Listing = require('../models/Listing');
-const NotificationService = require('../services/notificationService');
 const PDFService = require('../services/pdfService');
 const EmailService = require('../services/emailService');
 const AnalyticsService = require('../services/analyticsService');
+const { getAvailability, countHoldsAhead } = require('../services/bookingService');
+const { confirmPayment } = require('../services/paymentService');
 const { paystack } = require('../config/paystack');
 const router = express.Router();
 const emailService = new EmailService();
 
+const EMAIL_RE = /^\S+@\S+\.\S+$/;
+
 router.post('/paystack/initialize', async (req, res) => {
   try {
-    const { listingId, userId, userEmail, amount } = req.body;
+    const { listingId, moveInDate } = req.body;
+    const userId = req.userId;
 
-    if (!listingId || !userId || !userEmail || !amount) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(listingId)) {
-      return res.status(400).json({ error: 'Invalid listing ID' });
+    if (!listingId || !mongoose.Types.ObjectId.isValid(listingId)) {
+      return res.status(400).json({ error: 'A valid listing is required' });
     }
 
     const listing = await Listing.findById(listingId);
     if (!listing) {
       return res.status(404).json({ error: 'Listing not found' });
     }
-
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const callbackUrl = `${frontendUrl}/payment-callback`;
-
-    const payment = await paystack.transaction.initialize({
-      email: userEmail,
-      amount: amount * 100,
-      callback_url: callbackUrl,
-      metadata: { listingId, userId },
-    });
-
-    if (!payment.status) {
-      throw new Error('Paystack initialization failed');
+    if (listing.status !== 'active') {
+      return res.status(400).json({ error: 'This listing is not available for booking' });
+    }
+    if (listing.createdBy === userId) {
+      return res.status(400).json({ error: 'You cannot book your own listing' });
     }
 
-    const booking = new Booking({
+    // Move-in date: required, not in the past, within the next 12 months
+    const moveIn = new Date(moveInDate);
+    if (!moveInDate || Number.isNaN(moveIn.getTime())) {
+      return res.status(400).json({ error: 'Please choose your move-in date' });
+    }
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const latest = new Date(today);
+    latest.setUTCFullYear(latest.getUTCFullYear() + 1);
+    if (moveIn < today) {
+      return res.status(400).json({ error: 'Move-in date cannot be in the past' });
+    }
+    if (moveIn > latest) {
+      return res.status(400).json({ error: 'Move-in date must be within the next 12 months' });
+    }
+
+    // Email comes from the verified token. Phone-login users have none, so accept a valid one they typed.
+    const userEmail =
+      req.userEmail ||
+      (typeof req.body.userEmail === 'string' && EMAIL_RE.test(req.body.userEmail)
+        ? req.body.userEmail
+        : null);
+    if (!userEmail) {
+      return res.status(400).json({ error: 'A valid email is required to pay. Please add one to your profile.' });
+    }
+
+    // The price always comes from the listing, never from the browser
+    const amount = listing.priceValue;
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({ error: 'This listing has an invalid price' });
+    }
+
+    // Release this user's own earlier unpaid attempts so they do not block themselves
+    await Booking.updateMany(
+      { listingId, userId, status: 'pending' },
+      { $set: { status: 'cancelled' } }
+    );
+
+    const availability = await getAvailability(listing);
+    if (availability.isFull) {
+      return res.status(409).json({ error: 'This property is fully booked right now. Please check back later.' });
+    }
+
+    // Create the booking first so it holds a unit while the user pays
+    const reference = `HB-${crypto.randomBytes(9).toString('hex')}`;
+    const booking = await Booking.create({
       listingId,
       userId,
+      hostId: listing.createdBy,
       userEmail,
       amount,
-      paymentReference: payment.data.reference,
+      totalAmount: amount,
+      moveInDate: moveIn,
+      paymentReference: reference,
     });
 
-    await booking.save();
+    // If two people started at the same moment, the earlier holds win
+    const holdsAhead = await countHoldsAhead(booking);
+    if (holdsAhead >= (listing.capacity || 1)) {
+      booking.status = 'cancelled';
+      await booking.save();
+      return res.status(409).json({ error: 'Someone else just booked the last available unit.' });
+    }
 
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+    let payment;
     try {
-      await NotificationService.notifyBookingCreated(booking, listing.name);
-      await NotificationService.notifyListingOwnerBooking(booking, listing.createdBy, listing.name);
-    } catch (notifErr) {
-      console.error('Notification error:', notifErr);
+      payment = await paystack.transaction.initialize({
+        email: userEmail,
+        amount: Math.round(amount * 100),
+        reference,
+        callback_url: `${frontendUrl}/payment-callback`,
+        metadata: { listingId, userId },
+      });
+      if (!payment.status) {
+        throw new Error('Paystack initialization failed');
+      }
+    } catch (payErr) {
+      booking.status = 'failed';
+      await booking.save();
+      throw payErr;
     }
 
     res.json({
       authorization_url: payment.data.authorization_url,
-      reference: payment.data.reference,
+      reference,
     });
   } catch (err) {
     console.error('Error initializing payment:', err);
-    res.status(500).json({ error: 'Payment initialization failed', details: err.message });
+    res.status(500).json({ error: 'Payment initialization failed' });
   }
 });
 
 router.get('/paystack/verify/:reference', async (req, res) => {
   try {
     const { reference } = req.params;
-    const userId = req.userId;
 
-    const booking = await Booking.findOne({ paymentReference: reference }).populate(
-      'listingId',
-      'name createdBy'
-    );
-
+    const booking = await Booking.findOne({ paymentReference: reference }).select('userId');
     if (!booking) {
       return res.status(404).json({ error: 'Booking not found' });
     }
-
-    if (userId && booking.userId !== userId) {
+    if (booking.userId !== req.userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const verification = await paystack.transaction.verify({ reference });
+    const result = await confirmPayment(reference);
 
-    if (verification.data.status === 'success') {
-      await Booking.updateOne(
-        { paymentReference: reference },
-        {
-          status: 'completed',
-          paidAt: new Date(verification.data.paid_at),
-          paymentMethod: verification.data.channel,
-          receiptData: {
-            transactionId: verification.data.id,
-            gatewayResponse: verification.data.gateway_response,
-            channel: verification.data.channel,
-            ipAddress: verification.data.ip_address,
-          },
-        }
-      );
-
-      try {
-        await NotificationService.notifyPaymentSuccess(booking, booking.listingId.name);
-      } catch (notifErr) {
-        console.error('Payment success notification error:', notifErr);
-      }
-
-      res.json({ status: 'success', message: 'Payment verified' });
-    } else {
-      await Booking.updateOne({ paymentReference: reference }, { status: 'failed' });
-
-      try {
-        await NotificationService.notifyPaymentFailed(booking, booking.listingId.name);
-      } catch (notifErr) {
-        console.error('Payment failed notification error:', notifErr);
-      }
-
-      res.json({ status: 'failed', message: 'Payment failed' });
+    switch (result.outcome) {
+      case 'success':
+        return res.json({ status: 'success', message: 'Payment verified' });
+      case 'failed':
+        return res.json({ status: 'failed', message: 'Payment failed' });
+      case 'refunded':
+        return res.json({ status: 'failed', message: 'This payment was refunded' });
+      case 'mismatch':
+        return res.status(400).json({
+          error: 'The amount paid does not match this booking. Please contact support.',
+        });
+      default:
+        return res.json({
+          status: 'pending',
+          message: `Payment is ${result.paystackStatus || 'pending'}`,
+        });
     }
   } catch (err) {
     console.error('Error verifying payment:', err);
-    res.status(500).json({ error: 'Payment verification failed', details: err.message });
+    res.status(500).json({ error: 'Payment verification failed' });
   }
 });
 
@@ -260,34 +297,59 @@ router.post('/:paymentId/email-receipt', async (req, res) => {
   }
 });
 
+const shareSecret = () => process.env.SHARE_TOKEN_SECRET || process.env.PAYSTACK_SECRET_KEY;
+
+const signShareToken = (paymentId, expiresAt) => {
+  const payload = `${paymentId}.${expiresAt}`;
+  const sig = crypto.createHmac('sha256', shareSecret()).update(payload).digest('hex');
+  return Buffer.from(`${payload}.${sig}`).toString('base64url');
+};
+
+const readShareToken = (token) => {
+  try {
+    const decoded = Buffer.from(String(token), 'base64url').toString('utf8');
+    const [paymentId, expiresAt, sig] = decoded.split('.');
+    if (!paymentId || !expiresAt || !sig) return null;
+    const expected = crypto
+      .createHmac('sha256', shareSecret())
+      .update(`${paymentId}.${expiresAt}`)
+      .digest('hex');
+    const a = Buffer.from(expected);
+    const b = Buffer.from(sig);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+    return { paymentId, expiresAt: parseInt(expiresAt, 10) };
+  } catch (err) {
+    return null;
+  }
+};
+
 router.post('/:paymentId/share', async (req, res) => {
   try {
     const { paymentId } = req.params;
     const userId = req.userId;
-    const { expiresIn = '7d' } = req.body;
 
-    if (!userId) {
-      return res.status(401).json({ error: 'Authentication required' });
+    if (!mongoose.isValidObjectId(paymentId)) {
+      return res.status(400).json({ error: 'Invalid payment ID' });
     }
 
     const payment = await Booking.findById(paymentId);
-
     if (!payment) {
       return res.status(404).json({ error: 'Payment not found' });
     }
-
     if (payment.userId !== userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
+    if (payment.status !== 'completed') {
+      return res.status(400).json({ error: 'Only completed payments can be shared' });
+    }
 
-    const shareToken = Buffer.from(`${paymentId}:${Date.now() + 7 * 24 * 60 * 60 * 1000}`).toString(
-      'base64'
-    );
+    const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
+    const shareToken = signShareToken(paymentId, expiresAt);
     const shareableLink = `${process.env.FRONTEND_URL}/shared-receipt/${shareToken}`;
 
     res.json({
       shareableLink,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      expiresAt: new Date(expiresAt).toISOString(),
       message: 'Shareable link created successfully',
     });
   } catch (err) {
@@ -298,31 +360,27 @@ router.post('/:paymentId/share', async (req, res) => {
 
 router.get('/shared-receipt/:token', async (req, res) => {
   try {
-    const { token } = req.params;
-
-    const decoded = Buffer.from(token, 'base64').toString('ascii');
-    const [paymentId, expiry] = decoded.split(':');
-
-    if (Date.now() > parseInt(expiry)) {
+    const parsed = readShareToken(req.params.token);
+    if (!parsed) {
+      return res.status(400).json({ error: 'Invalid share link' });
+    }
+    if (Date.now() > parsed.expiresAt) {
       return res.status(410).json({ error: 'This share link has expired' });
     }
 
-    const payment = await Booking.findById(paymentId).populate('listingId', 'name location');
-
+    const payment = await Booking.findById(parsed.paymentId).populate('listingId', 'name location');
     if (!payment) {
       return res.status(404).json({ error: 'Receipt not found' });
     }
 
-    const publicReceiptData = {
+    res.json({
       receiptId: `HB-${payment.paymentReference}`,
       amount: payment.amount,
       currency: payment.currency,
       paidAt: payment.paidAt,
-      listingName: payment.listingId?.name,
+      listingName: payment.listingId ? payment.listingId.name : null,
       status: payment.status,
-    };
-
-    res.json(publicReceiptData);
+    });
   } catch (err) {
     console.error('Error accessing shared receipt:', err);
     res.status(500).json({ error: 'Invalid share link' });

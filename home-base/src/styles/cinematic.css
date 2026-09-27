@@ -3,7 +3,6 @@
    Dark luxury · Immersive depth · Editorial pacing
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
 
 /* ── Tokens ─────────────────────────────────────────────────── */
 :root {
@@ -20,19 +19,52 @@
   --hb-gold-dim:   rgba(200,168,75,0.12);
   --hb-gold-glow:  rgba(200,168,75,0.28);
   --hb-red:        #cc4f42;
+  --hb-green:      #6ec98a;
+
+  /* Glass surfaces — layered depth instead of flat cards */
+  --glass-1:       rgba(255,255,255,0.035);
+  --glass-2:       rgba(255,255,255,0.06);
+  --glass-border:  rgba(255,255,255,0.10);
+  --glass-blur:    18px;
+
+  /* Aurora accent colors — used only in the hero and section backgrounds,
+     always at low opacity, never as solid fills */
+  --aurora-gold:   rgba(200,168,75,0.16);
+  --aurora-red:    rgba(204,79,66,0.10);
+  --aurora-teal:   rgba(90,170,160,0.10);
 
   --font-display:  'Cormorant Garamond', Georgia, serif;
   --font-body:     'DM Sans', -apple-system, sans-serif;
+  /* Variable-weight display type for large, expressive headings */
+  --font-display-var: 'Cormorant Garamond', Georgia, serif;
 
   --ease-film:     cubic-bezier(0.16, 1, 0.3, 1);
   --ease-soft:     cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
 
+  --r-sm:    6px;
   --r-card:  10px;
+  --r-lg:    18px;
+  --r-xl:    28px;
   --r-pill:  100px;
 
   --shadow-card: 0 1px 2px rgba(0,0,0,0.5), 0 6px 24px rgba(0,0,0,0.55);
   --shadow-lift: 0 2px 8px rgba(0,0,0,0.6), 0 20px 52px rgba(0,0,0,0.72);
   --shadow-glow: 0 0 32px var(--hb-gold-glow);
+
+  /* Motion timing scale, used so every micro-interaction feels consistent */
+  --t-fast: 0.15s;
+  --t-med:  0.35s;
+  --t-slow: 0.6s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ── Global reset ───────────────────────────────────────────── */
@@ -41,8 +73,8 @@ html { scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
   margin: 0; padding: 0;
-  background: var(--hb-black);
-  color: var(--hb-white);
+  background: var(--hb-black) !important;
+  color: var(--hb-white) !important;
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.65;
@@ -885,4 +917,381 @@ h1,h2,h3,h4,h5,h6 {
 @media (max-width: 480px) {
   .hb-search-wrap { padding: 2.5rem 1rem; }
   .hb-grid { gap: 0.875rem; }
+}
+
+/* ── TOASTS ─────────────────────────────────────────────────── */
+.hb-toasts {
+  position: fixed;
+  top: 84px;
+  right: 20px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(380px, calc(100vw - 40px));
+  pointer-events: none;
+}
+.hb-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 0.85rem 1rem;
+  background: var(--hb-card2);
+  border: 1px solid var(--hb-border2);
+  border-left: 3px solid var(--hb-gold);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-lift);
+  color: var(--hb-white);
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  animation: hb-toast-in 0.4s var(--ease-film) both;
+}
+.hb-toast-success { border-left-color: #6ec98a; }
+.hb-toast-error { border-left-color: var(--hb-red); }
+.hb-toast-msg { flex: 1; }
+.hb-toast-x {
+  background: none;
+  border: none;
+  color: var(--hb-muted);
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 0;
+}
+.hb-toast-x:hover { color: var(--hb-white); }
+@keyframes hb-toast-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@media (max-width: 600px) {
+  .hb-toasts { top: 72px; right: 12px; left: 12px; width: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hb-toast { animation: none; }
+}
+
+/* ── AUTH LOADING SCREEN ────────────────────────────────────── */
+.hb-auth-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hb-auth-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--hb-border2);
+  border-top-color: var(--hb-gold);
+  border-radius: 50%;
+  animation: hb-auth-spin 0.8s linear infinite;
+}
+@keyframes hb-auth-spin { to { transform: rotate(360deg); } }
+
+/* ── BOOKING BOX (listing page) ─────────────────────────────── */
+.ld-availability {
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6ec98a;
+  margin-bottom: 0.9rem;
+}
+.ld-availability.full { color: var(--hb-red); }
+.ld-date-label {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hb-muted);
+  margin-bottom: 0.4rem;
+}
+.ld-date {
+  width: 100%;
+  background: var(--hb-card2);
+  border: 1px solid var(--hb-border2);
+  border-radius: 8px;
+  color: var(--hb-white);
+  padding: 0.7rem 0.85rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  margin-bottom: 0.9rem;
+  color-scheme: dark;
+}
+.ld-date:focus { outline: none; border-color: var(--hb-gold); }
+.ld-book-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ══════════════════════════════════════════════════════════════
+   2030 FOUNDATION — glass surfaces, aurora backgrounds, bento grid
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Glass surface — replaces flat var(--hb-card) fills where depth helps ── */
+.hb-glass {
+  background: var(--glass-1);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.3);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.3);
+  box-shadow: var(--shadow-card);
+}
+.hb-glass-2 { background: var(--glass-2); }
+
+/* ── Aurora background layer — soft moving color washes behind hero/section content.
+   Sits at z-index -1 inside a position:relative container. Never used as a solid fill. ── */
+.hb-aurora {
+  position: absolute;
+  inset: -10% -10% -10% -10%;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.hb-aurora::before,
+.hb-aurora::after {
+  content: '';
+  position: absolute;
+  width: 60vw;
+  height: 60vw;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.8;
+  animation: hb-aurora-drift 22s var(--ease-soft) infinite alternate;
+}
+.hb-aurora::before {
+  background: radial-gradient(circle, var(--aurora-gold), transparent 70%);
+  top: -10%;
+  left: -10%;
+}
+.hb-aurora::after {
+  background: radial-gradient(circle, var(--aurora-teal), transparent 70%);
+  bottom: -15%;
+  right: -5%;
+  animation-delay: -11s;
+}
+@keyframes hb-aurora-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(4%, 6%) scale(1.08); }
+}
+
+/* ── Bento grid — variable-span card layout for listings and dashboards ── */
+.hb-bento {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1rem;
+}
+.hb-bento-span-4  { grid-column: span 4; }
+.hb-bento-span-6  { grid-column: span 6; }
+.hb-bento-span-8  { grid-column: span 8; }
+.hb-bento-span-12 { grid-column: span 12; }
+@media (max-width: 900px) {
+  .hb-bento-span-4,
+  .hb-bento-span-6,
+  .hb-bento-span-8 { grid-column: span 12; }
+}
+
+/* ── Large variable-weight display heading, for hero/section titles ── */
+.hb-display-xl {
+  font-family: var(--font-display-var);
+  font-weight: 300;
+  font-size: clamp(2.4rem, 6vw, 4.6rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+}
+.hb-display-xl em {
+  font-style: italic;
+  color: var(--hb-gold);
+}
+
+/* ── Command palette shell (Phase D wires up the open/close logic) ── */
+.hb-cmdk-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 3000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+}
+.hb-cmdk {
+  width: min(560px, calc(100vw - 40px));
+  background: var(--hb-card2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lift);
+  overflow: hidden;
+  animation: hb-cmdk-in 0.25s var(--ease-spring) both;
+}
+@keyframes hb-cmdk-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+.hb-cmdk-input {
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--hb-border2);
+  color: var(--hb-white);
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  padding: 1.1rem 1.3rem;
+}
+.hb-cmdk-input:focus { outline: none; }
+.hb-cmdk-list { max-height: 340px; overflow-y: auto; padding: 0.5rem; }
+.hb-cmdk-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  color: var(--hb-muted2);
+  font-size: 0.9rem;
+}
+.hb-cmdk-item:hover,
+.hb-cmdk-item.active {
+  background: var(--glass-2);
+  color: var(--hb-white);
+}
+.hb-cmdk-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--hb-muted);
+  font-size: 0.85rem;
+}
+
+/* ── Focus states — visible keyboard focus everywhere, not just mouse hover ── */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--hb-gold);
+  outline-offset: 2px;
+}
+
+/* ── Muted-text contrast fix — the audit flagged --hb-muted as low-contrast on --hb-black.
+   --hb-muted2 already exists; this raises the floor for small/secondary text specifically. ── */
+.hb-card-loc,
+.hb-detail-label,
+.ld-detail-label {
+  color: var(--hb-muted2);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   2030 PHASE B — marketing pages
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Hero: aurora sits behind the grid lines, in front of the radial bg ── */
+.hb-hero-bg { z-index: 0; }
+.hb-hero-grid { z-index: 1; }
+.hb-hero .hb-aurora { z-index: 1; opacity: 0.7; }
+.hb-hero-content { z-index: 2; }
+
+/* Give the hero room for the floating search bar to overlap its bottom edge */
+.hb-hero { padding-bottom: 3.5rem; }
+
+/* ── Navbar refinement — true glass instead of a flat frosted rectangle ── */
+.hb-navbar.scrolled {
+  background: rgba(8,8,8,0.6) !important;
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border-bottom: 1px solid var(--glass-border) !important;
+}
+
+/* ── Buttons: slightly larger radius, spring-in press feedback ── */
+.hb-btn { border-radius: var(--r-pill); transition: all var(--t-med) var(--ease-soft); }
+.hb-btn:active { transform: scale(0.97); }
+.hb-btn-gold {
+  background: linear-gradient(135deg, #dbbe62, var(--hb-gold));
+}
+
+/* ── Stats strip → floating glass chips instead of a bordered flex bar ── */
+.hb-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  max-width: 1100px;
+  margin: -2.75rem auto 0;
+  padding: 0 2rem;
+  position: relative;
+  z-index: 3;
+  border: none;
+  background: none;
+  backdrop-filter: none;
+}
+.hb-stat {
+  background: var(--glass-1);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.3);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.3);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--t-med) var(--ease-soft), border-color var(--t-med);
+}
+.hb-stat:hover { transform: translateY(-3px); border-color: var(--glass-border); }
+
+/* ── Search bar → floating glass command bar ── */
+.hb-search-wrap { padding: 4.5rem 2rem 2.5rem; position: relative; z-index: 2; }
+.hb-search-bar {
+  background: var(--glass-2);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.3);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.3);
+  box-shadow: var(--shadow-lift);
+}
+
+/* ── Section titles → variable display type ── */
+.hb-section-title {
+  font-family: var(--font-display-var);
+  font-size: clamp(1.9rem, 4.2vw, 3.1rem);
+}
+
+/* ── Listings grid → bento rhythm: every 5th card spans wider ── */
+.hb-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1.1rem;
+}
+.hb-grid > * { grid-column: span 4; }
+.hb-grid > *:nth-child(5n) { grid-column: span 8; }
+.hb-grid > .hb-empty { grid-column: 1 / -1; }
+
+@media (max-width: 1100px) {
+  .hb-grid > * { grid-column: span 6; }
+  .hb-grid > *:nth-child(5n) { grid-column: span 12; }
+}
+@media (max-width: 768px) {
+  .hb-stats { grid-template-columns: repeat(2, 1fr); margin-top: -2rem; }
+  .hb-grid > *,
+  .hb-grid > *:nth-child(5n) { grid-column: span 12; }
+}
+/* ── Command palette trigger (navbar) ───────────────────────── */
+.hb-cmdk-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--glass-1);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-pill);
+  padding: 0.45rem 0.75rem 0.45rem 0.9rem;
+  color: var(--hb-muted2);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: border-color var(--t-fast), color var(--t-fast);
+}
+.hb-cmdk-trigger:hover { border-color: var(--hb-gold-glow); color: var(--hb-white); }
+.hb-cmdk-kbd {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  background: var(--glass-2);
+  border: 1px solid var(--glass-border);
+  border-radius: 5px;
+  padding: 0.1rem 0.35rem;
+  color: var(--hb-muted);
+}
+@media (max-width: 900px) {
+  .hb-cmdk-trigger-label, .hb-cmdk-kbd { display: none; }
+  .hb-cmdk-trigger { padding: 0.5rem; }
 }

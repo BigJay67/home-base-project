@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Check, Trash2, X } from 'react-feather';
 import { useSocket } from '../context/SocketContext';
 import { useNavigate } from 'react-router-dom';
-import { getAuthToken } from '../hooks/useAuthToken';
+import { api } from '../api/client';
 import './Notifications.css';
 
 function Notifications({ user }) {
@@ -44,64 +44,41 @@ function Notifications({ user }) {
 
   const fetchNotifications = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const res = await fetch(`${backendUrl}/api/notifications`, {
-        headers: { Authorization: await getAuthToken() }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const notifs = data.notifications || [];
-        setNotifications(notifs);
-        setUnreadCount(notifs.filter(n => !n.isRead).length);
-      }
+      const data = await api.get('/api/notifications');
+      const notifs = data.notifications || [];
+      setNotifications(notifs);
+      setUnreadCount(notifs.filter(n => !n.isRead).length);
     } catch (err) {}
   };
 
   const fetchUnreadMessageCount = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const res = await fetch(`${backendUrl}/api/conversations/unread-count`, {
-        headers: { Authorization: await getAuthToken() }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const msgCount = data.unreadCount || 0;
-        const notifUnread = notifications.filter(n => !n.isRead).length;
-        setUnreadCount(notifUnread + msgCount);
-      }
+      const data = await api.get('/api/conversations/unread-count');
+      const msgCount = data.unreadCount || 0;
+      const notifUnread = notifications.filter(n => !n.isRead).length;
+      setUnreadCount(notifUnread + msgCount);
     } catch (err) {}
   };
 
   const markAsRead = async (id) => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const res = await fetch(`${backendUrl}/api/notifications/${id}/read`, {
-        method: 'PUT', headers: { Authorization: await getAuthToken() }
-      });
-      if (res.ok) {
-        setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
+      await api.put(`/api/notifications/${id}/read`);
+      setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {}
   };
 
   const markAllAsRead = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const res = await fetch(`${backendUrl}/api/notifications/read-all`, {
-        method: 'PUT', headers: { Authorization: await getAuthToken() }
-      });
-      if (res.ok) { setNotifications(prev => prev.map(n => ({ ...n, isRead: true }))); setUnreadCount(0); }
+      await api.put('/api/notifications/read-all');
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true }))); setUnreadCount(0);
     } catch (err) {}
   };
 
   const deleteNotification = async (id, e) => {
     e.stopPropagation();
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      await fetch(`${backendUrl}/api/notifications/${id}`, {
-        method: 'DELETE', headers: { Authorization: await getAuthToken() }
-      });
+      await api.delete(`/api/notifications/${id}`);
       setNotifications(prev => {
         const deleted = prev.find(n => n._id === id);
         if (deleted && !deleted.isRead) setUnreadCount(c => Math.max(0, c - 1));

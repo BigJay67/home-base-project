@@ -2,12 +2,12 @@ import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyB4QqGkrWiukTIf8Fs0Nykyy3peRiuA29Q',
-  authDomain: 'homebase-220b0.firebaseapp.com',
-  projectId: 'homebase-220b0',
-  storageBucket: 'homebase-220b0.firebasestorage.app',
-  messagingSenderId: '216499715918',
-  appId: '1:216499715918:web:b0457d7ee903b24d35a81f'
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 }
 
 const app = initializeApp(firebaseConfig)

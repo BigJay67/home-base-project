@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Home, MapPin, List, Image, X } from 'react-feather'
-import { getAuthToken } from '../hooks/useAuthToken'
+import { api } from '../api/client'
 import './NewListing.css'
 
 function NewListing({ user }) {
@@ -12,6 +12,7 @@ function NewListing({ user }) {
   const [amenities, setAmenities] = useState('')
   const [distance, setDistance] = useState('')
   const [payment, setPayment] = useState('')
+  const [capacity, setCapacity] = useState('1')
   const [images, setImages] = useState([])
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -63,19 +64,12 @@ function NewListing({ user }) {
       const priceValue = parseInt(price.replace(/[^0-9]/g, '')) || 0
       if (priceValue <= 0) { setMessage('Please enter a valid price.'); setLoading(false); return }
 
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/listings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: await getAuthToken() },
-        body: JSON.stringify({
-          type, name, price, priceValue, location,
-          amenities: amenities.split(',').map(i => i.trim()).filter(Boolean),
-          distance, payment, images
-        })
+      await api.post('/api/listings', {
+        type, name, price, priceValue, location,
+        amenities: amenities.split(',').map(i => i.trim()).filter(Boolean),
+        distance, payment, images,
+        capacity: parseInt(capacity, 10) || 1
       })
-
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Failed to create listing')
 
       setMessage('success:Listing created successfully!')
       setTimeout(() => navigate('/listings'), 1800)
@@ -201,6 +195,23 @@ function NewListing({ user }) {
                       onChange={e => setPayment(e.target.value)}
                     />
                   </div>
+                </div>
+              </div>
+              <div className="nl-row">
+                <div className="nl-field">
+                  <label>Units available</label>
+                  <div className="nl-input-wrap">
+                    <Home size={15} className="nl-icon" />
+                    <input
+                      type="number"
+                      min="1"
+                      max="500"
+                      placeholder="1"
+                      value={capacity}
+                      onChange={e => setCapacity(e.target.value)}
+                    />
+                  </div>
+                  <span className="nl-hint">Use 1 for a single apartment, or the number of rooms/beds for a hostel</span>
                 </div>
               </div>
             </div>

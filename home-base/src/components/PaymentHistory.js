@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Table, Button, Badge, Alert, Spinner, Form, InputGroup, Dropdown, Modal } from 'react-bootstrap'
 import { Download, Search, FileText, Mail, Share2, Send, MoreVertical } from 'react-feather'
 import { useNavigate } from 'react-router-dom'
-import { getAuthToken } from '../hooks/useAuthToken';
-import './PaymentHistory.css'
+import { api } from '../api/client'
 
 function PaymentHistory ({ user }) {
   const [payments, setPayments] = useState([])
@@ -29,19 +28,7 @@ function PaymentHistory ({ user }) {
   const fetchPaymentHistory = async () => {
     try {
       setLoading(true)
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/payments/history?status=${filter}`, {
-        headers: {
-          Authorization: await getAuthToken()
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch payment history')
-      }
-
-      const data = await response.json()
-      setPayments(data)
+      setPayments(await api.get(`/api/payments/history?status=${filter}`))
     } catch (err) {
       console.error('Error fetching payment history:', err)
       setError('Failed to load payment history')
@@ -60,18 +47,7 @@ function PaymentHistory ({ user }) {
     }
 
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/payments/${paymentId}/receipt?template=${template}`, {
-        headers: {
-          Authorization: await getAuthToken()
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to generate receipt')
-      }
-
-      const blob = await response.blob()
+      const blob = await api.getBlob(`/api/payments/${paymentId}/receipt?template=${template}`)
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
@@ -100,20 +76,7 @@ function PaymentHistory ({ user }) {
 
     try {
       setEmailing(prev => ({ ...prev, [paymentId]: true }))
-
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/payments/${paymentId}/email-receipt`, {
-        method: 'POST',
-        headers: {
-          Authorization: await getAuthToken()
-        }
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to email receipt')
-      }
-
+      await api.post(`/api/payments/${paymentId}/email-receipt`)
       setMessage('Receipt sent to your email successfully!')
       setTimeout(() => setMessage(''), 3000)
     } catch (err) {
@@ -135,25 +98,8 @@ function PaymentHistory ({ user }) {
 
     try {
       setSharing(prev => ({ ...prev, [paymentId]: true }))
-
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/payments/${paymentId}/share`, {
-        method: 'POST',
-        headers: {
-          Authorization: await getAuthToken(),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ expiresIn: '7d' })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to create share link')
-      }
-
-      const result = await response.json()
-
+      const result = await api.post(`/api/payments/${paymentId}/share`, { expiresIn: '7d' })
       await navigator.clipboard.writeText(result.shareableLink)
-
       setMessage('Shareable link copied to clipboard!')
       setTimeout(() => setMessage(''), 3000)
     } catch (err) {
@@ -185,22 +131,9 @@ function PaymentHistory ({ user }) {
     }
 
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-
       for (const paymentId of completedPayments) {
         setEmailing(prev => ({ ...prev, [paymentId]: true }))
-
-        const response = await fetch(`${backendUrl}/api/payments/${paymentId}/email-receipt`, {
-          method: 'POST',
-          headers: {
-            Authorization: await getAuthToken()
-          }
-        })
-
-        if (!response.ok) {
-          throw new Error(`Failed to email receipt for payment ${paymentId}`)
-        }
-
+        await api.post(`/api/payments/${paymentId}/email-receipt`)
         await new Promise(resolve => setTimeout(resolve, 1000))
       }
 
@@ -238,7 +171,6 @@ function PaymentHistory ({ user }) {
     try {
       for (const paymentId of completedPayments) {
         await handleDownloadReceipt(paymentId)
-
         await new Promise(resolve => setTimeout(resolve, 500))
       }
     } catch (err) {

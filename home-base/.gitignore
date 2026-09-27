@@ -6,6 +6,6 @@
 .env.production.local
 
 # Build output
-build
+dist
 node_modules
 .vercel

@@ -7,11 +7,11 @@ const messageSchema = new mongoose.Schema({
   },
   senderEmail: {
     type: String,
-    required: true
+    default: ''
   },
   senderName: {
     type: String,
-    required: true
+    default: 'Guest'
   },
   content: {
     type: String,
@@ -36,7 +36,7 @@ const conversationSchema = new mongoose.Schema({
     },
     email: {
       type: String,
-      required: true
+      default: ''
     },
     displayName: {
       type: String,
@@ -95,7 +95,7 @@ conversationSchema.methods.toJSON = function() {
   return conversation;
 };
 
-conversationSchema.index({ participants: 1 });
+conversationSchema.index({ 'participants.userId': 1 });
 conversationSchema.index({ listingId: 1 });
 conversationSchema.index({ updatedAt: -1 });
 

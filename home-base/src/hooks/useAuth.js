@@ -1,58 +1,57 @@
 import { useState, useEffect, useCallback } from 'react'
 import { signOut } from 'firebase/auth'
 import { auth } from '../firebase'
-import { getAuthToken } from './useAuthToken'
+import { api, ApiError } from '../api/client'
 
-function useAuth () {
+function useAuth (notify) {
   const [user, setUser] = useState(null)
   const [userProfile, setUserProfile] = useState(null)
-  const [paymentMessage, setPaymentMessage] = useState('')
+  const [authLoading, setAuthLoading] = useState(true)
 
-  const refreshUserProfile = useCallback(async () => {
-    if (user) {
-      try {
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-        const token = await getAuthToken()
-        const response = await fetch(`${backendUrl}/api/users/${user.uid}`, {
-          headers: { Authorization: token }
-        })
-        if (response.ok) {
-          const profileData = await response.json()
-          setUserProfile(profileData)
-        }
-      } catch (error) {
-        console.error('Error refreshing user profile:', error)
-      }
-    } else {
+  const loadProfile = useCallback(async (firebaseUser) => {
+    if (!firebaseUser) {
       setUserProfile(null)
+      return
     }
-  }, [user])
+    try {
+      setUserProfile(await api.get(`/api/users/${firebaseUser.uid}`))
+    } catch (err) {
+      console.error('Error loading user profile:', err)
+    }
+  }, [])
+
+  const refreshUserProfile = useCallback(() => loadProfile(auth.currentUser), [loadProfile])
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      setUser(currentUser)
-      refreshUserProfile()
-    }, (error) => {
-      setPaymentMessage('Auth error: ' + error.message)
-    })
+    const unsubscribe = auth.onAuthStateChanged(
+      (currentUser) => {
+        setUser(currentUser)
+        setAuthLoading(false)
+        loadProfile(currentUser)
+      },
+      (error) => {
+        setAuthLoading(false)
+        notify('Auth error: ' + error.message)
+      }
+    )
     return () => unsubscribe()
-  }, [refreshUserProfile])
+  }, [loadProfile, notify])
 
   const handleSignOut = async () => {
     try {
       await signOut(auth)
-      setPaymentMessage('Logged out successfully!')
+      notify('Logged out successfully!')
     } catch (err) {
       console.error('Logout error:', err)
-      setPaymentMessage('Logout failed: ' + err.message)
+      const message = err instanceof ApiError ? err.message : err.message
+      notify('Logout failed: ' + message)
     }
   }
 
   return {
     user,
     userProfile,
-    paymentMessage,
-    setPaymentMessage,
+    authLoading,
     refreshUserProfile,
     handleSignOut
   }

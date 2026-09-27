@@ -5,6 +5,30 @@ const Listing = require('../models/Listing');
 const Review = require('../models/Review');
 const { generateImageVariants } = require('../config/cloudinary');
 const router = express.Router();
+const { getAvailability } = require('../services/bookingService');
+
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const clampCapacity = (value) => Math.min(500, Math.max(1, parseInt(value, 10) || 1));
+
+router.get('/:id/availability', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid listing ID' });
+    }
+
+    const listing = await Listing.findById(id).select('capacity status');
+    if (!listing) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+
+    const availability = await getAvailability(listing);
+    res.json({ ...availability, listingStatus: listing.status });
+  } catch (err) {
+    console.error('Error checking availability:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 router.get('/', async (req, res) => {
   try {
@@ -12,7 +36,7 @@ router.get('/', async (req, res) => {
     const query = {};
     
     if (type) query.type = type.toLowerCase();
-    if (location) query.location = { $regex: location, $options: 'i' };
+    if (location) query.location = { $regex: escapeRegex(location), $options: 'i' };
     if (maxPrice) query.priceValue = { $lte: parseInt(maxPrice) };
     if (amenities) {
       const amenitiesArray = amenities.split(',').map(item => item.trim());
@@ -21,22 +45,19 @@ router.get('/', async (req, res) => {
     if (status) query.status = status;
     if (createdBy) query.createdBy = createdBy;
     
-    console.log('Querying listings with:', query);
     const listings = await Listing.find(query).limit(50);
     res.json(listings);
   } catch (err) {
     console.error('Error fetching listings:', err.message, err.stack);
-    res.status(500).json({ error: 'Server error', details: err.message });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
 router.post('/', verifyToken, async (req, res) => {
   try {
-    console.log('POST /api/listings received:', JSON.stringify(req.body, null, 2));
-    const { type, name, price, priceValue, location, amenities, distance, payment, images } = req.body;
+    const { type, name, price, priceValue, location, amenities, distance, payment, images, capacity } = req.body;
     const createdBy = req.userId;
     if (!type || !name || !price || !priceValue || !location || !createdBy) {
-      console.log('Missing required fields:', { type, name, price, priceValue, location, createdBy });
       return res.status(400).json({ error: 'Missing required fields' });
     }
     if (!['hostel', 'apartment'].includes(type.toLowerCase())) {
@@ -64,7 +85,7 @@ router.post('/', verifyToken, async (req, res) => {
           });
         } catch (uploadErr) {
           console.error('❌ Image upload error:', uploadErr.message);
-          return res.status(500).json({ error: 'Failed to upload image', details: uploadErr.message });
+          return res.status(500).json({ error: 'Failed to upload image' });
         }
       }
     }
@@ -77,24 +98,23 @@ router.post('/', verifyToken, async (req, res) => {
       amenities: amenities || [],
       distance: distance || '',
       payment: payment || '',
+      capacity: clampCapacity(capacity),
       images: imageUrls,
       createdBy,
-      status: 'active' // Default status
+      status: 'active', // Default statu      
     });
-    console.log('Attempting to save listing:', JSON.stringify(listing, null, 2));
     await listing.save();
-    console.log('Listing saved successfully:', JSON.stringify(listing, null, 2));
     res.status(201).json(listing);
   } catch (err) {
-    console.error('Error creating listing:', JSON.stringify(err, null, 2));
-    res.status(500).json({ error: 'Failed to create listing', details: err.message });
+    console.error('Error creating listing:', err.message);
+    res.status(500).json({ error: 'Failed to create listing' });
   }
 });
 
 router.put('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { type, name, price, priceValue, location, amenities, distance, payment, images, imagesToRemove } = req.body;
+    const { type, name, price, priceValue, location, amenities, distance, payment, images, imagesToRemove, capacity } = req.body;
     const userId = req.userId;
 
     const listing = await Listing.findById(id);
@@ -126,7 +146,7 @@ router.put('/:id', verifyToken, async (req, res) => {
           console.log('✅ Image variants generated for update');
         } catch (uploadErr) {
           console.error('❌ Image upload error:', uploadErr.message);
-          return res.status(500).json({ error: 'Failed to upload image', details: uploadErr.message });
+          return res.status(500).json({ error: 'Failed to upload image' });
         }
       }
     }
@@ -142,6 +162,7 @@ router.put('/:id', verifyToken, async (req, res) => {
         amenities: amenities || listing.amenities,
         distance: distance || listing.distance,
         payment: payment || listing.payment,
+        capacity: capacity ? clampCapacity(capacity) : listing.capacity,
         images: imageUrls,
       },
       { new: true }
@@ -150,7 +171,7 @@ router.put('/:id', verifyToken, async (req, res) => {
     res.json(updatedListing);
   } catch (err) {
     console.error('Error updating listing:', err.message, err.stack);
-    res.status(500).json({ error: 'Failed to update listing', details: err.message });
+    res.status(500).json({ error: 'Failed to update listing' });
   }
 });
 
@@ -167,11 +188,10 @@ router.put('/:id/status', verifyToken, async (req, res) => {
 
     listing.status = status;
     await listing.save();
-    console.log('Listing status updated:', id, status);
     res.json(listing);
   } catch (err) {
     console.error('Error updating status:', err.message, err.stack);
-    res.status(500).json({ error: 'Server error', details: err.message });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -192,7 +212,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
     res.json({ message: 'Listing deleted successfully' });
   } catch (err) {
     console.error('Error deleting listing:', err.message, err.stack);
-    res.status(500).json({ error: 'Failed to delete listing', details: err.message });
+    res.status(500).json({ error: 'Failed to delete listing' });
   }
 });
 
@@ -202,7 +222,7 @@ router.get('/search', async (req, res) => {
     const query = {};
     
     if (type) query.type = type.toLowerCase();
-    if (location) query.location = { $regex: location, $options: 'i' };
+    if (location) query.location = { $regex: escapeRegex(location), $options: 'i' };
     if (maxPrice) query.priceValue = { $lte: parseInt(maxPrice) };
     if (amenities) {
       const amenitiesArray = amenities.split(',').map(item => item.trim());
@@ -263,7 +283,7 @@ router.get('/search', async (req, res) => {
     res.json(listings);
   } catch (err) {
     console.error('Error searching listings:', err.message, err.stack);
-    res.status(500).json({ error: 'Server error', details: err.message });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -284,7 +304,7 @@ router.get('/:id', async (req, res) => {
     res.json(listing);
   } catch (err) {
     console.error('Error fetching listing:', err.message, err.stack);
-    res.status(500).json({ error: 'Server error', details: err.message });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

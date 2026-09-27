@@ -4,6 +4,7 @@ const Conversation = require('../models/Conversation');
 const User = require('../models/User');
 const Listing = require('../models/Listing');
 const NotificationService = require('../services/notificationService');
+const { displayNameOf, toPayload } = require('../services/conversationService');
 
 router.get('/', async (req, res) => {
   try {
@@ -30,7 +31,7 @@ router.get('/', async (req, res) => {
       message: err.message,
       stack: err.stack,
     });
-    res.status(500).json({ error: 'Server error', details: err.message });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -56,7 +57,7 @@ router.get('/unread-count', async (req, res) => {
       message: err.message,
       stack: err.stack,
     });
-    res.status(500).json({ error: 'Server error', details: err.message });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -70,6 +71,15 @@ router.post('/', async (req, res) => {
     if (!toUserId || !message || !listingId) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
+    if (typeof message !== 'string' || !message.trim()) {
+      return res.status(400).json({ error: 'Message cannot be empty' });
+    }
+    if (message.length > 1000) {
+      return res.status(400).json({ error: 'Message must be 1000 characters or fewer' });
+    }
+    if (toUserId === fromUserId) {
+      return res.status(400).json({ error: 'You cannot message yourself' });
+    }
 
     const [fromUser, toUser, listing] = await Promise.all([
       User.findOne({ userId: fromUserId }),
@@ -82,6 +92,9 @@ router.post('/', async (req, res) => {
     if (!listing) {
       return res.status(404).json({ error: 'Listing not found' });
     }
+    if (listing.createdBy !== fromUserId && listing.createdBy !== toUserId) {
+      return res.status(403).json({ error: 'Messages about a listing must involve its host' });
+    }
 
     let conversation = await Conversation.findOne({
       listingId,
@@ -92,7 +105,7 @@ router.post('/', async (req, res) => {
       conversation.messages.push({
         senderId: fromUserId,
         senderEmail: fromUser.email,
-        senderName: fromUser.displayName || fromUser.email.split('@')[0],
+        senderName: displayNameOf(fromUser),
         content: message,
       });
       conversation.lastMessage = message.length > 50 ? message.substring(0, 50) + '...' : message;
@@ -120,7 +133,7 @@ router.post('/', async (req, res) => {
           {
             senderId: fromUserId,
             senderEmail: fromUser.email,
-            senderName: fromUser.displayName || fromUser.email.split('@')[0],
+            senderName: displayNameOf(fromUser),
             content: message,
           },
         ],
@@ -130,17 +143,13 @@ router.post('/', async (req, res) => {
     }
     await conversation.save();
 
-    const conversationObj = conversation.toObject();
-    if (conversationObj.unreadCounts instanceof Map) {
-      conversationObj.unreadCounts = Object.fromEntries(conversationObj.unreadCounts);
-    }
+    const conversationObj = await toPayload(conversation);
 
-    // Emit WebSocket notification
+    // Live update for anyone with this chat open, plus a ping for the recipient's notification bell
     const io = req.app.get('io');
     if (io) {
-      io.to(toUserId).emit('message_notification', { conversationId: conversation._id });
-    } else {
-      console.warn('WebSocket io not initialized');
+      io.to(String(conversation._id)).emit('new_message', { conversation: conversationObj });
+      io.to(`user:${toUserId}`).emit('message_notification', { conversationId: conversation._id });
     }
 
     // Create notification for recipient
@@ -163,10 +172,9 @@ router.post('/', async (req, res) => {
     console.error('Error creating conversation:', {
       message: err.message,
       stack: err.stack,
-      requestBody: req.body,
       userId: req.userId, // Use req.userId instead of fromUserId
     });
-    res.status(500).json({ error: 'Server error', details: err.message });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -204,7 +212,7 @@ router.get('/:conversationId', async (req, res) => {
       stack: err.stack,
       userId: req.userId,
     });
-    res.status(500).json({ error: 'Server error', details: err.message });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -216,8 +224,11 @@ router.post('/:conversationId/messages', async (req, res) => {
     if (!fromUserId) {
       return res.status(401).json({ error: 'Authentication required' });
     }
-    if (!message) {
+    if (typeof message !== 'string' || !message.trim()) {
       return res.status(400).json({ error: 'Message is required' });
+    }
+    if (message.length > 1000) {
+      return res.status(400).json({ error: 'Message must be 1000 characters or fewer' });
     }
     const conversation = await Conversation.findOne({
       _id: conversationId,
@@ -236,7 +247,7 @@ router.post('/:conversationId/messages', async (req, res) => {
     conversation.messages.push({
       senderId: fromUserId,
       senderEmail: fromUser.email,
-      senderName: fromUser.displayName || fromUser.email.split('@')[0],
+      senderName: displayNameOf(fromUser),
       content: message,
     });
     conversation.lastMessage = message.length > 50 ? message.substring(0, 50) + '...' : message;
@@ -246,17 +257,12 @@ router.post('/:conversationId/messages', async (req, res) => {
     conversation.unreadCounts.set(recipient.userId, currentUnread + 1);
     await conversation.save();
 
-    const conversationObj = conversation.toObject();
-    if (conversationObj.unreadCounts instanceof Map) {
-      conversationObj.unreadCounts = Object.fromEntries(conversationObj.unreadCounts);
-    }
+    const conversationObj = await toPayload(conversation);
 
-    // Emit WebSocket notification
     const io = req.app.get('io');
     if (io) {
-      io.to(recipient.userId).emit('message_notification', { conversationId: conversation._id });
-    } else {
-      console.warn('WebSocket io not initialized');
+      io.to(String(conversation._id)).emit('new_message', { conversation: conversationObj });
+      io.to(`user:${recipient.userId}`).emit('message_notification', { conversationId: conversation._id });
     }
 
     // Create notification for recipient
@@ -279,10 +285,9 @@ router.post('/:conversationId/messages', async (req, res) => {
     console.error('Error sending message:', {
       message: err.message,
       stack: err.stack,
-      requestBody: req.body,
       userId: req.userId, // Use req.userId instead of fromUserId
     });
-    res.status(500).json({ error: 'Server error', details: err.message });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

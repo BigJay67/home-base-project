@@ -3,15 +3,15 @@ import { Modal, Form, Button, Row, Col } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
 import ListingCard from './ListingCard'
 import ReviewModal from './ReviewModal'
-import { getAuthToken } from '../hooks/useAuthToken'
+import { api } from '../api/client'
 
 function Home({
   user, listings, error, loading,
   typeFilter, setTypeFilter,
   locationFilter, setLocationFilter,
   maxPriceFilter, setMaxPriceFilter,
-  paymentMessage, setPaymentMessage,
-  handleSearch, handlePayment, parsePrice, fetchListings
+  setPaymentMessage,
+  handleSearch, fetchListings
 }) {
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingListing, setEditingListing] = useState(null)
@@ -22,18 +22,8 @@ function Home({
   const [selectedListing] = useState(null)
   const navigate = useNavigate()
 
-  const handleEdit = (listing) => {
-    setEditingListing(listing)
-    setEditFormData({
-      type: listing.type, name: listing.name,
-      price: listing.price, priceValue: listing.priceValue.toString(),
-      location: listing.location,
-      amenities: listing.amenities.join(', '),
-      distance: listing.distance || '', payment: listing.payment || ''
-    })
-    setEditImages(listing.images || [])
-    setShowEditModal(true)
-  }
+  // The editor here can't handle images stored as objects, so ownership edits go to /listings instead
+  const handleEdit = () => navigate('/listings')
 
   const handleEditImageChange = (e) => {
     const files = Array.from(e.target.files)
@@ -58,24 +48,14 @@ function Home({
     if (!user || !editingListing) return
     setEditLoading(true)
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const updateData = {
+      await api.put(`/api/listings/${editingListing._id}`, {
         type: editFormData.type, name: editFormData.name,
         price: editFormData.price, priceValue: parseInt(editFormData.priceValue) || 0,
         location: editFormData.location,
         amenities: editFormData.amenities.split(',').map(i => i.trim()).filter(Boolean),
         distance: editFormData.distance, payment: editFormData.payment,
         images: editImages.filter(img => typeof img === 'string' && img.startsWith('data:image/'))
-      }
-      const response = await fetch(`${backendUrl}/api/listings/${editingListing._id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: await getAuthToken() },
-        body: JSON.stringify(updateData)
       })
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || `HTTP error! Status: ${response.status}`)
-      }
       setPaymentMessage('Listing updated successfully!')
       setShowEditModal(false)
       fetchListings()
@@ -89,12 +69,7 @@ function Home({
   const handleDelete = async (listingId) => {
     if (!window.confirm('Are you sure you want to delete this listing?')) return
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/listings/${listingId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', Authorization: await getAuthToken() }
-      })
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`)
+      await api.delete(`/api/listings/${listingId}`)
       setPaymentMessage('Listing deleted successfully!')
       fetchListings()
     } catch (err) {
@@ -109,17 +84,7 @@ function Home({
   }
 
   const handleReviewSubmit = async (reviewData) => {
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-    const response = await fetch(`${backendUrl}/api/reviews`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: await getAuthToken() },
-      body: JSON.stringify({ ...reviewData, userId: user.uid, userEmail: user.email })
-    })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || 'Failed to submit review')
-    }
-    return response.json()
+    return api.post('/api/reviews', { ...reviewData, userId: user.uid, userEmail: user.email })
   }
 
   const scrollToListings = () =>
@@ -137,6 +102,9 @@ function Home({
 
         {/* Vertical editorial grid lines */}
         <div className="hb-hero-grid" />
+
+        {/* Aurora — soft drifting color washes */}
+        <div className="hb-aurora" />
 
         {/* Content — each element has a staggered fade-up animation */}
         <div className="hb-hero-content">
@@ -156,7 +124,7 @@ function Home({
           <p className="hb-hero-p">
             {user
               ? 'Explore premium listings, manage your bookings and connect with hosts across Nigeria.'
-              : 'Curated apartments, studios and hostels across Nigeria. Book directly with verified hosts.'
+              : 'Curated apartments, studios and hostels across Nigeria. Book directly with hosts.'
             }
           </p>
 
@@ -195,16 +163,16 @@ function Home({
           <span className="hb-stat-l">Active Listings</span>
         </div>
         <div className="hb-stat">
-          <span className="hb-stat-n">24h</span>
-          <span className="hb-stat-l">Avg Response</span>
+          <span className="hb-stat-n">Direct</span>
+          <span className="hb-stat-l">Message Hosts</span>
         </div>
         <div className="hb-stat">
           <span className="hb-stat-n">₦0</span>
           <span className="hb-stat-l">Booking Fees</span>
         </div>
         <div className="hb-stat">
-          <span className="hb-stat-n">100%</span>
-          <span className="hb-stat-l">Verified Hosts</span>
+          <span className="hb-stat-n">Secure</span>
+          <span className="hb-stat-l">Paystack Payments</span>
         </div>
       </div>
 
@@ -245,8 +213,19 @@ function Home({
           )}
         </div>
 
-        {paymentMessage && <div className="hb-alert hb-alert-warn">{paymentMessage}</div>}
-        {error && <div className="hb-alert hb-alert-err">{error}</div>}
+        {error && (
+          <div className="hb-alert hb-alert-err">
+            {error}{' '}
+            <button
+              type="button"
+              className="hb-btn hb-btn-outline"
+              style={{ marginLeft: '0.75rem', padding: '0.35rem 0.9rem' }}
+              onClick={fetchListings}
+            >
+              Try again
+            </button>
+          </div>
+        )}
 
         {loading && (
           <div className="hb-grid">
@@ -280,8 +259,6 @@ function Home({
                 key={listing._id}
                 listing={listing}
                 user={user}
-                handlePayment={handlePayment}
-                parsePrice={parsePrice}
                 handleEdit={handleEdit}
                 handleDelete={handleDelete}
                 index={i}
@@ -292,7 +269,8 @@ function Home({
       </section>
 
       {/* ════════════════════════════════════════════════════
-          EDIT MODAL
+          EDIT MODAL — kept for reference; Edit on Home now goes to /listings.
+          Leaving this in place so nothing else that reads editingListing/editFormData breaks.
           ════════════════════════════════════════════════════ */}
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="lg">
         <Modal.Header closeButton><Modal.Title>Edit Listing</Modal.Title></Modal.Header>

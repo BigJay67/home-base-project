@@ -10,17 +10,16 @@ const verifyToken = async (req, res, next) => {
     }
 
     const token = authHeader.replace('Bearer ', '').trim();
-
-    // Firebase verifies the token signature and expiry.
-    // decodedToken.uid is the real, verified Firebase user ID.
     const decodedToken = await admin.auth().verifyIdToken(token);
+
     req.userId = decodedToken.uid;
+    req.userEmail = decodedToken.email || null;
+    req.userName = decodedToken.name || null;
 
     next();
   } catch (err) {
     console.error('Token verification failed:', err.message);
 
-    // Firebase throws specific error codes — give a helpful message
     if (err.code === 'auth/id-token-expired') {
       return res.status(401).json({ error: 'Token has expired. Please log in again.' });
     }
@@ -32,11 +31,7 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
-// ── adminAuth ────────────────────────────────────────────────
-// Use this on admin routes. It first verifies the token (same
-// as above), then also checks the user has role = 'admin' in
-// the database.
-//
+// Verifies the token, then checks the user has role = 'admin' in the database
 const adminAuth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -49,13 +44,14 @@ const adminAuth = async (req, res, next) => {
     const decodedToken = await admin.auth().verifyIdToken(token);
     const userId = decodedToken.uid;
 
-    // Check the database to confirm they're an admin
     const user = await User.findOne({ userId });
     if (!user || user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
     req.userId = userId;
+    req.userEmail = decodedToken.email || null;
+    req.userName = decodedToken.name || null;
     next();
   } catch (err) {
     console.error('Admin auth error:', err.message);

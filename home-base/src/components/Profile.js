@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Badge, Tab, Tabs, ListGroup, ProgressBar, InputGroup, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, Camera, Edit2, Save, X, Shield, Calendar, Star, Home, MessageCircle, List, Clock, } from 'react-feather';
-import './Profile.css';
-import { getAuthToken } from '../hooks/useAuthToken';
+import { api } from '../api/client';
 
 function Profile({ user, onProfileUpdate }) {
   const [displayName, setDisplayName] = useState('');
@@ -21,8 +20,6 @@ function Profile({ user, onProfileUpdate }) {
   const navigate = useNavigate();
 
   const setProfileData = useCallback((data) => {
-    // Note: The setters (setDisplayName, setEmail, etc.) are stable and don't need to be in the dependency array for useCallback.
-    // The 'user' object is a prop and must be in the dependency array.
     setDisplayName(data.displayName || user.displayName || '');
     setEmail(data.email || user.email || '');
     setPhoneNumber(data.phoneNumber || '');
@@ -30,36 +27,25 @@ function Profile({ user, onProfileUpdate }) {
   }, [user]);
 
   useEffect(() => {
-    if (!user) {
-      setMessage('Please log in to view your profile.');
-      setTimeout(() => navigate('/login'), 2000);
-      return;
-    }
+    if (!user) return;
 
     const fetchProfile = async () => {
       try {
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-        const token = await getAuthToken();
-        const response = await fetch(`${backendUrl}/api/users/${user.uid}`, {
-          headers: { Authorization: token }
-        });
-        if (response.status === 404) {
-          const createResponse = await fetch(`${backendUrl}/api/users/${user.uid}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', Authorization: token },
-            body: JSON.stringify({
+        let data;
+        try {
+          data = await api.get(`/api/users/${user.uid}`);
+        } catch (err) {
+          if (err.status === 404) {
+            data = await api.put(`/api/users/${user.uid}`, {
               displayName: user.displayName || '',
               profilePicture: '',
               email: user.email || '',
               phoneNumber: user.phoneNumber || ''
-            })
-          });
-          const createData = await createResponse.json();
-          setProfileData(createData);
-          return;
+            });
+          } else {
+            throw err;
+          }
         }
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-        const data = await response.json();
         setProfileData(data);
       } catch (err) {
         console.error('Error fetching profile:', err);
@@ -69,18 +55,16 @@ function Profile({ user, onProfileUpdate }) {
 
     const fetchUserStats = async () => {
       try {
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-        const [listingsRes, bookingsRes, reviewsRes] = await Promise.all([
-          fetch(`${backendUrl}/api/listings?createdBy=${user.uid}`, { headers: { Authorization: await getAuthToken() } }),
-          fetch(`${backendUrl}/api/bookings?userId=${user.uid}`, { headers: { Authorization: await getAuthToken() } }),
-          fetch(`${backendUrl}/api/reviews?userId=${user.uid}`, { headers: { Authorization: await getAuthToken() } })
+        const [listings, bookings, reviews] = await Promise.all([
+          api.get(`/api/listings?createdBy=${user.uid}`, { auth: false }).catch(() => []),
+          api.get('/api/bookings?role=guest').catch(() => []),
+          api.get(`/api/reviews?userId=${user.uid}`, { auth: false }).catch(() => [])
         ]);
-        const stats = {
-          listings: listingsRes.ok ? (await listingsRes.json()).length : 0,
-          bookings: bookingsRes.ok ? (await bookingsRes.json()).length : 0,
-          reviews: reviewsRes.ok ? (await reviewsRes.json()).length : 0
-        };
-        setUserStats(stats);
+        setUserStats({
+          listings: listings.length || 0,
+          bookings: bookings.length || 0,
+          reviews: reviews.length || 0
+        });
       } catch (err) {
         console.error('Error fetching stats:', err);
         setUserStats({ listings: 0, bookings: 0, reviews: 0 });
@@ -90,16 +74,11 @@ function Profile({ user, onProfileUpdate }) {
     const fetchRecentActivity = async () => {
       setActivityLoading(true);
       try {
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-        const [bookingsRes, listingsRes, messagesRes] = await Promise.all([
-          fetch(`${backendUrl}/api/bookings?userId=${user.uid}&limit=5`, { headers: { Authorization: await getAuthToken() } }),
-          fetch(`${backendUrl}/api/listings?createdBy=${user.uid}&limit=5`, { headers: { Authorization: await getAuthToken() } }),
-          fetch(`${backendUrl}/api/conversations?userId=${user.uid}&limit=5`, { headers: { Authorization: await getAuthToken() } })
+        const [bookings, listings, conversations] = await Promise.all([
+          api.get('/api/bookings?role=guest&limit=5').catch(() => []),
+          api.get(`/api/listings?createdBy=${user.uid}&limit=5`, { auth: false }).catch(() => []),
+          api.get('/api/conversations?limit=5').catch(() => [])
         ]);
-
-        const bookings = bookingsRes.ok ? await bookingsRes.json() : [];
-        const listings = listingsRes.ok ? await listingsRes.json() : [];
-        const conversations = messagesRes.ok ? await messagesRes.json() : [];
 
         const activity = [
           ...bookings.map(b => ({ type: 'booking', ...b, timestamp: b.createdAt })),
@@ -119,7 +98,7 @@ function Profile({ user, onProfileUpdate }) {
     fetchProfile();
     fetchUserStats();
     fetchRecentActivity();
-  }, [user, navigate, setProfileData, setMessage]);
+  }, [user, setProfileData]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -138,15 +117,9 @@ function Profile({ user, onProfileUpdate }) {
     setLoading(true);
     setMessage('');
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const token = await getAuthToken();
-      const response = await fetch(`${backendUrl}/api/users/${user.uid}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: token },
-        body: JSON.stringify({ displayName, email, phoneNumber, profilePicture: newProfilePicture })
+      const data = await api.put(`/api/users/${user.uid}`, {
+        displayName, email, phoneNumber, profilePicture: newProfilePicture
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Update failed');
       setProfilePicture(data.profilePicture || '');
       setNewProfilePicture(null);
       setEditing(false);
@@ -343,144 +316,135 @@ function Profile({ user, onProfileUpdate }) {
           {message}
         </Alert>
       )}
-      {!user ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" />
-          <p className="mt-3">Redirecting to login...</p>
-        </div>
-      ) : (
-        <>
-          <ProfileHeader />
-          <StatsCard />
-          <Row>
-            <Col lg={4}>
-              <ProfileCompletion />
-              <Card className="mb-4">
-                <Card.Header className="bg-light">
-                  <h6 className="mb-0">Quick Actions</h6>
-                </Card.Header>
-                <Card.Body>
-                  <div className="d-grid gap-2">
-                    <Button variant="outline-primary" size="sm" onClick={() => navigate('/new-listing')}>
-                      <Home size={16} className="me-2" />
-                      New Listing
-                    </Button>
-                    <Button variant="outline-secondary" size="sm" onClick={() => navigate('/bookings')}>
-                      <Calendar size={16} className="me-2" />
-                      My Bookings
-                    </Button>
-                    <Button variant="outline-info" size="sm" onClick={() => navigate('/conversations')}>
-                      <MessageCircle size={16} className="me-2" />
-                      Messages
-                    </Button>
-                    <Button variant="outline-success" size="sm" onClick={() => navigate('/listings')}>
-                      <List size={16} className="me-2" />
-                      My Listings
-                    </Button>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col lg={8}>
-              <Card>
-                <Card.Body>
-                  <Tabs activeKey={activeTab} onSelect={setActiveTab} className="mb-3 border-bottom">
-                    <Tab eventKey="profile" title="Profile">
-                      {editing ? (
-                        <Form onSubmit={handleSubmit}>
-                          <Row>
-                            <Col md={6}>
-                              <Form.Group className="mb-3">
-                                <Form.Label>Display Name</Form.Label>
-                                <InputGroup>
-                                  <InputGroup.Text><User size={16} /></InputGroup.Text>
-                                  <Form.Control value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Enter name" />
-                                </InputGroup>
-                              </Form.Group>
-                            </Col>
-                            <Col md={6}>
-                              <Form.Group className="mb-3">
-                                <Form.Label>Phone</Form.Label>
-                                <InputGroup>
-                                  <InputGroup.Text>+234</InputGroup.Text>
-                                  <Form.Control value={phoneNumber} onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, ''))} placeholder="8012345678" />
-                                </InputGroup>
-                              </Form.Group>
-                            </Col>
-                          </Row>
+      <ProfileHeader />
+      <StatsCard />
+      <Row>
+        <Col lg={4}>
+          <ProfileCompletion />
+          <Card className="mb-4">
+            <Card.Header className="bg-light">
+              <h6 className="mb-0">Quick Actions</h6>
+            </Card.Header>
+            <Card.Body>
+              <div className="d-grid gap-2">
+                <Button variant="outline-primary" size="sm" onClick={() => navigate('/new-listing')}>
+                  <Home size={16} className="me-2" />
+                  New Listing
+                </Button>
+                <Button variant="outline-secondary" size="sm" onClick={() => navigate('/bookings')}>
+                  <Calendar size={16} className="me-2" />
+                  My Bookings
+                </Button>
+                <Button variant="outline-info" size="sm" onClick={() => navigate('/conversations')}>
+                  <MessageCircle size={16} className="me-2" />
+                  Messages
+                </Button>
+                <Button variant="outline-success" size="sm" onClick={() => navigate('/listings')}>
+                  <List size={16} className="me-2" />
+                  My Listings
+                </Button>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col lg={8}>
+          <Card>
+            <Card.Body>
+              <Tabs activeKey={activeTab} onSelect={setActiveTab} className="mb-3 border-bottom">
+                <Tab eventKey="profile" title="Profile">
+                  {editing ? (
+                    <Form onSubmit={handleSubmit}>
+                      <Row>
+                        <Col md={6}>
                           <Form.Group className="mb-3">
-                            <Form.Label>Email</Form.Label>
+                            <Form.Label>Display Name</Form.Label>
                             <InputGroup>
-                              <InputGroup.Text><Mail size={16} /></InputGroup.Text>
-                              <Form.Control type="email" value={email} onChange={e => setEmail(e.target.value)} />
+                              <InputGroup.Text><User size={16} /></InputGroup.Text>
+                              <Form.Control value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Enter name" />
                             </InputGroup>
                           </Form.Group>
+                        </Col>
+                        <Col md={6}>
                           <Form.Group className="mb-3">
-                            <Form.Label>Photo</Form.Label>
-                            <Form.Control type="file" accept="image/*" onChange={handleImageChange} />
-                            {newProfilePicture && (
-                              <img src={newProfilePicture} alt="Preview" className="mt-2 rounded" style={{ width: '80px', height: '80px', objectFit: 'cover' }} />
-                            )}
+                            <Form.Label>Phone</Form.Label>
+                            <InputGroup>
+                              <InputGroup.Text>+234</InputGroup.Text>
+                              <Form.Control value={phoneNumber} onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, ''))} placeholder="8012345678" />
+                            </InputGroup>
                           </Form.Group>
-                        </Form>
-                      ) : (
-                        <div className="row g-3">
-                          <div className="col-md-6">
-                            <div className="d-flex align-items-center p-3 bg-light rounded">
-                              <User size={20} className="text-primary me-3" />
-                              <div>
-                                <small className="text-muted d-block">Name</small>
-                                <div className="fw-semibold">{displayName || 'Not set'}</div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="col-md-6">
-                            <div className="d-flex align-items-center p-3 bg-light rounded">
-                              <Phone size={20} className="text-primary me-3" />
-                              <div>
-                                <small className="text-muted d-block">Phone</small>
-                                <div className="fw-semibold">{phoneNumber || 'Not set'}</div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="col-12">
-                            <div className="d-flex align-items-center p-3 bg-light rounded">
-                              <Mail size={20} className="text-primary me-3" />
-                              <div>
-                                <small className="text-muted d-block">Email</small>
-                                <div className="fw-semibold">{email}</div>
-                              </div>
-                            </div>
+                        </Col>
+                      </Row>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Email</Form.Label>
+                        <InputGroup>
+                          <InputGroup.Text><Mail size={16} /></InputGroup.Text>
+                          <Form.Control type="email" value={email} onChange={e => setEmail(e.target.value)} />
+                        </InputGroup>
+                      </Form.Group>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Photo</Form.Label>
+                        <Form.Control type="file" accept="image/*" onChange={handleImageChange} />
+                        {newProfilePicture && (
+                          <img src={newProfilePicture} alt="Preview" className="mt-2 rounded" style={{ width: '80px', height: '80px', objectFit: 'cover' }} />
+                        )}
+                      </Form.Group>
+                    </Form>
+                  ) : (
+                    <div className="row g-3">
+                      <div className="col-md-6">
+                        <div className="d-flex align-items-center p-3 bg-light rounded">
+                          <User size={20} className="text-primary me-3" />
+                          <div>
+                            <small className="text-muted d-block">Name</small>
+                            <div className="fw-semibold">{displayName || 'Not set'}</div>
                           </div>
                         </div>
-                      )}
-                    </Tab>
-                    <Tab eventKey="activity" title="Recent Activity">
-                      {activityLoading ? (
-                        <div className="text-center py-4">
-                          <Spinner animation="border" size="sm" />
-                          <p className="mt-2 text-muted small">Loading activity...</p>
+                      </div>
+                      <div className="col-md-6">
+                        <div className="d-flex align-items-center p-3 bg-light rounded">
+                          <Phone size={20} className="text-primary me-3" />
+                          <div>
+                            <small className="text-muted d-block">Phone</small>
+                            <div className="fw-semibold">{phoneNumber || 'Not set'}</div>
+                          </div>
                         </div>
-                      ) : activities.length === 0 ? (
-                        <div className="text-center py-5 text-muted">
-                          <Calendar size={48} className="mb-3 opacity-50" />
-                          <p>No recent activity</p>
+                      </div>
+                      <div className="col-12">
+                        <div className="d-flex align-items-center p-3 bg-light rounded">
+                          <Mail size={20} className="text-primary me-3" />
+                          <div>
+                            <small className="text-muted d-block">Email</small>
+                            <div className="fw-semibold">{email}</div>
+                          </div>
                         </div>
-                      ) : (
-                        <div className="activity-list">
-                          {activities.map((act, i) => (
-                            <ActivityItem key={i} act={act} />
-                          ))}
-                        </div>
-                      )}
-                    </Tab>
-                  </Tabs>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
-        </>
-      )}
+                      </div>
+                    </div>
+                  )}
+                </Tab>
+                <Tab eventKey="activity" title="Recent Activity">
+                  {activityLoading ? (
+                    <div className="text-center py-4">
+                      <Spinner animation="border" size="sm" />
+                      <p className="mt-2 text-muted small">Loading activity...</p>
+                    </div>
+                  ) : activities.length === 0 ? (
+                    <div className="text-center py-5 text-muted">
+                      <Calendar size={48} className="mb-3 opacity-50" />
+                      <p>No recent activity</p>
+                    </div>
+                  ) : (
+                    <div className="activity-list">
+                      {activities.map((act, i) => (
+                        <ActivityItem key={i} act={act} />
+                      ))}
+                    </div>
+                  )}
+                </Tab>
+              </Tabs>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
     </Container>
   );
 }

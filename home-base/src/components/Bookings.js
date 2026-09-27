@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Container, Row, Col, Card, Alert, Button, Badge, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import './Bookings.css';
-import { getAuthToken } from '../hooks/useAuthToken';
+import { api } from '../api/client';
 
 function Bookings({ user }) {
   const [bookings, setBookings] = useState([]);
@@ -11,19 +10,10 @@ function Bookings({ user }) {
   const navigate = useNavigate();
 
   const fetchBookings = useCallback(async () => {
-    if (!user) {
-      navigate('/');
-      return;
-    }
     setLoading(true);
     setError(null);
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/bookings?userId=${user.uid}`, {
-        headers: { Authorization: await getAuthToken() }
-      });
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
+      const data = await api.get('/api/bookings?role=guest');
       setBookings(data.filter(booking => booking.status === 'completed'));
     } catch (err) {
       console.error('Error fetching bookings:', err);
@@ -31,11 +21,11 @@ function Bookings({ user }) {
     } finally {
       setLoading(false);
     }
-  }, [user, navigate]);
+  }, []);
 
   useEffect(() => {
     fetchBookings();
-  }, [user, fetchBookings]); 
+  }, [user, fetchBookings]);
 
   const formatCurrency = (amount, currency = 'NGN') => {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency }).format(amount);
@@ -61,10 +51,6 @@ function Bookings({ user }) {
     }
     return acc;
   }, {});
-
-  if (!user) {
-    return <Container className="my-5"><Alert variant="info">Redirecting to home...</Alert></Container>;
-  }
 
   if (loading) {
     return (

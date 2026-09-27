@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Container, Card, Row, Col, Button, Alert, Badge, Form, Modal, Spinner, Table } from 'react-bootstrap'
 import { ArrowLeft, User, Mail, Phone, Calendar, Shield, Trash2, Edit, Save, X } from 'react-feather'
-import './UserDetail.css'
+import { api } from '../api/client'
 
 function UserDetail ({ user: currentAdmin }) {
   const { userId } = useParams()
@@ -26,18 +26,7 @@ function UserDetail ({ user: currentAdmin }) {
   const fetchUserDetails = async () => {
     try {
       setLoading(true)
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/admin/users/${userId}`, {
-        headers: {
-          Authorization: currentAdmin.uid
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch user details')
-      }
-
-      const data = await response.json()
+      const data = await api.get(`/api/admin/users/${userId}`)
       setUser(data)
       setEditForm({
         displayName: data.displayName || '',
@@ -57,22 +46,7 @@ function UserDetail ({ user: currentAdmin }) {
   const handleSave = async () => {
     try {
       setSaving(true)
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/admin/users/${userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: currentAdmin.uid
-        },
-        body: JSON.stringify(editForm)
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update user')
-      }
-
-      const data = await response.json()
+      const data = await api.put(`/api/admin/users/${userId}`, editForm)
       setUser(data.user)
       setEditing(false)
       setMessage('User updated successfully')
@@ -86,24 +60,10 @@ function UserDetail ({ user: currentAdmin }) {
 
   const handleMakeAdmin = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/admin/users/${userId}/make-admin`, {
-        method: 'POST',
-        headers: {
-          Authorization: currentAdmin.uid
-        }
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to make user admin')
-      }
-
-      const data = await response.json()
+      const data = await api.post(`/api/admin/users/${userId}/make-admin`)
       setUser(data.user)
       setEditForm(prev => ({ ...prev, role: 'admin' }))
       setMessage('User promoted to admin successfully')
-
       setTimeout(() => setMessage(''), 3000)
     } catch (err) {
       setError(err.message)
@@ -112,19 +72,7 @@ function UserDetail ({ user: currentAdmin }) {
 
   const handleDeleteUser = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: currentAdmin.uid
-        }
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to delete user')
-      }
-
+      await api.delete(`/api/admin/users/${userId}`)
       setMessage('User deleted successfully')
       setTimeout(() => navigate('/admin'), 2000)
     } catch (err) {

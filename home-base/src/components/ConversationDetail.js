@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send } from 'react-feather';
 import { useConversationSocket } from '../hooks/useConversationSocket';
+import { api } from '../api/client';
 import './ConversationDetail.css';
-import { getAuthToken } from '../hooks/useAuthToken';
 
 function ConversationDetail({ user }) {
   const { id } = useParams();
@@ -26,15 +26,13 @@ function ConversationDetail({ user }) {
 
   const fetchConversation = useCallback(async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/conversations/${id}`, {
-        headers: { Authorization: await getAuthToken() }
-      });
-      if (response.status === 404) { setError('Conversation not found.'); setLoading(false); return; }
-      if (!response.ok) throw new Error('Failed to fetch conversation');
-      setConversation(await response.json());
+      setConversation(await api.get(`/api/conversations/${id}`));
     } catch (err) {
-      setError('Failed to load conversation.');
+      if (err.status === 404) {
+        setError('Conversation not found.');
+      } else {
+        setError('Failed to load conversation.');
+      }
     } finally {
       setLoading(false);
     }
@@ -63,19 +61,13 @@ function ConversationDetail({ user }) {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!message.trim() || !isConnected || !conversation) return;
+    if (!message.trim() || !conversation) return;
     setSending(true);
     setError('');
     try {
       const toUserId = conversation.participants.find(p => p.userId !== user.uid)?.userId;
-      const listingId = conversation.listingId?._id;
-      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/conversations`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: await getAuthToken() },
-        body: JSON.stringify({ toUserId, message: message.trim(), listingId })
-      });
-      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
-      setConversation(await res.json());
+      const listingId = conversation.listingId?._id || conversation.listingId;
+      setConversation(await api.post('/api/conversations', { toUserId, message: message.trim(), listingId }));
       setMessage('');
       if (isConnected) markMessagesRead();
     } catch (err) {
@@ -102,7 +94,6 @@ function ConversationDetail({ user }) {
     return date.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
-  if (!user) return <div className="cd-state"><p>Please log in.</p></div>;
   if (loading) return <div className="cd-state"><div className="cd-spinner" /></div>;
   if (error && !conversation) return <div className="cd-state"><p className="cd-error">{error}</p></div>;
   if (!conversation) return <div className="cd-state"><p>Conversation not found.</p></div>;
@@ -179,10 +170,10 @@ function ConversationDetail({ user }) {
             rows={1}
             value={message}
             onChange={handleInputChange}
-            placeholder={isConnected ? 'Type a message…' : 'Connecting…'}
-            disabled={sending || !isConnected}
+            placeholder="Type a message…"
+            disabled={sending}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey && isConnected) {
+              if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 handleSendMessage(e);
               }
@@ -191,7 +182,7 @@ function ConversationDetail({ user }) {
           <button
             type="submit"
             className="cd-send-btn"
-            disabled={sending || !message.trim() || !isConnected}
+            disabled={sending || !message.trim()}
           >
             <Send size={17} />
           </button>

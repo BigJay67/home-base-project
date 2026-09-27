@@ -7,11 +7,11 @@ export const useConversationSocket = (conversationId, user) => {
 
   useEffect(() => {
     if (socket && isConnected && conversationId) {
-      if (process.env.NODE_ENV === 'development') { console.log('Joining conversation room:', conversationId) }
+      if (import.meta.env.DEV) { console.log('Joining conversation room:', conversationId) }
       socket.emit('join_conversation', conversationId)
 
       return () => {
-        if (process.env.NODE_ENV === 'development') { console.log('Leaving conversation room:', conversationId) }
+        if (import.meta.env.DEV) { console.log('Leaving conversation room:', conversationId) }
         socket.emit('leave_conversation', conversationId)
       }
     }
@@ -21,7 +21,7 @@ export const useConversationSocket = (conversationId, user) => {
     if (!socket) return
 
     const handler = (data) => {
-      if (process.env.NODE_ENV === 'development') { console.log('📨 New message received:', data) }
+      if (import.meta.env.DEV) { console.log('📨 New message received:', data) }
       callback(data)
     }
 
@@ -33,7 +33,7 @@ export const useConversationSocket = (conversationId, user) => {
     if (!socket) return
 
     const handler = (data) => {
-      if (process.env.NODE_ENV === 'development') { console.log('⌨️ Typing event:', data) }
+      if (import.meta.env.DEV) { console.log('⌨️ Typing event:', data) }
       callback(data)
     }
 
@@ -45,7 +45,7 @@ export const useConversationSocket = (conversationId, user) => {
     if (!socket) return
 
     const handler = (data) => {
-      if (process.env.NODE_ENV === 'development') { console.log('📖 Messages read event:', data) }
+      if (import.meta.env.DEV) { console.log('📖 Messages read event:', data) }
       callback(data)
     }
 
@@ -58,7 +58,7 @@ export const useConversationSocket = (conversationId, user) => {
       throw new Error('WebSocket not connected')
     }
 
-    if (process.env.NODE_ENV === 'development') { console.log('📤 Sending message:', { conversationId, message }) }
+    if (import.meta.env.DEV) { console.log('📤 Sending message:', { conversationId, message }) }
 
     socket.emit('send_message', {
       conversationId,
@@ -70,7 +70,7 @@ export const useConversationSocket = (conversationId, user) => {
   const startTyping = useCallback(() => {
     if (!socket || !isConnected) return
 
-    if (process.env.NODE_ENV === 'development') { console.log('⌨️ Starting typing indicator') }
+    if (import.meta.env.DEV) { console.log('⌨️ Starting typing indicator') }
 
     socket.emit('typing_start', {
       conversationId,
@@ -81,7 +81,7 @@ export const useConversationSocket = (conversationId, user) => {
   const stopTyping = useCallback(() => {
     if (!socket || !isConnected) return
 
-    if (process.env.NODE_ENV === 'development') { console.log('🛑 Stopping typing indicator') }
+    if (import.meta.env.DEV) { console.log('🛑 Stopping typing indicator') }
 
     socket.emit('typing_stop', {
       conversationId,
@@ -92,7 +92,7 @@ export const useConversationSocket = (conversationId, user) => {
   const markMessagesRead = useCallback(() => {
     if (!socket || !isConnected) return
 
-    if (process.env.NODE_ENV === 'development') { console.log('📖 Marking messages as read') }
+    if (import.meta.env.DEV) { console.log('📖 Marking messages as read') }
 
     socket.emit('mark_messages_read', {
       conversationId,

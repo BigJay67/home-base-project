@@ -115,16 +115,17 @@ function LoginPage() {
       {/* Left panel — decorative (desktop only) */}
       <div className="lp-side">
         <div className="lp-side-bg" />
+        <div className="hb-aurora" />
         <div className="lp-side-content">
           <div className="lp-side-logo">Home<em>Base</em></div>
           <h2 className="lp-side-h2">Your next<br /><em>home awaits</em></h2>
           <p className="lp-side-p">
-            Premium apartments, studios and hostels across Nigeria. Verified hosts, zero booking fees.
+            Premium apartments, studios and hostels across Nigeria. Message hosts directly, zero booking fees.
           </p>
           <div className="lp-side-stats">
             <div className="lp-side-stat">
-              <span className="lp-side-num">100%</span>
-              <span className="lp-side-lbl">Verified Hosts</span>
+              <span className="lp-side-num">Direct</span>
+              <span className="lp-side-lbl">Message Hosts</span>
             </div>
             <div className="lp-side-stat">
               <span className="lp-side-num">₦0</span>

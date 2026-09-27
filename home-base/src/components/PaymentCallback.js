@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Container, Alert, Spinner, Button } from 'react-bootstrap';
 import { auth } from '../firebase';
+import { api } from '../api/client';
 
 function PaymentCallback({ user }) {
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState('loading');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
   useEffect(() => {
     const verifyPayment = async () => {
@@ -42,29 +42,7 @@ function PaymentCallback({ user }) {
           return;
         }
 
-        // Get a real Firebase JWT token
-        const token = await currentUser.getIdToken();
-        const headers = {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        };
-
-        const response = await fetch(
-          `${backendUrl}/api/payments/paystack/verify/${reference}`,
-          { method: 'GET', headers }
-        );
-
-        if (!response.ok) {
-          const text = await response.text();
-          let errorMessage = `Verification failed (${response.status})`;
-          try {
-            const errorData = JSON.parse(text);
-            errorMessage = errorData.error || errorMessage;
-          } catch (_) {}
-          throw new Error(errorMessage);
-        }
-
-        const data = await response.json();
+        const data = await api.get(`/api/payments/paystack/verify/${reference}`);
 
         if (data.status === 'success') {
           setMessage('Payment successful! Redirecting to payment history...');
@@ -83,7 +61,7 @@ function PaymentCallback({ user }) {
     };
 
     verifyPayment();
-  }, [navigate, searchParams, user, backendUrl]);
+  }, [navigate, searchParams, user]);
 
   return (
     <Container className="my-5 text-center">

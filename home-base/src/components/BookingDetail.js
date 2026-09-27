@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Container, Card, Row, Col, Button, Badge, Alert, Spinner, Table, Modal } from 'react-bootstrap'
 import { ArrowLeft, Download, Printer, Share2, Calendar, MapPin, DollarSign, User, FileText, Mail, Shield } from 'react-feather'
-import { getAuthToken } from '../hooks/useAuthToken';
-import './BookingDetail.css'
+import { api } from '../api/client'
 
 function BookingDetail ({ user: currentUser }) {
   const { id } = useParams()
@@ -16,15 +15,8 @@ function BookingDetail ({ user: currentUser }) {
 
   const checkAdminStatus = useCallback(async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const token = await getAuthToken();
-      const response = await fetch(`${backendUrl}/api/users/${currentUser.uid}`, {
-        headers: { Authorization: token }
-      })
-      if (response.ok) {
-        const userData = await response.json()
-        setIsAdmin(userData.role === 'admin')
-      }
+      const userData = await api.get(`/api/users/${currentUser.uid}`)
+      setIsAdmin(userData.role === 'admin')
     } catch (err) {
       console.error('Error checking admin status:', err)
     }
@@ -34,32 +26,16 @@ function BookingDetail ({ user: currentUser }) {
   const fetchBookingDetail = useCallback(async () => {
     try {
       setLoading(true)
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/bookings/${id}`, {
-        headers: {
-          Authorization: await getAuthToken()
+      try {
+        setBooking(await api.get(`/api/bookings/${id}`))
+        return
+      } catch (err) {
+        if (err.status === 403 || err.status === 404) {
+          setBooking(await api.get(`/api/admin/bookings/${id}`))
+          return
         }
-      })
-
-      if (!response.ok) {
-        if (response.status === 403 || response.status === 404) {
-          const adminResponse = await fetch(`${backendUrl}/api/admin/bookings/${id}`, {
-            headers: {
-              Authorization: await getAuthToken()
-            }
-          })
-
-          if (adminResponse.ok) {
-            const data = await adminResponse.json()
-            setBooking(data)
-            return
-          }
-        }
-        throw new Error('Failed to fetch booking details')
+        throw err
       }
-
-      const data = await response.json()
-      setBooking(data)
     } catch (err) {
       console.error('Error fetching booking details:', err)
       setError('Failed to load booking details')
@@ -108,18 +84,7 @@ function BookingDetail ({ user: currentUser }) {
     if (!booking) return
 
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/payments/${booking._id}/receipt`, {
-        headers: {
-          Authorization: await getAuthToken()
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to download receipt')
-      }
-
-      const blob = await response.blob()
+      const blob = await api.getBlob(`/api/payments/${booking._id}/receipt`)
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url

@@ -300,3 +300,32 @@
   .hb-card-name { font-size: 1.05rem; }
   .hb-card-act  { font-size: 0.65rem; padding: 0.55rem 0.4rem; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   2030 upgrade — glass surface, bento-aware sizing
+   ══════════════════════════════════════════════════════════════ */
+.hb-card {
+  background: var(--glass-1);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+}
+.hb-card:hover {
+  border-color: var(--hb-gold-glow);
+  box-shadow: var(--shadow-lift), 0 0 0 1px var(--hb-gold-glow);
+}
+
+/* Wide bento cards (grid-column: span 8) get a shorter, letterboxed image
+   so the photo doesn't look stretched at 2x width */
+@media (min-width: 1101px) {
+  .hb-grid > *:nth-child(5n) .hb-card-img { height: 220px; }
+  .hb-grid > *:nth-child(5n) .hb-card-body { padding: 1.3rem 1.6rem; }
+}
+
+.hb-card-price {
+  background: var(--glass-2);
+  border-radius: var(--r-pill);
+  padding: 0.15rem 0.65rem;
+  display: inline-block;
+}

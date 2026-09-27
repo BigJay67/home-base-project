@@ -312,3 +312,23 @@
   .nl-row { grid-template-columns: 1fr; gap: 0.85rem; }
   .nl-actions { flex-direction: column; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   2030 upgrade — glass section cards
+   ══════════════════════════════════════════════════════════════ */
+.nl-section {
+  background: var(--glass-1);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+}
+
+.nl-submit {
+  border-radius: var(--r-pill);
+  transition: all var(--t-med) var(--ease-soft);
+}
+.nl-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}

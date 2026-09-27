@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Container, Row, Col, Card, Button, Badge, Modal, Alert, Spinner, Form } from 'react-bootstrap'
-import { getAuthToken } from '../hooks/useAuthToken';
-import './UserListings.css'
+import { api } from '../api/client'
 
 function UserListings ({ user }) {
   const [listings, setListings] = useState([])
@@ -17,16 +16,7 @@ function UserListings ({ user }) {
     try {
       setLoading(true)
       setError('')
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/listings?createdBy=${user.uid}`, {
-        headers: {
-          Authorization: await getAuthToken()
-        }
-      })
-      if (!response.ok) {
-        throw new Error('Failed to fetch listings')
-      }
-      const data = await response.json()
+      const data = await api.get(`/api/listings?createdBy=${user.uid}`, { auth: false })
       const userListings = data.filter(listing => listing.createdBy === user.uid)
       setListings(userListings)
     } catch (err) {
@@ -43,19 +33,7 @@ function UserListings ({ user }) {
 
   const handleStatusChange = async (listingId, newStatus) => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/listings/${listingId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: await getAuthToken()
-        },
-        body: JSON.stringify({ status: newStatus, userId: user.uid })
-      })
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update status')
-      }
+      await api.put(`/api/listings/${listingId}/status`, { status: newStatus })
       fetchUserListings()
     } catch (err) {
       console.error('Error updating listing status:', err)
@@ -75,6 +53,7 @@ function UserListings ({ user }) {
       price: listing.price,
       location: listing.location,
       type: listing.type,
+      capacity: listing.capacity || 1,
       amenities: listing.amenities ? listing.amenities.join(', ') : ''
     })
     setNewImages([])
@@ -114,25 +93,13 @@ function UserListings ({ user }) {
     }
 
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/listings/${editingListing._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: await getAuthToken()
-        },
-        body: JSON.stringify({
-          ...editForm,
-          amenities: editForm.amenities.split(',').map(a => a.trim()).filter(Boolean),
-          images: newImages,
-          imagesToRemove,
-          userId: user.uid
-        })
+      await api.put(`/api/listings/${editingListing._id}`, {
+        ...editForm,
+        capacity: parseInt(editForm.capacity, 10) || 1,
+        amenities: editForm.amenities.split(',').map(a => a.trim()).filter(Boolean),
+        images: newImages,
+        imagesToRemove
       })
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update listing')
-      }
       setShowEditModal(false)
       setEditingListing(null)
       setNewImages([])
@@ -148,19 +115,7 @@ function UserListings ({ user }) {
     if (!window.confirm('Are you sure you want to delete this listing?')) return
 
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/listings/${listingId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: await getAuthToken()
-        },
-        body: JSON.stringify({ userId: user.uid })
-      })
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to delete listing')
-      }
+      await api.delete(`/api/listings/${listingId}`)
       fetchUserListings()
     } catch (err) {
       console.error('Error deleting listing:', err)
@@ -314,8 +269,22 @@ function UserListings ({ user }) {
               >
                 <option value="apartment">Apartment</option>
                 <option value="hostel">Hostel</option>
-                <option value="house">House</option>
               </select>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label">Units available</label>
+              <input
+                type="number"
+                min="1"
+                max="500"
+                className="form-control"
+                value={editForm.capacity}
+                onChange={(e) => setEditForm({ ...editForm, capacity: e.target.value })}
+              />
+              <Form.Text className="text-muted">
+                Rooms or beds guests can book separately. Use 1 for a single apartment.
+              </Form.Text>
             </div>
 
             <div className="mb-3">

@@ -17,28 +17,34 @@ export const SocketProvider = ({ children, user }) => {
 
   useEffect(() => {
     if (user && user.uid) {
-      if (process.env.NODE_ENV === 'development') { console.log('Initializing WebSocket connection for user:', user.uid) }
+      if (import.meta.env.DEV) { console.log('Initializing WebSocket connection for user:', user.uid) }
 
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      if (process.env.NODE_ENV === 'development') { console.log('Connecting to WebSocket server:', backendUrl) }
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'
+      if (import.meta.env.DEV) { console.log('Connecting to WebSocket server:', backendUrl) }
 
       const newSocket = io(backendUrl, {
         transports: ['websocket', 'polling'],
         reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 10000,
+        // A fresh Firebase token is sent on every connect and reconnect
+        auth: async (cb) => {
+          try {
+            cb({ token: await user.getIdToken() })
+          } catch (err) {
+            cb({})
+          }
+        }
       })
 
       newSocket.on('connect', () => {
-        if (process.env.NODE_ENV === 'development') { console.log('✅ Connected to WebSocket server') }
+        if (import.meta.env.DEV) { console.log('✅ Connected to WebSocket server') }
         setIsConnected(true)
-
-        newSocket.emit('user_join', user.uid)
-        if (process.env.NODE_ENV === 'development') { console.log('User joined room:', user.uid) }
       })
 
       newSocket.on('disconnect', (reason) => {
-        if (process.env.NODE_ENV === 'development') { console.log('❌ Disconnected from WebSocket server:', reason) }
+        if (import.meta.env.DEV) { console.log('❌ Disconnected from WebSocket server:', reason) }
         setIsConnected(false)
       })
 
@@ -48,16 +54,12 @@ export const SocketProvider = ({ children, user }) => {
       })
 
       newSocket.on('reconnect', (attemptNumber) => {
-        if (process.env.NODE_ENV === 'development') { console.log('🔄 Reconnected to WebSocket server. Attempt:', attemptNumber) }
+        if (import.meta.env.DEV) { console.log('🔄 Reconnected to WebSocket server. Attempt:', attemptNumber) }
         setIsConnected(true)
-
-        if (user.uid) {
-          newSocket.emit('user_join', user.uid)
-        }
       })
 
       newSocket.on('reconnect_attempt', (attemptNumber) => {
-        if (process.env.NODE_ENV === 'development') { console.log('🔄 Attempting to reconnect... Attempt:', attemptNumber) }
+        if (import.meta.env.DEV) { console.log('🔄 Attempting to reconnect... Attempt:', attemptNumber) }
       })
 
       newSocket.on('reconnect_error', (error) => {
@@ -71,12 +73,12 @@ export const SocketProvider = ({ children, user }) => {
       setSocket(newSocket)
 
       return () => {
-        if (process.env.NODE_ENV === 'development') { console.log('🧹 Cleaning up WebSocket connection') }
+        if (import.meta.env.DEV) { console.log('🧹 Cleaning up WebSocket connection') }
         newSocket.close()
       }
     } else {
       if (socket) {
-        if (process.env.NODE_ENV === 'development') { console.log('👤 User logged out, closing WebSocket') }
+        if (import.meta.env.DEV) { console.log('👤 User logged out, closing WebSocket') }
         socket.close()
         setSocket(null)
         setIsConnected(false)

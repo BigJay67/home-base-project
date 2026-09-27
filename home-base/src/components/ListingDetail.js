@@ -3,10 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Modal, Form } from 'react-bootstrap'
 import { ArrowLeft } from 'react-feather'
 import MessageButton from './MessageButton'
-import { getAuthToken } from '../hooks/useAuthToken'
+import { api } from '../api/client'
 import './ListingDetail.css'
 
-function ListingDetail({ user, handlePayment, parsePrice }) {
+function ListingDetail({ user, handlePayment }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const [listing, setListing] = useState(null)
@@ -21,23 +21,21 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' })
   const [submittingReview, setSubmittingReview] = useState(false)
+  const [reviewError, setReviewError] = useState('')
+  const [moveInDate, setMoveInDate] = useState('')
+  const [availability, setAvailability] = useState(null)
 
   useEffect(() => {
     if (!id || id === ':id') { setError('Invalid listing ID'); setLoading(false); return }
     fetchListing()
     fetchReviews()
+    fetchAvailability()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   const fetchListing = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/listings/${id}`)
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        throw new Error(data.error || `HTTP ${response.status}`)
-      }
-      setListing(await response.json())
+      setListing(await api.get(`/api/listings/${id}`, { auth: false }))
       setError('')
     } catch (err) {
       setError(`Failed to load listing: ${err.message}`)
@@ -48,13 +46,16 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
 
   const fetchReviews = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/reviews/${id}`)
-      if (!response.ok) return
-      const data = await response.json()
+      const data = await api.get(`/api/reviews/${id}`, { auth: false })
       setReviews(data.reviews || [])
       setAverageRating(data.averageRating || 0)
       setTotalReviews(data.totalReviews || 0)
+    } catch (_) {}
+  }
+
+  const fetchAvailability = async () => {
+    try {
+      setAvailability(await api.get(`/api/listings/${id}/availability`, { auth: false }))
     } catch (_) {}
   }
 
@@ -72,29 +73,18 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
     e.preventDefault()
     if (!user) { navigate('/login'); return }
     setSubmittingReview(true)
+    setReviewError('')
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
-      const response = await fetch(`${backendUrl}/api/reviews`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: await getAuthToken() },
-        body: JSON.stringify({
-          listingId: id,
-          userId: user.uid,
-          userEmail: user.email,
-          userName: user.displayName || user.email,
-          rating: reviewForm.rating,
-          comment: reviewForm.comment
-        })
+      await api.post('/api/reviews', {
+        listingId: id,
+        rating: reviewForm.rating,
+        comment: reviewForm.comment
       })
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        throw new Error(data.error || `HTTP ${response.status}`)
-      }
       await fetchReviews()
       setShowReviewModal(false)
       setReviewForm({ rating: 5, comment: '' })
     } catch (err) {
-      setError(`Failed to submit review: ${err.message}`)
+      setReviewError(err.message)
     } finally {
       setSubmittingReview(false)
     }
@@ -135,6 +125,7 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
   }
 
   const isOwner = user && user.uid === listing.createdBy
+  const todayStr = new Date().toISOString().split('T')[0]
 
   return (
     <div className="ld-page">
@@ -256,7 +247,7 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
                 )}
               </div>
               {user && !isOwner && (
-                <button className="ld-write-review" onClick={() => setShowReviewModal(true)}>
+                <button className="ld-write-review" onClick={() => { setReviewError(''); setShowReviewModal(true) }}>
                   Write a Review
                 </button>
               )}
@@ -318,9 +309,26 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
                 <div className="ld-owner-note">This is your listing</div>
               ) : user ? (
                 <>
+                  {availability && (
+                    <div className={`ld-availability${availability.isFull ? ' full' : ''}`}>
+                      {availability.isFull
+                        ? 'Fully booked right now'
+                        : `${availability.available} of ${availability.capacity} available`}
+                    </div>
+                  )}
+                  <label className="ld-date-label" htmlFor="move-in-date">Move-in date</label>
+                  <input
+                    id="move-in-date"
+                    type="date"
+                    className="ld-date"
+                    min={todayStr}
+                    value={moveInDate}
+                    onChange={e => setMoveInDate(e.target.value)}
+                  />
                   <button
                     className="ld-book-btn"
-                    onClick={() => handlePayment(listing._id, parsePrice(listing.price))}
+                    disabled={!moveInDate || Boolean(availability && availability.isFull)}
+                    onClick={() => handlePayment(listing._id, moveInDate)}
                   >
                     Book Now
                   </button>
@@ -367,6 +375,7 @@ function ListingDetail({ user, handlePayment, parsePrice }) {
         </Modal.Header>
         <Form onSubmit={handleReviewSubmit}>
           <Modal.Body>
+            {reviewError && <div className="hb-alert hb-alert-err">{reviewError}</div>}
             <Form.Group className="mb-3">
               <Form.Label>Rating</Form.Label>
               <div style={{ display: 'flex', gap: '0.4rem' }}>

@@ -7,6 +7,8 @@ const Review = require('../models/Review');
 const NotificationService = require('../services/notificationService');
 const AnalyticsService = require('../services/analyticsService');
 const router = express.Router();
+const mongoose = require('mongoose');
+const { confirmPayment } = require('../services/paymentService');
 
 router.get('/listings', adminAuth, async (req, res) => {
   try {
@@ -43,13 +45,27 @@ router.get('/bookings', adminAuth, async (req, res) => {
 router.delete('/listings/:id', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    
-    
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid listing ID' });
+    }
+
+    const paidCount = await Booking.countDocuments({
+      listingId: id,
+      $or: [
+        { paidAt: { $ne: null } },
+        { status: { $in: ['completed', 'confirmed', 'refunded'] } }
+      ]
+    });
+    if (paidCount > 0) {
+      return res.status(409).json({
+        error: `This listing has ${paidCount} paid booking(s). Set it to inactive instead of deleting it, so payment records are kept.`
+      });
+    }
+
     await Review.deleteMany({ listingId: id });
     await Booking.deleteMany({ listingId: id });
-    
     await Listing.findByIdAndDelete(id);
-    
+
     res.json({ message: 'Listing and associated data deleted successfully' });
   } catch (err) {
     console.error('Error deleting listing:', err);
@@ -366,6 +382,30 @@ router.delete('/bookings/:id', adminAuth, async (req, res) => {
     console.error('Error deleting booking:', err);
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+router.put('/bookings/:id/retry', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid booking ID' });
+    }
+    const booking = await Booking.findById(id).select('paymentReference');
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+    const result = await confirmPayment(booking.paymentReference);
+    res.json({ message: `Payment check finished: ${result.outcome}`, outcome: result.outcome });
+  } catch (err) {
+    console.error('Error retrying payment check:', err);
+    res.status(500).json({ error: 'Payment check failed' });
+  }
+});
+
+router.put('/bookings/:id/refund', adminAuth, (req, res) => {
+  res.status(501).json({
+    error: 'Refunds are not automated yet. Issue the refund from the Paystack dashboard, then set the booking to "refunded".'
+  });
 });
 
 router.get('/bookings/:id/export', adminAuth, async (req, res) => {
