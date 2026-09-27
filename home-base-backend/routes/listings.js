@@ -53,7 +53,9 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', verifyToken, async (req, res) => {
+const { requireVerifiedEmail } = require('../middleware/auth');
+
+router.post('/', verifyToken, requireVerifiedEmail, async (req, res) => {
   try {
     const { type, name, price, priceValue, location, amenities, distance, payment, images, capacity } = req.body;
     const createdBy = req.userId;

@@ -14,7 +14,9 @@ const emailService = new EmailService();
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
-router.post('/paystack/initialize', async (req, res) => {
+const { requireVerifiedEmail } = require('../middleware/auth');
+
+router.post('/', verifyToken, requireVerifiedEmail, async (req, res) => {
   try {
     const { listingId, moveInDate } = req.body;
     const userId = req.userId;

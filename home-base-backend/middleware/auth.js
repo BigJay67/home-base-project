@@ -15,6 +15,7 @@ const verifyToken = async (req, res, next) => {
     req.userId = decodedToken.uid;
     req.userEmail = decodedToken.email || null;
     req.userName = decodedToken.name || null;
+    req.userEmailVerified = decodedToken.email_verified || false;
 
     next();
   } catch (err) {
@@ -29,6 +30,18 @@ const verifyToken = async (req, res, next) => {
 
     return res.status(401).json({ error: 'Authentication failed' });
   }
+};
+
+// Blocks the request unless the user's email is verified.
+// Phone-only accounts (no email on the token) are exempt — they proved
+// identity via SMS instead, so there is no email to verify.
+const requireVerifiedEmail = (req, res, next) => {
+  if (req.userEmail && !req.userEmailVerified) {
+    return res.status(403).json({
+      error: 'Please verify your email address before doing this. Check your inbox for the verification link, or resend it from your profile.'
+    });
+  }
+  next();
 };
 
 // Verifies the token, then checks the user has role = 'admin' in the database
@@ -52,6 +65,7 @@ const adminAuth = async (req, res, next) => {
     req.userId = userId;
     req.userEmail = decodedToken.email || null;
     req.userName = decodedToken.name || null;
+    req.userEmailVerified = decodedToken.email_verified || false;
     next();
   } catch (err) {
     console.error('Admin auth error:', err.message);
@@ -64,4 +78,4 @@ const adminAuth = async (req, res, next) => {
   }
 };
 
-module.exports = { verifyToken, adminAuth };
+module.exports = { verifyToken, adminAuth, requireVerifiedEmail };

@@ -26,6 +26,8 @@ import UserListings from './components/UserListings';
 import './styles/cinematic.css';
 import './styles/bootstrap-theme.css';
 import CommandPalette from './components/CommandPalette';
+import SignupPage from './components/SignupPage';
+import EmailVerifyBanner from './components/EmailVerifyBanner';
 
 function RequireAuth({ user, authLoading, children }) {
   if (authLoading) {
@@ -49,6 +51,7 @@ function AppShell() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cmdkOpen, setCmdkOpen] = useState(false);
+  const [verifyDismissed, setVerifyDismissed] = useState(false);
   const toast = useToast();
 
   const {
@@ -108,6 +111,11 @@ function AppShell() {
   return (
     <SocketProvider user={user}>
       <Router>
+
+        {user && !verifyDismissed && (
+          <EmailVerifyBanner user={user} onDismiss={() => setVerifyDismissed(true)} />
+        )}
+        <nav className={`hb-navbar${scrolled ? ' scrolled' : ''}`}></nav>
 
         {/* ── Navbar ───────────────────────────────────────── */}
         <nav className={`hb-navbar${scrolled ? ' scrolled' : ''}`}>
@@ -238,6 +246,7 @@ function AppShell() {
         {/* ── Routes ───────────────────────────────────────── */}
         <Routes>
           <Route path="/login" element={<LoginPage setPaymentMessage={setPaymentMessage} />} />
+          <Route path="/signup" element={<SignupPage />} />
           <Route
             path="/"
             element={

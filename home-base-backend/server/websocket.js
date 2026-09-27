@@ -28,6 +28,8 @@ const initializeWebSocket = (server) => {
       if (!token) return next(new Error('Authentication required'));
       const decoded = await admin.auth().verifyIdToken(token);
       socket.userId = decoded.uid;
+      socket.userEmail = decoded.email || null;
+      socket.emailVerified = decoded.email_verified || false;
       next();
     } catch (err) {
       next(new Error('Authentication failed'));
@@ -62,6 +64,10 @@ const initializeWebSocket = (server) => {
     socket.on('send_message', async ({ conversationId, message } = {}) => {
       try {
         const senderId = socket.userId;
+        if (socket.userEmail && !socket.emailVerified) {
+          socket.emit('chat_error', { message: 'Please verify your email address before sending messages.' });
+          return;
+        }
         const text = typeof message === 'string' ? message.trim() : '';
         if (!text || text.length > MAX_MESSAGE_LENGTH) {
           socket.emit('chat_error', { message: 'Message must be between 1 and 1000 characters' });

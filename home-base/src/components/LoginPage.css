@@ -411,3 +411,18 @@
 
 .lp-side { position: relative; overflow: hidden; }
 .lp-side .hb-aurora { opacity: 0.6; }
+
+.lp-field-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.lp-forgot-link {
+  background: none;
+  border: none;
+  color: var(--hb-gold);
+  font-size: 0.72rem;
+  cursor: pointer;
+  padding: 0;
+}
+.lp-forgot-link:hover { text-decoration: underline; }
