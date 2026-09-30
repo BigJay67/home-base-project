@@ -12,8 +12,11 @@ const bookingSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   totalAmount: { type: Number },
 
-  // The date the guest plans to move in
+  // The date the guest plans to move in (check-in)
   moveInDate: { type: Date },
+  // The date the guest plans to move out (check-out) — together these define
+  // the stay's date range, which is what availability is actually checked against
+  checkOutDate: { type: Date },
 
   // Legacy field from the old booking form
   dates: [{ type: String }],

@@ -13,6 +13,8 @@ const clampCapacity = (value) => Math.min(500, Math.max(1, parseInt(value, 10) |
 router.get('/:id/availability', async (req, res) => {
   try {
     const { id } = req.params;
+    const { moveInDate, checkOutDate } = req.query;
+
     if (!mongoose.isValidObjectId(id)) {
       return res.status(400).json({ error: 'Invalid listing ID' });
     }
@@ -22,7 +24,18 @@ router.get('/:id/availability', async (req, res) => {
       return res.status(404).json({ error: 'Listing not found' });
     }
 
-    const availability = await getAvailability(listing);
+    // No dates chosen yet — just report capacity, not date-specific availability
+    if (!moveInDate || !checkOutDate) {
+      return res.json({ capacity: listing.capacity || 1, listingStatus: listing.status });
+    }
+
+    const moveIn = new Date(moveInDate);
+    const checkOut = new Date(checkOutDate);
+    if (Number.isNaN(moveIn.getTime()) || Number.isNaN(checkOut.getTime()) || checkOut <= moveIn) {
+      return res.status(400).json({ error: 'Invalid date range' });
+    }
+
+    const availability = await getAvailability(listing, moveIn, checkOut);
     res.json({ ...availability, listingStatus: listing.status });
   } catch (err) {
     console.error('Error checking availability:', err.message);

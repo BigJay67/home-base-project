@@ -23,6 +23,7 @@ function ListingDetail({ user, handlePayment }) {
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewError, setReviewError] = useState('')
   const [moveInDate, setMoveInDate] = useState('')
+  const [checkOutDate, setCheckOutDate] = useState('')
   const [availability, setAvailability] = useState(null)
 
   useEffect(() => {
@@ -32,6 +33,10 @@ function ListingDetail({ user, handlePayment }) {
     fetchAvailability()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
+
+  useEffect(() => {
+    if (moveInDate && checkOutDate) fetchAvailability(moveInDate, checkOutDate)
+  }, [moveInDate, checkOutDate])
 
   const fetchListing = async () => {
     try {
@@ -53,9 +58,10 @@ function ListingDetail({ user, handlePayment }) {
     } catch (_) {}
   }
 
-  const fetchAvailability = async () => {
+  const fetchAvailability = async (moveIn, checkOut) => {
     try {
-      setAvailability(await api.get(`/api/listings/${id}/availability`, { auth: false }))
+      const query = moveIn && checkOut ? `?moveInDate=${moveIn}&checkOutDate=${checkOut}` : ''
+      setAvailability(await api.get(`/api/listings/${id}/availability${query}`, { auth: false }))
     } catch (_) {}
   }
 
@@ -323,12 +329,25 @@ function ListingDetail({ user, handlePayment }) {
                     className="ld-date"
                     min={todayStr}
                     value={moveInDate}
-                    onChange={e => setMoveInDate(e.target.value)}
+                    onChange={e => {
+                      setMoveInDate(e.target.value)
+                      if (checkOutDate && e.target.value >= checkOutDate) setCheckOutDate('')
+                    }}
+                  />
+                  <label className="ld-date-label" htmlFor="checkout-date">Check-out date</label>
+                  <input
+                    id="checkout-date"
+                    type="date"
+                    className="ld-date"
+                    min={moveInDate || todayStr}
+                    value={checkOutDate}
+                    disabled={!moveInDate}
+                    onChange={e => setCheckOutDate(e.target.value)}
                   />
                   <button
                     className="ld-book-btn"
-                    disabled={!moveInDate || Boolean(availability && availability.isFull)}
-                    onClick={() => handlePayment(listing._id, moveInDate)}
+                    disabled={!moveInDate || !checkOutDate || Boolean(availability && availability.isFull)}
+                    onClick={() => handlePayment(listing._id, moveInDate, checkOutDate)}
                   >
                     Book Now
                   </button>

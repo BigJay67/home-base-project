@@ -12,6 +12,8 @@ const { requiredEnvVars, isAllowedOrigin } = require('./config/constants');
 const { errorHandler } = require('./middleware/errorHandler');
 const { requestLogger } = require('./middleware/logger');
 const { verifyToken } = require('./middleware/auth');
+const helmet = require('helmet');
+const { generalLimiter } = require('./middleware/rateLimiter');
 
 const listingsRouter = require('./routes/listings');
 const bookingsRouter = require('./routes/bookings');
@@ -22,6 +24,7 @@ const conversationsRouter = require('./routes/conversations');
 const paymentsRouter = require('./routes/payments');
 const adminRouter = require('./routes/admin');
 const webhooksRouter = require('./routes/webhooks');
+const searchRouter = require('./routes/search');
 
 // Check required env vars
 requiredEnvVars.forEach(varName => {
@@ -44,6 +47,14 @@ const app = express();
 const server = http.createServer(app);
 const io = initializeWebSocket(server);
 app.set('io', io);
+
+// Security headers. CSP/CORP are irrelevant for a pure JSON API consumed
+// cross-origin by the Vercel frontend, so they're turned off rather than
+// left to interfere with fetches from the frontend's own domain.
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: false,
+}));
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -80,8 +91,14 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Routes (verifyToken checks the Firebase JWT)
-app.use('/api/listings', listingsRouter);            // some public, some protected inside
+// Applied here, after webhooks are already mounted above — Paystack's
+// webhook calls are handled and responded to before ever reaching this,
+// so they're naturally exempt without needing a special case.
+app.use('/api/', generalLimiter);
+
+app.use('/api/search', searchRouter);
+
+app.use('/api/listings', listingsRouter);
 app.use('/api/bookings', verifyToken, bookingsRouter);
 app.use('/api/users', verifyToken, usersRouter);
 app.use('/api/reviews', reviewsRouter);              // GET public, POST/PUT/DELETE protected inside

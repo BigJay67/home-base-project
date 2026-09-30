@@ -13,12 +13,15 @@ const router = express.Router();
 const emailService = new EmailService();
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
+const { writeLimiter } = require('../middleware/rateLimiter');
 
 const { requireVerifiedEmail } = require('../middleware/auth');
 
+const MAX_STAY_DAYS = 365;
+
 router.post('/paystack/initialize', requireVerifiedEmail, async (req, res) => {
   try {
-    const { listingId, moveInDate } = req.body;
+    const { listingId, moveInDate, checkOutDate } = req.body;
     const userId = req.userId;
 
     if (!listingId || !mongoose.Types.ObjectId.isValid(listingId)) {
@@ -36,11 +39,20 @@ router.post('/paystack/initialize', requireVerifiedEmail, async (req, res) => {
       return res.status(400).json({ error: 'You cannot book your own listing' });
     }
 
-    // Move-in date: required, not in the past, within the next 12 months
+    // Move-in and check-out dates: both required, check-out after move-in,
+    // move-in not in the past, and the whole stay within the next 12 months
     const moveIn = new Date(moveInDate);
+    const checkOut = new Date(checkOutDate);
     if (!moveInDate || Number.isNaN(moveIn.getTime())) {
       return res.status(400).json({ error: 'Please choose your move-in date' });
     }
+    if (!checkOutDate || Number.isNaN(checkOut.getTime())) {
+      return res.status(400).json({ error: 'Please choose your check-out date' });
+    }
+    if (checkOut <= moveIn) {
+      return res.status(400).json({ error: 'Check-out date must be after your move-in date' });
+    }
+
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
     const latest = new Date(today);
@@ -50,6 +62,11 @@ router.post('/paystack/initialize', requireVerifiedEmail, async (req, res) => {
     }
     if (moveIn > latest) {
       return res.status(400).json({ error: 'Move-in date must be within the next 12 months' });
+    }
+
+    const stayDays = Math.round((checkOut - moveIn) / (1000 * 60 * 60 * 24));
+    if (stayDays > MAX_STAY_DAYS) {
+      return res.status(400).json({ error: `Stays longer than ${MAX_STAY_DAYS} days are not supported yet.` });
     }
 
     // Email comes from the verified token. Phone-login users have none, so accept a valid one they typed.
@@ -62,7 +79,9 @@ router.post('/paystack/initialize', requireVerifiedEmail, async (req, res) => {
       return res.status(400).json({ error: 'A valid email is required to pay. Please add one to your profile.' });
     }
 
-    // The price always comes from the listing, never from the browser
+    // The price always comes from the listing, never from the browser.
+    // Note: this charges the listing's flat price regardless of stay length —
+    // per-night/per-month proration isn't implemented yet.
     const amount = listing.priceValue;
     if (!Number.isFinite(amount) || amount <= 0) {
       return res.status(400).json({ error: 'This listing has an invalid price' });
@@ -74,9 +93,9 @@ router.post('/paystack/initialize', requireVerifiedEmail, async (req, res) => {
       { $set: { status: 'cancelled' } }
     );
 
-    const availability = await getAvailability(listing);
+    const availability = await getAvailability(listing, moveIn, checkOut);
     if (availability.isFull) {
-      return res.status(409).json({ error: 'This property is fully booked right now. Please check back later.' });
+      return res.status(409).json({ error: 'This property is fully booked for those dates. Try different dates.' });
     }
 
     // Create the booking first so it holds a unit while the user pays
@@ -89,15 +108,16 @@ router.post('/paystack/initialize', requireVerifiedEmail, async (req, res) => {
       amount,
       totalAmount: amount,
       moveInDate: moveIn,
+      checkOutDate: checkOut,
       paymentReference: reference,
     });
 
-    // If two people started at the same moment, the earlier holds win
+    // If two people started at the same moment for overlapping dates, the earlier holds win
     const holdsAhead = await countHoldsAhead(booking);
     if (holdsAhead >= (listing.capacity || 1)) {
       booking.status = 'cancelled';
       await booking.save();
-      return res.status(409).json({ error: 'Someone else just booked the last available unit.' });
+      return res.status(409).json({ error: 'Someone else just booked those dates.' });
     }
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';

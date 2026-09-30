@@ -21,6 +21,9 @@ function Home({
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [selectedListing] = useState(null)
   const navigate = useNavigate()
+  const [aiQuery, setAiQuery] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiSummary, setAiSummary] = useState(null)
 
   // The editor here can't handle images stored as objects, so ownership edits go to /listings instead
   const handleEdit = () => navigate('/listings')
@@ -81,6 +84,32 @@ function Home({
     const imgs = [...editImages]
     imgs.splice(index, 1)
     setEditImages(imgs)
+  }
+
+  const handleAiSearch = async (e) => {
+    e.preventDefault()
+    if (!aiQuery.trim()) return
+    setAiLoading(true)
+    try {
+      const filters = await api.post('/api/search/parse', { query: aiQuery.trim() }, { auth: false })
+      setTypeFilter(filters.type || '')
+      setLocationFilter(filters.location || '')
+      setMaxPriceFilter(filters.maxPrice ? String(filters.maxPrice) : '')
+      setAiSummary(filters)
+      document.getElementById('listings-section')?.scrollIntoView({ behavior: 'smooth' })
+    } catch (err) {
+      setPaymentMessage(`Search failed: ${err.message}`)
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  const clearAiSearch = () => {
+    setAiQuery('')
+    setAiSummary(null)
+    setTypeFilter('')
+    setLocationFilter('')
+    setMaxPriceFilter('')
   }
 
   const handleReviewSubmit = async (reviewData) => {
@@ -180,9 +209,37 @@ function Home({
           SEARCH BAR
           ════════════════════════════════════════════════════ */}
       <div className="hb-search-wrap">
-        <span className="hb-search-label">Filter Properties</span>
-        <form onSubmit={handleSearch}>
-          <div className="hb-search-bar">
+        <span className="hb-search-label">Search Properties</span>
+
+        <form onSubmit={handleAiSearch} className="hb-ai-search-bar">
+          <input
+            type="text"
+            className="hb-ai-search-input"
+            placeholder='Try: "quiet 2-bed near campus under 300k"'
+            value={aiQuery}
+            onChange={e => setAiQuery(e.target.value)}
+            maxLength={200}
+          />
+          <button type="submit" className="hb-ai-search-go" disabled={aiLoading || !aiQuery.trim()}>
+            {aiLoading ? 'Thinking…' : 'Ask'}
+          </button>
+        </form>
+
+        {aiSummary && (
+          <div className="hb-ai-summary">
+            Searched for:
+            {aiSummary.type && <span className="hb-ai-chip">{aiSummary.type}</span>}
+            {aiSummary.location && <span className="hb-ai-chip">📍 {aiSummary.location}</span>}
+            {aiSummary.maxPrice && <span className="hb-ai-chip">under ₦{aiSummary.maxPrice.toLocaleString()}</span>}
+            {aiSummary.keywords?.map((k, i) => <span key={i} className="hb-ai-chip">{k}</span>)}
+            <button type="button" className="hb-ai-clear" onClick={clearAiSearch}>Clear</button>
+          </div>
+        )}
+
+        <details className="hb-manual-filters">
+          <summary>Or filter manually</summary>
+          <form onSubmit={handleSearch}>
+            <div className="hb-search-bar">
             <select className="hb-search-input" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
               <option value="">All Types</option>
               <option value="hostel">Hostel</option>
@@ -193,6 +250,7 @@ function Home({
             <button type="submit" className="hb-search-go">Search</button>
           </div>
         </form>
+        </details>
       </div>
 
       {/* ════════════════════════════════════════════════════

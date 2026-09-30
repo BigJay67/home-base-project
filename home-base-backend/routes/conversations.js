@@ -63,7 +63,9 @@ router.get('/unread-count', async (req, res) => {
 
 const { requireVerifiedEmail } = require('../middleware/auth');
 
-router.post('/', requireVerifiedEmail, async (req, res) => {
+const { writeLimiter } = require('../middleware/rateLimiter');
+
+router.post('/', writeLimiter, requireVerifiedEmail, async (req, res) => {
   try {
     const { toUserId, message, listingId } = req.body;
     const fromUserId = req.userId;
@@ -218,7 +220,7 @@ router.get('/:conversationId', async (req, res) => {
   }
 });
 
-router.post('/:conversationId/messages', requireVerifiedEmail, async (req, res) => {
+router.post('/:conversationId/messages', writeLimiter, requireVerifiedEmail, async (req, res) => {
   try {
     const { conversationId } = req.params;
     const { message } = req.body;

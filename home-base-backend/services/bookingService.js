@@ -3,10 +3,12 @@ const Booking = require('../models/Booking');
 const PENDING_HOLD_MINUTES = 30;
 
 // A unit is held by a paid booking, or by an unpaid one still inside its checkout window.
-// Bookings without a moveInDate were made before availability existed, so they are ignored.
-const holdFilter = (listingId) => ({
+// Bookings without both dates predate date-range availability and are ignored here —
+// they still show up in booking history, just not in this math.
+const activeHoldFilter = (listingId) => ({
   listingId,
   moveInDate: { $ne: null },
+  checkOutDate: { $ne: null },
   $or: [
     { status: { $in: ['completed', 'confirmed'] } },
     {
@@ -16,9 +18,19 @@ const holdFilter = (listingId) => ({
   ],
 });
 
-const getAvailability = async (listing) => {
+// Counts existing holds on this listing whose [moveIn, checkOut) range overlaps
+// the given range. Standard interval-overlap test: two ranges overlap unless
+// one ends before or exactly when the other starts.
+const countOverlapping = (listingId, moveIn, checkOut) =>
+  Booking.countDocuments({
+    ...activeHoldFilter(listingId),
+    moveInDate: { $lt: checkOut },
+    checkOutDate: { $gt: moveIn },
+  });
+
+const getAvailability = async (listing, moveIn, checkOut) => {
   const capacity = listing.capacity || 1;
-  const taken = await Booking.countDocuments(holdFilter(listing._id));
+  const taken = await countOverlapping(listing._id, moveIn, checkOut);
   return {
     capacity,
     taken,
@@ -27,12 +39,15 @@ const getAvailability = async (listing) => {
   };
 };
 
-// Holds created before (or at the same moment as) this booking.
-// Used to settle races: the earliest holds win.
+// Holds that overlap this booking's own date range, created before (or at the
+// same moment as) it. Used to settle races: for a given overlapping window,
+// the earliest holds win.
 const countHoldsAhead = (booking) =>
   Booking.countDocuments({
-    ...holdFilter(booking.listingId),
+    ...activeHoldFilter(booking.listingId),
     _id: { $ne: booking._id },
+    moveInDate: { $lt: booking.checkOutDate },
+    checkOutDate: { $gt: booking.moveInDate },
     createdAt: { $lte: booking.createdAt },
   });
 
