@@ -19,7 +19,7 @@ const { requireVerifiedEmail } = require('../middleware/auth');
 
 const MAX_STAY_DAYS = 365;
 
-router.post('/paystack/initialize', requireVerifiedEmail, async (req, res) => {
+router.post('/paystack/initialize', writeLimiter, requireVerifiedEmail, async (req, res) => {
   try {
     const { listingId, moveInDate, checkOutDate } = req.body;
     const userId = req.userId;
