@@ -1307,19 +1307,19 @@ textarea:focus-visible,
 }
 
 /* ── Email verification banner ──────────────────────────────── */
-.hb-verify-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  background: rgba(200,168,75,0.1);
-  border-bottom: 1px solid rgba(200,168,75,0.25);
+.hb-verify-banner button {
+  background: none;
+  border: none;
   color: var(--hb-gold);
+  text-decoration: underline;
+  cursor: pointer;
   font-size: 0.82rem;
-  padding: 0.6rem 1.25rem;
-  position: sticky;
-  top: 0;
-  z-index: 999;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.4rem;
 }
+.hb-verify-banner button:disabled { opacity: 0.6; cursor: default; }
 .hb-verify-banner button {
   background: none;
   border: none;
