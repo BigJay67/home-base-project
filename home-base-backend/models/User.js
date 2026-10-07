@@ -11,7 +11,15 @@ const userSchema = new mongoose.Schema({
   lastLogin: Date,
   loginCount: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
+  payout: {
+    subaccountCode: { type: String, default: '' },
+    bankCode: { type: String, default: '' },
+    bankName: { type: String, default: '' },
+    accountNumber: { type: String, default: '' },
+    accountName: { type: String, default: '' },
+    setupAt: { type: Date },
+  },
 });
 
 userSchema.pre('save', function(next) {

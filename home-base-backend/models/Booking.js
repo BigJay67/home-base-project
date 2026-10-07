@@ -35,6 +35,9 @@ const bookingSchema = new mongoose.Schema({
   currency: { type: String, default: 'NGN' },
   paidAt: { type: Date },
 
+  platformFeePercent: { type: Number },
+  hostSubaccountCode: { type: String },
+
   receiptData: {
     transactionId: String,
     gatewayResponse: String,

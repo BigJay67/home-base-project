@@ -11,6 +11,7 @@ const { confirmPayment } = require('../services/paymentService');
 const { paystack } = require('../config/paystack');
 const router = express.Router();
 const emailService = new EmailService();
+const User = require('../models/User');
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 const { writeLimiter } = require('../middleware/rateLimiter');
@@ -110,6 +111,8 @@ router.post('/paystack/initialize', writeLimiter, requireVerifiedEmail, async (r
       moveInDate: moveIn,
       checkOutDate: checkOut,
       paymentReference: reference,
+      platformFeePercent: hostSubaccountCode ? platformFeePercent : null,
+      hostSubaccountCode: hostSubaccountCode || null,
     });
 
     // If two people started at the same moment for overlapping dates, the earlier holds win
@@ -122,6 +125,14 @@ router.post('/paystack/initialize', writeLimiter, requireVerifiedEmail, async (r
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
+    // If the host has completed payout setup, split automatically on Paystack's
+    // side: their subaccount's own percentage_charge decides the platform's cut.
+    // If not set up yet, the full amount goes to the platform account, same as before —
+    // nothing here blocks a booking just because the host hasn't configured payouts.
+    const hostUser = await User.findOne({ userId: listing.createdBy }).select('payout');
+    const hostSubaccountCode = hostUser && hostUser.payout ? hostUser.payout.subaccountCode : null;
+    const platformFeePercent = Number(process.env.PLATFORM_FEE_PERCENT) || 10;
+
     let payment;
     try {
       payment = await paystack.transaction.initialize({
@@ -130,6 +141,7 @@ router.post('/paystack/initialize', writeLimiter, requireVerifiedEmail, async (r
         reference,
         callback_url: `${frontendUrl}/payment-callback`,
         metadata: { listingId, userId },
+        ...(hostSubaccountCode ? { subaccount: hostSubaccountCode } : {}),
       });
       if (!payment.status) {
         throw new Error('Paystack initialization failed');

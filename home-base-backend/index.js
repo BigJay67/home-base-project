@@ -22,6 +22,7 @@ const reviewsRouter = require('./routes/reviews');
 const notificationsRouter = require('./routes/notifications');
 const conversationsRouter = require('./routes/conversations');
 const paymentsRouter = require('./routes/payments');
+const payoutsRouter = require('./routes/payouts');
 const adminRouter = require('./routes/admin');
 const webhooksRouter = require('./routes/webhooks');
 const searchRouter = require('./routes/search');
@@ -105,6 +106,7 @@ app.use('/api/reviews', reviewsRouter);              // GET public, POST/PUT/DEL
 app.use('/api/notifications', verifyToken, notificationsRouter);
 app.use('/api/conversations', verifyToken, conversationsRouter);
 app.use('/api/payments', verifyToken, paymentsRouter);
+app.use('/api/payouts', verifyToken, payoutsRouter);
 app.use('/api/admin', adminRouter);                  // adminAuth is applied inside
 
 app.use(errorHandler);
