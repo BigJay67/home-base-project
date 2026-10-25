@@ -9,6 +9,8 @@ const { getAvailability } = require('../services/bookingService');
 
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const clampCapacity = (value) => Math.min(500, Math.max(1, parseInt(value, 10) || 1));
+const normalizePriceValue = (value) => Number(String(value).replace(/[,₦\s]/g, ''));
+const displayPrice = (value) => `₦${value.toLocaleString('en-NG')}`;
 
 router.get('/:id/availability', async (req, res) => {
   try {
@@ -66,14 +68,29 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Hosts need to manage inactive listings too; this collection is scoped to the signed-in user.
+router.get('/mine', verifyToken, async (req, res) => {
+  try {
+    const listings = await Listing.find({ createdBy: req.userId }).sort({ createdAt: -1 });
+    res.json(listings);
+  } catch (err) {
+    console.error('Error fetching host listings:', err.message);
+    res.status(500).json({ error: 'Failed to load your listings' });
+  }
+});
+
 const { requireVerifiedEmail } = require('../middleware/auth');
 
 router.post('/', requireVerifiedEmail, async (req, res) => {
   try {
     const { type, name, price, priceValue, location, amenities, distance, payment, images, capacity } = req.body;
     const createdBy = req.userId;
-    if (!type || !name || !price || !priceValue || !location || !createdBy) {
+    if (!type || !name || !price || !location || !createdBy) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+    const amount = normalizePriceValue(priceValue);
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+      return res.status(400).json({ error: 'Enter a valid booking amount in naira' });
     }
     if (!['hostel', 'apartment'].includes(type.toLowerCase())) {
       console.log('Invalid type:', type);
@@ -107,8 +124,8 @@ router.post('/', requireVerifiedEmail, async (req, res) => {
     const listing = new Listing({
       type: type.toLowerCase(),
       name,
-      price,
-      priceValue: parseInt(priceValue) || 0,
+      price: displayPrice(amount),
+      priceValue: amount,
       location,
       amenities: amenities || [],
       distance: distance || '',
@@ -138,6 +155,13 @@ router.put('/:id', verifyToken, async (req, res) => {
     }
     if (listing.createdBy !== userId) {
       return res.status(403).json({ error: 'Unauthorized: You can only edit your own listings' });
+    }
+    const priceChanged = priceValue !== undefined || price !== undefined;
+    const amount = priceChanged
+      ? normalizePriceValue(priceValue !== undefined ? priceValue : String(price).replace(/[^0-9]/g, ''))
+      : listing.priceValue;
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+      return res.status(400).json({ error: 'Enter a valid booking amount in naira' });
     }
 
     let imageUrls = listing.images || [];
@@ -171,8 +195,8 @@ router.put('/:id', verifyToken, async (req, res) => {
       {
         type: type ? type.toLowerCase() : listing.type,
         name: name || listing.name,
-        price: price || listing.price,
-        priceValue: priceValue ? parseInt(priceValue) : listing.priceValue,
+        price: displayPrice(amount),
+        priceValue: amount,
         location: location || listing.location,
         amenities: amenities || listing.amenities,
         distance: distance || listing.distance,

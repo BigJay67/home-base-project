@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Modal, Form } from 'react-bootstrap'
-import { ArrowLeft } from 'react-feather'
+import { ArrowLeft, MapPin } from 'react-feather'
 import MessageButton from './MessageButton'
 import { api } from '../api/client'
 import './ListingDetail.css'
@@ -132,6 +132,13 @@ function ListingDetail({ user, handlePayment }) {
 
   const isOwner = user && user.uid === listing.createdBy
   const todayStr = new Date().toISOString().split('T')[0]
+  // Checkout uses priceValue. Show that same amount before a guest starts payment.
+  const checkoutPrice = Number.isFinite(listing.priceValue) && listing.priceValue > 0
+    ? `₦${listing.priceValue.toLocaleString('en-NG')}`
+    : listing.price
+  const nextDay = moveInDate
+    ? new Date(new Date(`${moveInDate}T12:00:00`).getTime() + 86400000).toISOString().split('T')[0]
+    : todayStr
 
   return (
     <div className="ld-page">
@@ -181,7 +188,7 @@ function ListingDetail({ user, handlePayment }) {
           <div className="ld-hero-type">{listing.type}</div>
           <h1 className="ld-hero-title">{listing.name}</h1>
           <div className="ld-hero-meta">
-            <span className="ld-hero-loc">📍 {listing.location}</span>
+            <span className="ld-hero-loc"><MapPin size={15} aria-hidden="true" /> {listing.location}</span>
             {averageRating > 0 && (
               <span className="ld-hero-rating">
                 ★ {averageRating.toFixed(1)}
@@ -305,9 +312,10 @@ function ListingDetail({ user, handlePayment }) {
 
             {/* Price */}
             <div className="ld-price-block">
-              <span className="ld-price">{listing.price}</span>
-              <span className="ld-per">/ {listing.payment || 'month'}</span>
+              <span className="ld-price">{checkoutPrice}</span>
+              <span className="ld-per">booking amount</span>
             </div>
+            <p className="ld-price-note">Amount charged at checkout for your selected dates.</p>
 
             {/* Action */}
             <div className="ld-sidebar-acts">
@@ -339,7 +347,7 @@ function ListingDetail({ user, handlePayment }) {
                     id="checkout-date"
                     type="date"
                     className="ld-date"
-                    min={moveInDate || todayStr}
+                    min={nextDay}
                     value={checkOutDate}
                     disabled={!moveInDate}
                     onChange={e => setCheckOutDate(e.target.value)}

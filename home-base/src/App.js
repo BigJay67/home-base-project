@@ -3,31 +3,33 @@ import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, usePar
 import { NavDropdown } from 'react-bootstrap';
 import { ChevronDown, Search } from 'react-feather';
 import Home from './components/Home';
-import Bookings from './components/Bookings';
-import PaymentCallback from './components/PaymentCallback';
-import NewListing from './components/NewListing';
-import Profile from './components/Profile';
-import ListingDetail from './components/ListingDetail';
-import AdminDashboard from './components/AdminDashboard';
 import Notifications from './components/Notifications';
-import Conversations from './components/Conversations';
-import ConversationDetail from './components/ConversationDetail';
-import PaymentHistory from './components/PaymentHistory';
-import BookingDetail from './components/BookingDetail';
-import UserDetail from './components/UserDetail';
-import LoginPage from './components/LoginPage';
 import { SocketProvider } from './context/SocketContext';
 import { ToastProvider, useToast } from './context/ToastContext';
 import useListings from './hooks/useListings';
 import useAuth from './hooks/useAuth';
 import usePayment from './hooks/usePayment';
 import ProfileAvatar from './components/ProfileAvatar';
-import UserListings from './components/UserListings';
 import './styles/cinematic.css';
 import './styles/bootstrap-theme.css';
+import './styles/homebase-refresh.css';
 import CommandPalette from './components/CommandPalette';
-import SignupPage from './components/SignupPage';
 import EmailVerifyBanner from './components/EmailVerifyBanner';
+
+const Bookings = React.lazy(() => import('./components/Bookings'));
+const PaymentCallback = React.lazy(() => import('./components/PaymentCallback'));
+const NewListing = React.lazy(() => import('./components/NewListing'));
+const Profile = React.lazy(() => import('./components/Profile'));
+const ListingDetail = React.lazy(() => import('./components/ListingDetail'));
+const AdminDashboard = React.lazy(() => import('./components/AdminDashboard'));
+const Conversations = React.lazy(() => import('./components/Conversations'));
+const ConversationDetail = React.lazy(() => import('./components/ConversationDetail'));
+const PaymentHistory = React.lazy(() => import('./components/PaymentHistory'));
+const BookingDetail = React.lazy(() => import('./components/BookingDetail'));
+const UserDetail = React.lazy(() => import('./components/UserDetail'));
+const LoginPage = React.lazy(() => import('./components/LoginPage'));
+const UserListings = React.lazy(() => import('./components/UserListings'));
+const SignupPage = React.lazy(() => import('./components/SignupPage'));
 
 function RequireAuth({ user, authLoading, children }) {
   if (authLoading) {
@@ -77,7 +79,6 @@ function AppShell() {
     <RequireAuth user={user} authLoading={authLoading}>{element}</RequireAuth>
   );
 
-  const handleSearch = e => { e.preventDefault(); fetchListings(); };
   const refreshNotifications = useCallback(() => setNotificationRefresh(p => p + 1), []);
 
   // Detect scroll → switch navbar to frosted glass
@@ -115,19 +116,20 @@ function AppShell() {
         {user && !verifyDismissed && (
           <EmailVerifyBanner user={user} onDismiss={() => setVerifyDismissed(true)} />
         )}
-        <nav className={`hb-navbar${scrolled ? ' scrolled' : ''}`}></nav>
-
         {/* ── Navbar ───────────────────────────────────────── */}
         <nav className={`hb-navbar${scrolled ? ' scrolled' : ''}`}>
           <div className="hb-navbar-inner">
 
             {/* Logo */}
             <Link to="/" className="hb-logo" onClick={closeMobile}>
-              Home<em>Base</em>
+              <span className="hb-logo-mark">H</span><span>home<em>base</em></span>
             </Link>
 
             {/* Center nav links (desktop only) */}
             <ul className="hb-nav-links">
+              <li><a href="/#listings-section" className="hb-nav-a">Explore stays</a></li>
+              <li><a href="/#how-it-works" className="hb-nav-a">How it works</a></li>
+              {!user && <li><Link to="/signup" className="hb-nav-a">List your space</Link></li>}
               {user && (
                 <>
                   <li>
@@ -159,7 +161,7 @@ function AppShell() {
             {/* Right side */}
             <div className="hb-nav-right">
               {/* Command palette trigger */}
-              <button className="hb-cmdk-trigger" onClick={() => setCmdkOpen(true)} aria-label="Search">
+              <button className="hb-cmdk-trigger" onClick={() => setCmdkOpen(true)} aria-label="Open quick search">
                 <Search size={15} />
                 <span className="hb-cmdk-trigger-label">Search</span>
                 <kbd className="hb-cmdk-kbd">⌘K</kbd>
@@ -198,7 +200,7 @@ function AppShell() {
                 </NavDropdown>
               ) : (
                 <NavLink to="/login" className="hb-nav-btn hb-nav-btn-gold">
-                  Enter
+                  Sign in
                 </NavLink>
               )}
 
@@ -207,6 +209,8 @@ function AppShell() {
                 className={`hb-mobile-toggle${mobileOpen ? ' open' : ''}`}
                 onClick={() => setMobileOpen(o => !o)}
                 aria-label="Menu"
+                aria-expanded={mobileOpen}
+                aria-controls="homebase-mobile-menu"
               >
                 <span /><span /><span />
               </button>
@@ -215,8 +219,10 @@ function AppShell() {
         </nav>
 
         {/* ── Mobile full-screen menu ───────────────────────── */}
-        <div className={`hb-mobile-menu${mobileOpen ? ' open' : ''}`}>
+        <div id="homebase-mobile-menu" className={`hb-mobile-menu${mobileOpen ? ' open' : ''}`} hidden={!mobileOpen}>
           <Link to="/" className="hb-mobile-link" onClick={closeMobile}>Home</Link>
+          <a href="/#listings-section" className="hb-mobile-link" onClick={closeMobile}>Explore stays</a>
+          <a href="/#how-it-works" className="hb-mobile-link" onClick={closeMobile}>How it works</a>
           {user ? (
             <>
               <NavLink to="/bookings"        className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>Bookings</NavLink>
@@ -229,7 +235,10 @@ function AppShell() {
               )}
             </>
           ) : (
-            <NavLink to="/login" className="hb-mobile-link" onClick={closeMobile}>Sign In</NavLink>
+            <>
+              <NavLink to="/signup" className="hb-mobile-link" onClick={closeMobile}>List your space</NavLink>
+              <NavLink to="/login" className="hb-mobile-link" onClick={closeMobile}>Sign In</NavLink>
+            </>
           )}
           {user && (
             <div className="hb-mobile-actions">
@@ -244,6 +253,7 @@ function AppShell() {
         </div>
 
         {/* ── Routes ───────────────────────────────────────── */}
+        <React.Suspense fallback={<div className="hb-auth-loading"><div className="hb-auth-spinner" /></div>}>
         <Routes>
           <Route path="/login" element={<LoginPage setPaymentMessage={setPaymentMessage} />} />
           <Route path="/signup" element={<SignupPage />} />
@@ -262,9 +272,7 @@ function AppShell() {
                 maxPriceFilter={maxPriceFilter}
                 setMaxPriceFilter={setMaxPriceFilter}
                 setPaymentMessage={setPaymentMessage}
-                handleSearch={handleSearch}
                 fetchListings={fetchListings}
-                handleSignOut={handleSignOut}
               />
             }
           />
@@ -282,6 +290,7 @@ function AppShell() {
           <Route path="/admin/users/:userId" element={guard(<UserDetail user={user} />)} />
           <Route path="/listings"            element={guard(<UserListings user={user} />)} />
         </Routes>
+        </React.Suspense>
 
         {/* ── Floating chat ────────────────────────────────── */}
         {user && (
@@ -297,40 +306,31 @@ function AppShell() {
           <div className="hb-footer-inner">
             <div className="hb-footer-grid">
               <div>
-                <span className="hb-footer-logo">Home<em>Base</em></span>
+                <span className="hb-footer-logo">home<em>base</em></span>
                 <p className="hb-footer-desc">
-                  Premium accommodations across Nigeria. Apartments, studios and hostels — book with confidence.
+                  Find a place that feels like yours. Explore apartments and hostels across Nigeria.
                 </p>
               </div>
               <div className="hb-footer-col">
-                <h6>Explore</h6>
+                <h6>Discover</h6>
                 <ul>
-                  <li><Link to="/">Listings</Link></li>
-                  <li><Link to="/bookings">My Bookings</Link></li>
-                  <li><Link to="/new-listing">Host a Property</Link></li>
-                  <li><Link to="/payment-history">Payment History</Link></li>
+                  <li><a href="/#listings-section">All stays</a></li>
+                  <li><a href="/#how-it-works">How it works</a></li>
+                  <li><Link to={user ? '/new-listing' : '/signup'}>List your space</Link></li>
                 </ul>
               </div>
               <div className="hb-footer-col">
-                <h6>Support</h6>
+                <h6>Your account</h6>
                 <ul>
-                  <li><Link to="/conversations">Help Center</Link></li>
-                  <li><button type="button">Safety</button></li>
-                  <li><button type="button">Contact Us</button></li>
-                </ul>
-              </div>
-              <div className="hb-footer-col">
-                <h6>Legal</h6>
-                <ul>
-                  <li><button type="button">Terms of Service</button></li>
-                  <li><button type="button">Privacy Policy</button></li>
-                  <li><button type="button">Cookie Policy</button></li>
+                  <li><Link to={user ? '/bookings' : '/login'}>My bookings</Link></li>
+                  <li><Link to={user ? '/conversations' : '/login'}>Messages</Link></li>
+                  <li><Link to={user ? '/profile' : '/signup'}>{user ? 'Profile' : 'Create account'}</Link></li>
                 </ul>
               </div>
             </div>
             <div className="hb-footer-bottom">
               <span className="hb-footer-copy">© {new Date().getFullYear()} HomeBase. All rights reserved.</span>
-              <span className="hb-footer-copy">Built for Nigeria.</span>
+              <span className="hb-footer-copy">Made for finding your place.</span>
             </div>
           </div>
         </footer>

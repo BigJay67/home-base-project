@@ -16,9 +16,16 @@ function UserListings ({ user }) {
     try {
       setLoading(true)
       setError('')
-      const data = await api.get(`/api/listings?createdBy=${user.uid}`, { auth: false })
-      const userListings = data.filter(listing => listing.createdBy === user.uid)
-      setListings(userListings)
+      let data
+      try {
+        data = await api.get('/api/listings/mine')
+      } catch (err) {
+        // Keep existing deployments usable until the authenticated /mine route ships.
+        if (err.status !== 400 && err.status !== 404) throw err
+        data = await api.get(`/api/listings?createdBy=${user.uid}`, { auth: false })
+        data = data.filter(listing => listing.createdBy === user.uid)
+      }
+      setListings(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error('Error fetching user listings:', err)
       setError('Failed to load your listings')
@@ -50,7 +57,7 @@ function UserListings ({ user }) {
     setEditForm({
       name: listing.name,
       description: listing.description || '',
-      price: listing.price,
+      price: listing.priceValue ? String(listing.priceValue) : listing.price,
       location: listing.location,
       type: listing.type,
       capacity: listing.capacity || 1,
@@ -93,8 +100,14 @@ function UserListings ({ user }) {
     }
 
     try {
+      const priceValue = Number(String(editForm.price).replace(/[^0-9]/g, ''))
+      if (!Number.isSafeInteger(priceValue) || priceValue <= 0) {
+        alert('Enter a valid booking amount in naira.')
+        return
+      }
       await api.put(`/api/listings/${editingListing._id}`, {
         ...editForm,
+        priceValue,
         capacity: parseInt(editForm.capacity, 10) || 1,
         amenities: editForm.amenities.split(',').map(a => a.trim()).filter(Boolean),
         images: newImages,
@@ -192,7 +205,7 @@ function UserListings ({ user }) {
                   </div>
 
                   <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h6 className="mb-0 text-primary">{listing.price}</h6>
+                    <h6 className="mb-0 text-primary">{listing.priceValue ? `₦${listing.priceValue.toLocaleString('en-NG')}` : listing.price}</h6>
                     <span className="text-muted small">
                       {listing.createdAt ? new Date(listing.createdAt).toLocaleDateString() : 'N/A'}
                     </span>
@@ -238,7 +251,7 @@ function UserListings ({ user }) {
             </div>
 
             <div className="mb-3">
-              <label className="form-label">Price</label>
+              <label className="form-label">Booking amount (₦)</label>
               <input
                 type="text"
                 className="form-control"

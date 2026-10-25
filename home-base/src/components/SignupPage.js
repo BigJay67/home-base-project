@@ -77,8 +77,8 @@ function SignupPage() {
               <span className="lp-side-lbl">Message Hosts</span>
             </div>
             <div className="lp-side-stat">
-              <span className="lp-side-num">₦0</span>
-              <span className="lp-side-lbl">Booking Fees</span>
+              <span className="lp-side-num">Easy</span>
+              <span className="lp-side-lbl">Online Booking</span>
             </div>
           </div>
         </div>

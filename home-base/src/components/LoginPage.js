@@ -135,7 +135,7 @@ function LoginPage() {
           <div className="lp-side-logo">Home<em>Base</em></div>
           <h2 className="lp-side-h2">Your next<br /><em>home awaits</em></h2>
           <p className="lp-side-p">
-            Premium apartments, studios and hostels across Nigeria. Message hosts directly, zero booking fees.
+            Explore apartments and hostels across Nigeria, connect with hosts, and manage your stay in one place.
           </p>
           <div className="lp-side-stats">
             <div className="lp-side-stat">
@@ -143,8 +143,8 @@ function LoginPage() {
               <span className="lp-side-lbl">Message Hosts</span>
             </div>
             <div className="lp-side-stat">
-              <span className="lp-side-num">₦0</span>
-              <span className="lp-side-lbl">Booking Fees</span>
+              <span className="lp-side-num">Easy</span>
+              <span className="lp-side-lbl">Online Booking</span>
             </div>
           </div>
         </div>

@@ -1,70 +1,52 @@
-# Getting Started with Create React App
+# HomeBase
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+HomeBase is an accommodation marketplace for finding and booking apartments and hostels. Guests can search real listings, compare amenities and reviews, save stays, message hosts, and book with an online payment flow. Hosts can publish and manage their properties.
 
-## Available Scripts
+## What’s inside
 
-In the project directory, you can run:
+- Responsive discovery page with location, property type, and budget filters
+- Sort by recent listings or booking amount; saved stays persist in the browser
+- Natural language search through the existing `/api/search/parse` endpoint
+- Property galleries, availability checks, reviews, host messaging, and checkout
+- Firebase email, phone, and Google authentication
+- Host listing management, bookings, payment history, and admin views
+- Shared editorial design system and generated local hero asset
 
-### `npm start`
+## Project structure
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+| Path | Purpose |
+| --- | --- |
+| `home-base/` | React 18 and Vite frontend |
+| `home-base-backend/` | Express API, MongoDB models, Paystack, Cloudinary, and WebSocket messaging |
+| `home-base/src/components/Home.js` | Discovery page and search interactions |
+| `home-base/src/styles/homebase-refresh.css` | Updated theme and responsive layouts |
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Run locally
 
-### `npm test`
+Use Node.js and npm. Install dependencies in each app:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+cd home-base-backend && npm install
+cd ../home-base && npm install
+```
 
-### `npm run build`
+Create your local environment files from your own service credentials. The frontend expects `VITE_BACKEND_URL` and the Firebase `VITE_FIREBASE_*` values. The backend checks required variables in `home-base-backend/config/constants.js`; it also needs a MongoDB connection, Firebase Admin configuration, and credentials for the services you enable. Keep secrets out of Git.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Start the API, then the frontend in separate terminals:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+cd home-base-backend && npm start
+cd home-base && npm run dev
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+The Vite project is configured for port 3000. For a production frontend build, run `npm run build` inside `home-base/`; Vercel serves its `dist/` directory and rewrites app routes to `index.html`.
 
-### `npm run eject`
+## Pricing model
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+`priceValue` is the amount charged by the payment API for a booking. The interface shows this amount in cards and on the property page. Newly created and edited listings now derive the display price from the same value to avoid a mismatch between the listing and checkout. Payment terms are shown separately in the property details.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Review legacy listing data before presenting or accepting payments. An existing record can still contain an old text price that differs from its numeric checkout amount; the redesigned interface displays the checkout amount.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Presentation checklist
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Use real photos and accurate locations for the listings you want to demonstrate. Test a guest search, a property detail page, a saved stay, and a host account. If you plan to demonstrate payment, use the configured provider’s test environment and a disposable test listing.
