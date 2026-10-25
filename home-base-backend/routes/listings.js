@@ -83,7 +83,7 @@ const { requireVerifiedEmail } = require('../middleware/auth');
 
 router.post('/', requireVerifiedEmail, async (req, res) => {
   try {
-    const { type, name, price, priceValue, location, amenities, distance, payment, images, capacity } = req.body;
+    const { type, name, description, price, priceValue, location, amenities, distance, payment, images, capacity, houseRules, checkInWindow } = req.body;
     const createdBy = req.userId;
     if (!type || !name || !price || !location || !createdBy) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -124,12 +124,15 @@ router.post('/', requireVerifiedEmail, async (req, res) => {
     const listing = new Listing({
       type: type.toLowerCase(),
       name,
+      description: typeof description === 'string' ? description.trim().slice(0, 3000) : '',
       price: displayPrice(amount),
       priceValue: amount,
       location,
       amenities: amenities || [],
       distance: distance || '',
       payment: payment || '',
+      houseRules: typeof houseRules === 'string' ? houseRules.trim().slice(0, 3000) : '',
+      checkInWindow: typeof checkInWindow === 'string' ? checkInWindow.trim().slice(0, 160) : '',
       capacity: clampCapacity(capacity),
       images: imageUrls,
       createdBy,
@@ -146,7 +149,7 @@ router.post('/', requireVerifiedEmail, async (req, res) => {
 router.put('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { type, name, price, priceValue, location, amenities, distance, payment, images, imagesToRemove, capacity } = req.body;
+    const { type, name, description, price, priceValue, location, amenities, distance, payment, images, imagesToRemove, capacity, houseRules, checkInWindow } = req.body;
     const userId = req.userId;
 
     const listing = await Listing.findById(id);
@@ -195,12 +198,15 @@ router.put('/:id', verifyToken, async (req, res) => {
       {
         type: type ? type.toLowerCase() : listing.type,
         name: name || listing.name,
+        description: typeof description === 'string' ? description.trim().slice(0, 3000) : listing.description,
         price: displayPrice(amount),
         priceValue: amount,
         location: location || listing.location,
         amenities: amenities || listing.amenities,
         distance: distance || listing.distance,
         payment: payment || listing.payment,
+        houseRules: typeof houseRules === 'string' ? houseRules.trim().slice(0, 3000) : listing.houseRules,
+        checkInWindow: typeof checkInWindow === 'string' ? checkInWindow.trim().slice(0, 160) : listing.checkInWindow,
         capacity: capacity ? clampCapacity(capacity) : listing.capacity,
         images: imageUrls,
       },

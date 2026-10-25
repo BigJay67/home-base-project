@@ -7,12 +7,15 @@ import './NewListing.css'
 function NewListing({ user }) {
   const [type, setType] = useState('')
   const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
   const [location, setLocation] = useState('')
   const [amenities, setAmenities] = useState('')
   const [distance, setDistance] = useState('')
   const [payment, setPayment] = useState('')
   const [capacity, setCapacity] = useState('1')
+  const [houseRules, setHouseRules] = useState('')
+  const [checkInWindow, setCheckInWindow] = useState('')
   const [images, setImages] = useState([])
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -65,9 +68,9 @@ function NewListing({ user }) {
       if (priceValue <= 0) { setMessage('Please enter a valid price.'); setLoading(false); return }
 
       await api.post('/api/listings', {
-        type, name, price, priceValue, location,
+        type, name, description, price, priceValue, location,
         amenities: amenities.split(',').map(i => i.trim()).filter(Boolean),
-        distance, payment, images,
+        distance, payment, images, houseRules, checkInWindow,
         capacity: parseInt(capacity, 10) || 1
       })
 
@@ -134,6 +137,7 @@ function NewListing({ user }) {
                   </div>
                 </div>
               </div>
+              <div className="nl-field nl-field-full"><label>What makes this space feel like home?</label><div className="nl-input-wrap nl-textarea-wrap"><textarea value={description} onChange={e => setDescription(e.target.value)} maxLength={3000} rows={4} placeholder="Describe the rooms, atmosphere, and what guests can expect…" /></div></div>
             </div>
           </div>
 
@@ -149,13 +153,13 @@ function NewListing({ user }) {
                     <span className="nl-icon-text">₦</span>
                     <input
                       type="text"
-                      placeholder="40,000/month"
+                      placeholder="40,000"
                       value={price}
                       onChange={handlePriceChange}
                       required
                     />
                   </div>
-                  <span className="nl-hint">e.g. ₦40,000/month</span>
+                  <span className="nl-hint">Amount charged for the booking. Tell guests what this covers in the payment terms.</span>
                 </div>
                 <div className="nl-field">
                   <label>Location *</label>
@@ -241,6 +245,16 @@ function NewListing({ user }) {
           {/* Section: Images */}
           <div className="nl-section">
             <span className="nl-section-num">04</span>
+            <div className="nl-section-body">
+              <h2 className="nl-section-title">Before guests book</h2>
+              <div className="nl-field nl-field-full"><label>House rules</label><div className="nl-input-wrap nl-textarea-wrap"><textarea value={houseRules} onChange={e => setHouseRules(e.target.value)} maxLength={3000} rows={4} placeholder="Be clear about visitors, quiet hours, shared spaces, pets, and anything guests need to know." /></div></div>
+              <div className="nl-field nl-field-full"><label>Check-in window</label><div className="nl-input-wrap"><input value={checkInWindow} onChange={e => setCheckInWindow(e.target.value)} maxLength={160} placeholder="e.g. 2:00–8:00 pm; arrange late arrival with host" /></div></div>
+            </div>
+          </div>
+
+          {/* Section: Images */}
+          <div className="nl-section">
+            <span className="nl-section-num">05</span>
             <div className="nl-section-body">
               <h2 className="nl-section-title">Photos</h2>
               <label className="nl-upload">

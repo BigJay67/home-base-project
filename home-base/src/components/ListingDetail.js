@@ -208,6 +208,7 @@ function ListingDetail({ user, handlePayment }) {
           {/* Details card */}
           <div className="ld-card">
             <h2 className="ld-card-title">Property Details</h2>
+            {listing.description && <p className="ld-description">{listing.description}</p>}
             <div className="ld-details-grid">
               <div className="ld-detail-item">
                 <span className="ld-detail-label">Location</span>
@@ -231,6 +232,9 @@ function ListingDetail({ user, handlePayment }) {
               )}
             </div>
           </div>
+
+          {/* Amenities */}
+          {(listing.houseRules || listing.checkInWindow) && <div className="ld-card"><h2 className="ld-card-title">Good to know before booking</h2>{listing.checkInWindow && <div className="ld-prebook-row"><strong>Check-in window</strong><p>{listing.checkInWindow}</p></div>}{listing.houseRules && <div className="ld-prebook-row"><strong>House rules</strong><p>{listing.houseRules}</p></div>}</div>}
 
           {/* Amenities */}
           {listing.amenities && listing.amenities.length > 0 && (

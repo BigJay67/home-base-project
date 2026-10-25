@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useParams, useLocation } from 'react-router-dom';
 import { NavDropdown } from 'react-bootstrap';
-import { ChevronDown, Search } from 'react-feather';
+import { Search } from 'react-feather';
 import Home from './components/Home';
 import Notifications from './components/Notifications';
 import { SocketProvider } from './context/SocketContext';
@@ -15,8 +15,12 @@ import './styles/bootstrap-theme.css';
 import './styles/homebase-refresh.css';
 import CommandPalette from './components/CommandPalette';
 import EmailVerifyBanner from './components/EmailVerifyBanner';
+import CookieConsent from './components/CookieConsent';
+import './styles/inner-pages.css';
+import './styles/experience.css';
 
-const Bookings = React.lazy(() => import('./components/Bookings'));
+const StaysDashboard = React.lazy(() => import('./components/StaysDashboard'));
+const StaySpace = React.lazy(() => import('./components/StaySpace'));
 const PaymentCallback = React.lazy(() => import('./components/PaymentCallback'));
 const NewListing = React.lazy(() => import('./components/NewListing'));
 const Profile = React.lazy(() => import('./components/Profile'));
@@ -46,6 +50,11 @@ function RequireAuth({ user, authLoading, children }) {
 function LegacyListingRedirect() {
   const { id } = useParams();
   return <Navigate to={`/listing/${id}`} replace />;
+}
+
+function PageSurface({ children }) {
+  const { pathname } = useLocation();
+  return <main key={pathname} className={pathname === '/' ? 'hb-home-route' : 'hb-inner-route'}>{children}</main>;
 }
 
 function AppShell() {
@@ -122,19 +131,18 @@ function AppShell() {
 
             {/* Logo */}
             <Link to="/" className="hb-logo" onClick={closeMobile}>
-              <span className="hb-logo-mark">H</span><span>home<em>base</em></span>
+              <span className="hb-logo-mark">H</span><span className="hb-logo-word">home<em>base</em></span>
             </Link>
 
             {/* Center nav links (desktop only) */}
             <ul className="hb-nav-links">
               <li><a href="/#listings-section" className="hb-nav-a">Explore stays</a></li>
-              <li><a href="/#how-it-works" className="hb-nav-a">How it works</a></li>
               {!user && <li><Link to="/signup" className="hb-nav-a">List your space</Link></li>}
               {user && (
                 <>
                   <li>
                     <NavLink to="/bookings" className={({ isActive }) => 'hb-nav-a' + (isActive ? ' active' : '')}>
-                      Bookings
+                      My stays
                     </NavLink>
                   </li>
                   <li>
@@ -166,29 +174,23 @@ function AppShell() {
                 <span className="hb-cmdk-trigger-label">Search</span>
                 <kbd className="hb-cmdk-kbd">⌘K</kbd>
               </button>
-              {/* Notifications bell */}
-              {user && <Notifications user={user} refresh={notificationRefresh} />}
-
               {/* User menu or login button */}
               {user ? (
                 <NavDropdown
                   title={
                     <div className="hb-user-pill">
                       <ProfileAvatar user={user} userProfile={userProfile} size={28} />
-                      <span className="hb-user-name">
-                        {user.displayName || user.email.split('@')[0]}
-                      </span>
-                      <ChevronDown size={13} style={{ color: 'var(--hb-muted)', flexShrink: 0 }} />
                     </div>
                   }
                   id="user-menu"
+                  aria-label="Account menu"
                   align="end"
                 >
                   <NavDropdown.Item as={NavLink} to="/profile" onClick={closeMobile}>
                     My Profile
                   </NavDropdown.Item>
                   <NavDropdown.Item as={NavLink} to="/bookings" onClick={closeMobile}>
-                    My Bookings
+                    My Stays
                   </NavDropdown.Item>
                   <NavDropdown.Item as={NavLink} to="/conversations" onClick={closeMobile}>
                     Messages
@@ -222,10 +224,9 @@ function AppShell() {
         <div id="homebase-mobile-menu" className={`hb-mobile-menu${mobileOpen ? ' open' : ''}`} hidden={!mobileOpen}>
           <Link to="/" className="hb-mobile-link" onClick={closeMobile}>Home</Link>
           <a href="/#listings-section" className="hb-mobile-link" onClick={closeMobile}>Explore stays</a>
-          <a href="/#how-it-works" className="hb-mobile-link" onClick={closeMobile}>How it works</a>
           {user ? (
             <>
-              <NavLink to="/bookings"        className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>Bookings</NavLink>
+              <NavLink to="/bookings"        className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>My Stays</NavLink>
               <NavLink to="/new-listing"     className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>Host a Property</NavLink>
               <NavLink to="/payment-history" className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>Payment History</NavLink>
               <NavLink to="/conversations"   className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>Messages</NavLink>
@@ -253,7 +254,7 @@ function AppShell() {
         </div>
 
         {/* ── Routes ───────────────────────────────────────── */}
-        <React.Suspense fallback={<div className="hb-auth-loading"><div className="hb-auth-spinner" /></div>}>
+        <PageSurface><React.Suspense fallback={<div className="hb-auth-loading"><div className="hb-auth-spinner" /></div>}>
         <Routes>
           <Route path="/login" element={<LoginPage setPaymentMessage={setPaymentMessage} />} />
           <Route path="/signup" element={<SignupPage />} />
@@ -276,7 +277,8 @@ function AppShell() {
               />
             }
           />
-          <Route path="/bookings"            element={guard(<Bookings user={user} />)} />
+          <Route path="/bookings"            element={guard(<StaysDashboard user={user} />)} />
+          <Route path="/stays/:bookingId"    element={guard(<StaySpace />)} />
           <Route path="/payment-callback"    element={<PaymentCallback user={user} />} />
           <Route path="/new-listing"         element={guard(<NewListing user={user} />)} />
           <Route path="/profile"             element={guard(<Profile user={user} onProfileUpdate={refreshUserProfile} />)} />
@@ -290,15 +292,18 @@ function AppShell() {
           <Route path="/admin/users/:userId" element={guard(<UserDetail user={user} />)} />
           <Route path="/listings"            element={guard(<UserListings user={user} />)} />
         </Routes>
-        </React.Suspense>
+        </React.Suspense></PageSurface>
 
         {/* ── Floating chat ────────────────────────────────── */}
         {user && (
-          <Link to="/conversations" className="floating-chat-btn" title="Messages">
+          <div className="hb-floating-actions">
+          <Notifications user={user} refresh={notificationRefresh} />
+          <Link to="/conversations" className="floating-chat-btn" title="Messages" aria-label="Messages">
             <svg width="21" height="21" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </Link>
+          </div>
         )}
 
         {/* ── Footer ───────────────────────────────────────── */}
@@ -315,14 +320,13 @@ function AppShell() {
                 <h6>Discover</h6>
                 <ul>
                   <li><a href="/#listings-section">All stays</a></li>
-                  <li><a href="/#how-it-works">How it works</a></li>
                   <li><Link to={user ? '/new-listing' : '/signup'}>List your space</Link></li>
                 </ul>
               </div>
               <div className="hb-footer-col">
                 <h6>Your account</h6>
                 <ul>
-                  <li><Link to={user ? '/bookings' : '/login'}>My bookings</Link></li>
+                  <li><Link to={user ? '/bookings' : '/login'}>My stays</Link></li>
                   <li><Link to={user ? '/conversations' : '/login'}>Messages</Link></li>
                   <li><Link to={user ? '/profile' : '/signup'}>{user ? 'Profile' : 'Create account'}</Link></li>
                 </ul>
@@ -331,6 +335,7 @@ function AppShell() {
             <div className="hb-footer-bottom">
               <span className="hb-footer-copy">© {new Date().getFullYear()} HomeBase. All rights reserved.</span>
               <span className="hb-footer-copy">Made for finding your place.</span>
+              <CookieConsent />
             </div>
           </div>
         </footer>

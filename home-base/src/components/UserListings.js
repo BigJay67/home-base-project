@@ -61,7 +61,9 @@ function UserListings ({ user }) {
       location: listing.location,
       type: listing.type,
       capacity: listing.capacity || 1,
-      amenities: listing.amenities ? listing.amenities.join(', ') : ''
+      amenities: listing.amenities ? listing.amenities.join(', ') : '',
+      houseRules: listing.houseRules || '',
+      checkInWindow: listing.checkInWindow || ''
     })
     setNewImages([])
     setImagesToRemove([])
@@ -320,6 +322,9 @@ function UserListings ({ user }) {
                 placeholder="WiFi, Parking, Kitchen, etc..."
               />
             </div>
+
+            <div className="mb-3"><label className="form-label">House rules</label><textarea className="form-control" rows="3" maxLength={3000} value={editForm.houseRules || ''} onChange={e => setEditForm({ ...editForm, houseRules: e.target.value })} /></div>
+            <div className="mb-3"><label className="form-label">Check-in window</label><input className="form-control" maxLength={160} value={editForm.checkInWindow || ''} onChange={e => setEditForm({ ...editForm, checkInWindow: e.target.value })} placeholder="e.g. 2:00–8:00 pm" /></div>
 
             <div className="mb-3">
               <label className="form-label">Current Images</label>

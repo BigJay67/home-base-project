@@ -26,6 +26,7 @@ const payoutsRouter = require('./routes/payouts');
 const adminRouter = require('./routes/admin');
 const webhooksRouter = require('./routes/webhooks');
 const searchRouter = require('./routes/search');
+const staysRouter = require('./routes/stays');
 
 // Check required env vars
 requiredEnvVars.forEach(varName => {
@@ -101,6 +102,7 @@ app.use('/api/search', searchRouter);
 
 app.use('/api/listings', listingsRouter);
 app.use('/api/bookings', verifyToken, bookingsRouter);
+app.use('/api/stays', verifyToken, staysRouter);
 app.use('/api/users', verifyToken, usersRouter);
 app.use('/api/reviews', reviewsRouter);              // GET public, POST/PUT/DELETE protected inside
 app.use('/api/notifications', verifyToken, notificationsRouter);

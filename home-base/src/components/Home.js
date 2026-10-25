@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, CheckCircle, Compass, Heart, Home as HomeIcon, MapPin, Search, Shield, Sliders, X } from 'react-feather'
+import { ArrowRight, Compass, FileText, Heart, Home as HomeIcon, MapPin, Search, Shield, Sliders, Tool, X } from 'react-feather'
 import ListingCard from './ListingCard'
 import { api } from '../api/client'
 
@@ -81,12 +81,12 @@ function Home({
       <div className="home-hero-image" role="img" aria-label="Contemporary apartment interior" />
       <div className="home-hero-overlay" />
       <div className="home-hero-content">
-        <span className="home-eyebrow"><span className="home-eyebrow-dot" /> Find your place in Nigeria</span>
-        <h1 id="home-hero-title">A stay that feels<br /><em>like yours.</em></h1>
-        <p>Discover apartments and hostels that fit the way you live. Explore real listings, connect with hosts, and book in one place.</p>
+        <span className="home-eyebrow"><span className="home-eyebrow-dot" /> REAL PLACES. REAL LIFE. NIGERIA.</span>
+        <h1 id="home-hero-title">Your place.<br /><em>Your pace.</em></h1>
+        <p>Find a space that fits your life, then keep everything from booking to move-in in one place.</p>
         <button className="home-hero-link" onClick={scrollToListings}>Explore stays <ArrowRight size={18} /></button>
       </div>
-      <div className="home-hero-caption">Thoughtful spaces. Better stays.</div>
+      <div className="home-hero-caption">GOOD PLACES. GOOD LIVING.</div>
     </section>
 
     <div className="home-search-shell">
@@ -121,12 +121,13 @@ function Home({
       {!loading && !error && displayedListings.length > 0 && <div className="home-listing-grid">{displayedListings.map((listing, index) => <ListingCard key={listing._id} listing={listing} user={user} index={index} isSaved={savedIds.includes(listing._id)} onToggleSaved={() => toggleSaved(listing._id)} handleEdit={() => navigate('/listings')} handleDelete={handleDelete} />)}</div>}
     </section>
 
+    <section className="home-lifecycle" aria-labelledby="home-lifecycle-title"><div className="home-lifecycle-intro"><span className="home-kicker">MORE THAN A BOOKING</span><h2 id="home-lifecycle-title">The whole stay.<br /><em>Handled.</em></h2><p>When your booking is paid, your stay space keeps the important things together for guests and hosts.</p><Link to={user ? '/bookings' : '/signup'}>See your stay space <ArrowRight size={18} /></Link></div><div className="home-lifecycle-grid"><div><span>01</span><FileText size={27} /><strong>Shared agreements</strong><p>Review host terms and keep both acknowledgements on record.</p></div><div><span>02</span><Shield size={27} /><strong>Move-in condition</strong><p>Record what you found when you arrived, with photo evidence.</p></div><div><span>03</span><Tool size={27} /><strong>Issues & repairs</strong><p>Report maintenance or damage and follow the host’s updates.</p></div></div></section>
+
     <section className="home-smart" aria-labelledby="home-smart-title">
       <div className="home-smart-copy"><span className="home-kicker">A MORE NATURAL WAY TO SEARCH</span><h2 id="home-smart-title">Tell us what you need.<br /><em>We’ll find the fit.</em></h2><p>Describe your ideal space in your own words. HomeBase turns it into property filters you can adjust.</p><button className="home-outline-button" onClick={() => setSmartOpen(value => !value)} aria-expanded={smartOpen}>{smartOpen ? 'Close smart search' : 'Try smart search'} <ArrowRight size={17} /></button></div>
       <div className="home-smart-panel"><span className="home-smart-spark">✳</span><p>“I’m looking for an apartment in Lagos under ₦500,000.”</p><div><span>Apartment</span><span>Lagos</span><span>Under ₦500k</span></div></div>
       {smartOpen && <form className="home-smart-form" onSubmit={runSmartSearch}><label htmlFor="smart-search-input">Describe your ideal stay</label><div><input id="smart-search-input" value={smartQuery} onChange={e => setSmartQuery(e.target.value)} maxLength={200} placeholder="e.g. a quiet apartment in Lagos under ₦500,000" /><button disabled={smartLoading || !smartQuery.trim()}>{smartLoading ? 'Searching…' : 'Find matches'}</button></div></form>}
     </section>
-    <section className="home-how" id="how-it-works"><div><span className="home-kicker">SIMPLE FROM START TO STAY</span><h2>Your next chapter<br /><em>starts here.</em></h2></div><div className="home-steps"><div><span><Search size={22} /></span><strong>01. Explore</strong><p>Search by location, type, and budget, then compare property details.</p></div><div><span><CheckCircle size={22} /></span><strong>02. Choose</strong><p>Review photos, amenities, availability, and guest feedback.</p></div><div><span><Shield size={22} /></span><strong>03. Book</strong><p>Choose your dates, book through HomeBase, and connect with your host.</p></div></div></section>
     <section className="home-host-cta"><div><span className="home-kicker">HAVE A SPACE TO SHARE?</span><h2>Good spaces deserve<br />great guests.</h2><p>Create a listing and connect with people looking for their next home base.</p></div><Link to={user ? '/new-listing' : '/signup'}>List your property <ArrowRight size={18} /></Link></section>
   </main>
 }

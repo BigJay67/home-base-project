@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import './Notifications.css';
 
-function Notifications({ user }) {
+function Notifications({ user, refresh }) {
   const { socket } = useSocket();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -27,7 +27,7 @@ function Notifications({ user }) {
 
   useEffect(() => {
     if (!socket || !user) return;
-    const handleMsg = () => fetchUnreadMessageCount();
+    const handleMsg = () => fetchNotifications();
     socket.on('message_notification', handleMsg);
     return () => socket.off('message_notification', handleMsg);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -40,7 +40,7 @@ function Notifications({ user }) {
       return () => clearInterval(interval);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, refresh]);
 
   const fetchNotifications = async () => {
     try {
@@ -48,15 +48,6 @@ function Notifications({ user }) {
       const notifs = data.notifications || [];
       setNotifications(notifs);
       setUnreadCount(notifs.filter(n => !n.isRead).length);
-    } catch (err) {}
-  };
-
-  const fetchUnreadMessageCount = async () => {
-    try {
-      const data = await api.get('/api/conversations/unread-count');
-      const msgCount = data.unreadCount || 0;
-      const notifUnread = notifications.filter(n => !n.isRead).length;
-      setUnreadCount(notifUnread + msgCount);
     } catch (err) {}
   };
 
@@ -129,6 +120,7 @@ function Notifications({ user }) {
         className="ntf-bell"
         onClick={() => setOpen(o => !o)}
         aria-label="Notifications"
+        aria-expanded={open}
       >
         <Bell size={19} />
         {unreadCount > 0 && (
@@ -170,6 +162,9 @@ function Notifications({ user }) {
                       key={n._id}
                       className={`ntf-item ${!n.isRead ? 'unread' : ''}`}
                       onClick={() => handleClick(n)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(n); } }}
                     >
                       {/* Unread dot */}
                       {!n.isRead && <span className="ntf-dot" />}
