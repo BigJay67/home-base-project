@@ -192,6 +192,9 @@ function AppShell() {
                   <NavDropdown.Item as={NavLink} to="/bookings" onClick={closeMobile}>
                     My Stays
                   </NavDropdown.Item>
+                  <NavDropdown.Item as={NavLink} to="/listings" onClick={closeMobile}>
+                    My Listings
+                  </NavDropdown.Item>
                   <NavDropdown.Item as={NavLink} to="/conversations" onClick={closeMobile}>
                     Messages
                   </NavDropdown.Item>
@@ -228,6 +231,7 @@ function AppShell() {
             <>
               <NavLink to="/bookings"        className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>My Stays</NavLink>
               <NavLink to="/new-listing"     className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>Host a Property</NavLink>
+              <NavLink to="/listings"        className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>My Listings</NavLink>
               <NavLink to="/payment-history" className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>Payment History</NavLink>
               <NavLink to="/conversations"   className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>Messages</NavLink>
               <NavLink to="/profile"         className={({isActive}) => 'hb-mobile-link' + (isActive ? ' active' : '')} onClick={closeMobile}>My Profile</NavLink>

@@ -67,13 +67,21 @@ function Home({
       fetchListings()
     } catch (err) { setPaymentMessage(`Could not delete listing: ${err.message}`) }
   }
+  const browsableListings = useMemo(
+    () => listings.filter(item => !user?.uid || item.createdBy !== user.uid),
+    [listings, user?.uid]
+  )
+  const visibleSavedCount = useMemo(
+    () => browsableListings.filter(item => savedIds.includes(item._id)).length,
+    [browsableListings, savedIds]
+  )
   const displayedListings = useMemo(() => {
-    const result = savedOnly ? listings.filter(item => savedIds.includes(item._id)) : [...listings]
+    const result = savedOnly ? browsableListings.filter(item => savedIds.includes(item._id)) : [...browsableListings]
     if (sortBy === 'price-low') result.sort((a, b) => (a.priceValue || 0) - (b.priceValue || 0))
     if (sortBy === 'price-high') result.sort((a, b) => (b.priceValue || 0) - (a.priceValue || 0))
     if (sortBy === 'newest') result.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     return result
-  }, [listings, savedIds, savedOnly, sortBy])
+  }, [browsableListings, savedIds, savedOnly, sortBy])
   const activeFilters = Boolean(typeFilter || locationFilter || maxPriceFilter || savedOnly)
 
   return <main className="home-page">
@@ -112,7 +120,7 @@ function Home({
         <button className={!typeFilter && !savedOnly ? 'active' : ''} onClick={() => { setTypeFilter(''); setSavedOnly(false) }}>All stays</button>
         <button className={typeFilter === 'apartment' && !savedOnly ? 'active' : ''} onClick={() => { setTypeFilter('apartment'); setSavedOnly(false) }}>Apartments</button>
         <button className={typeFilter === 'hostel' && !savedOnly ? 'active' : ''} onClick={() => { setTypeFilter('hostel'); setSavedOnly(false) }}>Hostels</button>
-        <button className={savedOnly ? 'active' : ''} onClick={() => setSavedOnly(value => !value)}><Heart size={15} /> Saved {savedIds.length > 0 && `(${savedIds.length})`}</button>
+        <button className={savedOnly ? 'active' : ''} onClick={() => setSavedOnly(value => !value)}><Heart size={15} /> Saved {visibleSavedCount > 0 && `(${visibleSavedCount})`}</button>
       </div><label className="home-sort"><Sliders size={15} /><span>Sort by</span><select value={sortBy} onChange={e => setSortBy(e.target.value)} aria-label="Sort properties"><option value="newest">Newest</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option></select></label></div>
       {(activeFilters || smartSummary) && <div className="home-active-search"><span>{smartSummary ? `“${smartSummary}”` : 'Filters applied'}{locationFilter && ` · ${locationFilter}`}{maxPriceFilter && ` · up to ₦${Number(maxPriceFilter).toLocaleString('en-NG')}`}</span><button onClick={clearFilters}><X size={14} /> Clear filters</button></div>}
       {error && <div className="home-state home-state-error"><h3>We couldn’t load stays right now.</h3><p>{error}</p><button onClick={fetchListings}>Try again <ArrowRight size={16} /></button></div>}
