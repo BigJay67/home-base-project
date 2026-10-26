@@ -3,6 +3,9 @@ import { Container, Row, Col, Card, Table, Button, Badge, Alert, Spinner, Form, 
 import { Download, Search, FileText, Mail, Share2, Send, MoreVertical } from 'react-feather'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
+import { billingLabels } from '../utils/pricing'
+
+const isPaid = payment => ['completed', 'confirmed'].includes(payment.status)
 
 function PaymentHistory ({ user }) {
   const [payments, setPayments] = useState([])
@@ -41,7 +44,7 @@ function PaymentHistory ({ user }) {
     const payment = payments.find(p => p._id === paymentId)
     if (!payment) return
 
-    if (payment.status !== 'completed') {
+    if (!isPaid(payment)) {
       alert(`Receipt download is only available for completed payments. Current status: ${payment.status}`)
       return
     }
@@ -69,7 +72,7 @@ function PaymentHistory ({ user }) {
     const payment = payments.find(p => p._id === paymentId)
     if (!payment) return
 
-    if (payment.status !== 'completed') {
+    if (!isPaid(payment)) {
       alert(`Receipt email is only available for completed payments. Current status: ${payment.status}`)
       return
     }
@@ -91,7 +94,7 @@ function PaymentHistory ({ user }) {
     const payment = payments.find(p => p._id === paymentId)
     if (!payment) return
 
-    if (payment.status !== 'completed') {
+    if (!isPaid(payment)) {
       alert(`Shareable receipt is only available for completed payments. Current status: ${payment.status}`)
       return
     }
@@ -113,12 +116,12 @@ function PaymentHistory ({ user }) {
   const handleBulkEmail = async (paymentIds) => {
     const completedPayments = paymentIds.filter(id => {
       const payment = payments.find(p => p._id === id)
-      return payment && payment.status === 'completed'
+      return payment && isPaid(payment)
     })
 
     const pendingPayments = paymentIds.filter(id => {
       const payment = payments.find(p => p._id === id)
-      return payment && payment.status !== 'completed'
+      return payment && !isPaid(payment)
     })
 
     if (completedPayments.length === 0) {
@@ -151,12 +154,12 @@ function PaymentHistory ({ user }) {
   const handleBulkDownload = async (paymentIds) => {
     const completedPayments = paymentIds.filter(id => {
       const payment = payments.find(p => p._id === id)
-      return payment && payment.status === 'completed'
+      return payment && isPaid(payment)
     })
 
     const pendingPayments = paymentIds.filter(id => {
       const payment = payments.find(p => p._id === id)
-      return payment && payment.status !== 'completed'
+      return payment && !isPaid(payment)
     })
 
     if (completedPayments.length === 0) {
@@ -331,11 +334,12 @@ function PaymentHistory ({ user }) {
   }
 
   return (
-        <Container className="my-4 my-md-5">
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-2">
+        <Container className="exp-managed exp-payment-page my-4 my-md-5">
+            <div className="exp-page-hero exp-payment-hero d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-2">
                 <div>
-                    <h1 className="h4 h-md-2 mb-1">Payment History</h1>
-                    <p className="text-muted mb-0">View and download your payment receipts</p>
+                    <span className="exp-overline">YOUR MONEY, CLEARLY TRACKED</span>
+                    <h1 className="mb-1">Every payment.<br /><em>Easy to find.</em></h1>
+                    <p className="mb-0">Review stay totals, find receipts, and keep your records together.</p>
                 </div>
                 <Button variant="outline-primary" size="sm" onClick={fetchPaymentHistory}>
                     Refresh
@@ -358,6 +362,7 @@ function PaymentHistory ({ user }) {
                                 >
                                     <option value="all">All Payments</option>
                                     <option value="completed">Completed</option>
+                                    <option value="confirmed">Confirmed by host</option>
                                     <option value="pending">Pending</option>
                                     <option value="failed">Failed</option>
                                     <option value="refunded">Refunded</option>
@@ -417,7 +422,7 @@ function PaymentHistory ({ user }) {
                                     <tr>
                                         <SelectionHeader />
                                         <th>Listing</th>
-                                        <th>Amount</th>
+                                        <th>Total paid</th>
                                         <th>Status</th>
                                         <th>Date</th>
                                         <th>Reference</th>
@@ -436,6 +441,7 @@ function PaymentHistory ({ user }) {
                                                             {payment.listingId.location}
                                                         </div>
                                                     )}
+                                                    {payment.durationCount && payment.billingPeriod && <div className="exp-payment-term">{payment.durationCount} {billingLabels[payment.billingPeriod]}{payment.durationCount === 1 ? '' : 's'} · {formatCurrency(payment.unitRate, payment.currency)} / {billingLabels[payment.billingPeriod]}</div>}
                                                 </div>
                                             </td>
                                             <td>
@@ -454,7 +460,7 @@ function PaymentHistory ({ user }) {
                                             </td>
                                             <td>
                                                 <div className="d-flex gap-1">
-                                                    {payment.status === 'completed' && (
+                                                    {isPaid(payment) && (
                                                         <>
                                                             <Dropdown>
                                                                 <Dropdown.Toggle
@@ -535,7 +541,7 @@ function PaymentHistory ({ user }) {
                             <Col xs={6} md={3}>
                                 <div className="border-end">
                                     <h4 className="text-success mb-1">
-                                        {payments.filter(p => p.status === 'completed').length}
+                                        {payments.filter(isPaid).length}
                                     </h4>
                                     <small className="text-muted">Completed</small>
                                 </div>

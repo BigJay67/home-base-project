@@ -6,10 +6,12 @@ const listingSchema = new mongoose.Schema({
   description: { type: String, default: '', maxlength: 3000 },
   price: { type: String, required: true },
   priceValue: { type: Number, required: true },
+  billingPeriod: { type: String, enum: ['daily', 'weekly', 'monthly', 'yearly'] },
   location: { type: String, required: true },
   amenities: [{ type: String }],
   distance: { type: String },
   payment: { type: String },
+  longStayTerms: { type: String, default: '', maxlength: 2000 },
   houseRules: { type: String, default: '', maxlength: 3000 },
   checkInWindow: { type: String, default: '', maxlength: 160 },
   // How many separate units (rooms or beds) can be booked on this listing

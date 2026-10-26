@@ -18,6 +18,7 @@ import EmailVerifyBanner from './components/EmailVerifyBanner';
 import CookieConsent from './components/CookieConsent';
 import './styles/inner-pages.css';
 import './styles/experience.css';
+import './styles/management-pages.css';
 
 const StaysDashboard = React.lazy(() => import('./components/StaysDashboard'));
 const StaySpace = React.lazy(() => import('./components/StaySpace'));

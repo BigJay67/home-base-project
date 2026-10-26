@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Calendar, Clipboard, Home, MapPin, MessageCircle, PlusCircle } from 'react-feather';
 import { api } from '../api/client';
+import { billingLabels } from '../utils/pricing';
 
 const money = amount => `₦${Number(amount || 0).toLocaleString('en-NG')}`;
 const date = value => value ? new Date(value).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }) : 'To be confirmed';
@@ -33,7 +34,7 @@ export default function StaysDashboard({ user }) {
         <div className="exp-booking-top"><span className="exp-chip">{mode === 'host' ? 'Hosting' : 'Your stay'}</span><span className={`exp-status exp-status-${booking.status}`}>{booking.status}</span></div>
         <h3>{listing.name || 'Property unavailable'}</h3>
         <p className="exp-location"><MapPin size={15} /> {listing.location || 'Location unavailable'}</p>
-        <div className="exp-booking-meta"><span><Calendar size={16} /> {date(booking.moveInDate)} → {date(booking.checkOutDate)}</span><strong>{money(booking.totalAmount || booking.amount)}</strong></div>
+        <div className="exp-booking-meta"><span><Calendar size={16} /> {date(booking.moveInDate)} → {date(booking.checkOutDate)}{booking.durationCount && booking.billingPeriod && <small> · {booking.durationCount} {billingLabels[booking.billingPeriod]}{booking.durationCount === 1 ? '' : 's'}</small>}</span><strong>{money(booking.totalAmount || booking.amount)}</strong></div>
         <div className="exp-booking-actions">
           {ready && <Link className="exp-action-primary" to={`/stays/${booking._id}`}>Open stay space <ArrowRight size={17} /></Link>}
           <Link className="exp-action-quiet" to={`/bookings/${booking._id}`}>Booking details</Link>

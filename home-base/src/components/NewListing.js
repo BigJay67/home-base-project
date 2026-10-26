@@ -9,10 +9,12 @@ function NewListing({ user }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
+  const [billingPeriod, setBillingPeriod] = useState('')
   const [location, setLocation] = useState('')
   const [amenities, setAmenities] = useState('')
   const [distance, setDistance] = useState('')
   const [payment, setPayment] = useState('')
+  const [longStayTerms, setLongStayTerms] = useState('')
   const [capacity, setCapacity] = useState('1')
   const [houseRules, setHouseRules] = useState('')
   const [checkInWindow, setCheckInWindow] = useState('')
@@ -57,8 +59,8 @@ function NewListing({ user }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!user) { setMessage('Please log in to create a listing.'); return }
-    if (!type || !name || !price || !location) {
-      setMessage('Please fill in all required fields: Type, Name, Price, and Location.')
+    if (!type || !name || !price || !billingPeriod || !location) {
+      setMessage('Please fill in the property type, name, rate, billing period, and location.')
       return
     }
 
@@ -68,9 +70,9 @@ function NewListing({ user }) {
       if (priceValue <= 0) { setMessage('Please enter a valid price.'); setLoading(false); return }
 
       await api.post('/api/listings', {
-        type, name, description, price, priceValue, location,
+        type, name, description, price, priceValue, billingPeriod, location,
         amenities: amenities.split(',').map(i => i.trim()).filter(Boolean),
-        distance, payment, images, houseRules, checkInWindow,
+        distance, payment, longStayTerms, images, houseRules, checkInWindow,
         capacity: parseInt(capacity, 10) || 1
       })
 
@@ -148,7 +150,7 @@ function NewListing({ user }) {
               <h2 className="nl-section-title">Pricing & Location</h2>
               <div className="nl-row">
                 <div className="nl-field">
-                  <label>Price *</label>
+                  <label>Rate per billing period *</label>
                   <div className="nl-input-wrap">
                     <span className="nl-icon-text">₦</span>
                     <input
@@ -159,7 +161,7 @@ function NewListing({ user }) {
                       required
                     />
                   </div>
-                  <span className="nl-hint">Amount charged for the booking. Tell guests what this covers in the payment terms.</span>
+                  <span className="nl-hint">The full checkout total will be this rate × the guest’s selected number of periods.</span>
                 </div>
                 <div className="nl-field">
                   <label>Location *</label>
@@ -175,6 +177,7 @@ function NewListing({ user }) {
                   </div>
                 </div>
               </div>
+              <div className="nl-row"><div className="nl-field"><label>Billing period *</label><div className="nl-input-wrap"><select value={billingPeriod} onChange={e => setBillingPeriod(e.target.value)} required><option value="">Choose a period</option><option value="daily">Per day</option><option value="weekly">Per week</option><option value="monthly">Per calendar month</option><option value="yearly">Per calendar year</option></select></div></div></div>
               <div className="nl-row">
                 <div className="nl-field">
                   <label>Distance</label>
@@ -189,18 +192,19 @@ function NewListing({ user }) {
                   </div>
                 </div>
                 <div className="nl-field">
-                  <label>Payment Terms</label>
+                  <label>Additional payment notes</label>
                   <div className="nl-input-wrap">
                     <span className="nl-icon-text">₦</span>
                     <input
                       type="text"
-                      placeholder="Monthly"
+                      placeholder="e.g. Utilities included in the rate"
                       value={payment}
                       onChange={e => setPayment(e.target.value)}
                     />
                   </div>
                 </div>
               </div>
+              {(billingPeriod === 'monthly' || billingPeriod === 'yearly') && <div className="nl-field nl-field-full"><label>Long-stay terms</label><div className="nl-input-wrap nl-textarea-wrap"><textarea value={longStayTerms} onChange={e => setLongStayTerms(e.target.value)} maxLength={2000} rows={3} placeholder="Move-in process, notice period, utilities, and other terms for a longer stay…" /></div><span className="nl-hint">Guests will see these before checkout and can review the shared stay agreement after payment.</span></div>}
               <div className="nl-row">
                 <div className="nl-field">
                   <label>Units available</label>

@@ -11,6 +11,9 @@ const bookingSchema = new mongoose.Schema({
   userEmail: { type: String, required: true },
   amount: { type: Number, required: true },
   totalAmount: { type: Number },
+  unitRate: { type: Number },
+  billingPeriod: { type: String, enum: ['daily', 'weekly', 'monthly', 'yearly'] },
+  durationCount: { type: Number },
 
   // The date the guest plans to move in (check-in)
   moveInDate: { type: Date },

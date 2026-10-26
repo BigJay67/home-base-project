@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Table, Button, Alert, Badge, Form, Modal, Dr
 import { useNavigate } from 'react-router-dom'
 import { MoreVertical, ToggleLeft, ToggleRight, Mail, User, DollarSign, Check, X, RefreshCw, Download, Trash2 } from 'react-feather'
 import { api } from '../api/client'
+import { billingLabels } from '../utils/pricing'
 
 function AdminDashboard ({ user }) {
   const [listings, setListings] = useState([])
@@ -332,9 +333,9 @@ function AdminDashboard ({ user }) {
   if (error) return <Container className="my-5"><Alert variant="danger">{error}</Alert></Container>
 
   return (
-    <Container className="my-3 my-md-5">
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-2">
-        <h1 className="h4 h-md-2 mb-0">Admin Dashboard</h1>
+    <Container className="exp-managed exp-admin-page my-3 my-md-5">
+      <div className="exp-page-hero exp-admin-hero d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-2">
+        <div><span className="exp-overline">HOMEBASE CONTROL ROOM</span><h1 className="mb-0">See the whole<br /><em>picture.</em></h1><p>Listings, people, and bookings in one clear workspace.</p></div>
         <Button variant="outline-primary" size="sm" onClick={fetchData}>
           <span className="d-none d-md-inline">Refresh Data</span>
           <span className="d-md-none">Refresh</span>
@@ -344,7 +345,7 @@ function AdminDashboard ({ user }) {
       {message && <Alert variant="success">{message}</Alert>}
       {error && <Alert variant="danger">{error}</Alert>}
 
-      <Row className="g-2 mb-4">
+      <Row className="g-2 mb-4 exp-admin-stats">
         {[
           { title: 'Total Listings', value: stats.totalListings, color: 'primary' },
           { title: 'Active Listings', value: stats.activeListings, color: 'success' },
@@ -365,7 +366,7 @@ function AdminDashboard ({ user }) {
         ))}
       </Row>
 
-      <Card>
+      <Card className="exp-admin-panel">
         <Card.Header className="p-2 p-md-3">
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
             <div className="d-flex flex-wrap gap-1">
@@ -641,6 +642,7 @@ function AdminDashboard ({ user }) {
                           {booking.listingId?.location && (
                             <div className="text-muted small">{booking.listingId.location}</div>
                           )}
+                          {booking.durationCount && booking.billingPeriod && <div className="exp-payment-term">{booking.durationCount} {billingLabels[booking.billingPeriod]}{booking.durationCount === 1 ? '' : 's'}</div>}
                         </td>
                         <td>₦{booking.amount?.toLocaleString()}</td>
                         <td>

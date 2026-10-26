@@ -7,6 +7,7 @@ const PDFService = require('../services/pdfService');
 const EmailService = require('../services/emailService');
 const AnalyticsService = require('../services/analyticsService');
 const { getAvailability, countHoldsAhead } = require('../services/bookingService');
+const { PricingError, getQuote } = require('../services/pricingService');
 const { confirmPayment } = require('../services/paymentService');
 const { paystack } = require('../config/paystack');
 const router = express.Router();
@@ -18,11 +19,9 @@ const { writeLimiter } = require('../middleware/rateLimiter');
 
 const { requireVerifiedEmail } = require('../middleware/auth');
 
-const MAX_STAY_DAYS = 365;
-
 router.post('/paystack/initialize', writeLimiter, requireVerifiedEmail, async (req, res) => {
   try {
-    const { listingId, moveInDate, checkOutDate } = req.body;
+    const { listingId, moveInDate, durationCount, quotedAmount } = req.body;
     const userId = req.userId;
 
     if (!listingId || !mongoose.Types.ObjectId.isValid(listingId)) {
@@ -40,35 +39,15 @@ router.post('/paystack/initialize', writeLimiter, requireVerifiedEmail, async (r
       return res.status(400).json({ error: 'You cannot book your own listing' });
     }
 
-    // Move-in and check-out dates: both required, check-out after move-in,
-    // move-in not in the past, and the whole stay within the next 12 months
-    const moveIn = new Date(moveInDate);
-    const checkOut = new Date(checkOutDate);
-    if (!moveInDate || Number.isNaN(moveIn.getTime())) {
-      return res.status(400).json({ error: 'Please choose your move-in date' });
+    if (durationCount === undefined || quotedAmount === undefined) {
+      return res.status(400).json({ error: 'Refresh this page to review the full stay price before checkout' });
     }
-    if (!checkOutDate || Number.isNaN(checkOut.getTime())) {
-      return res.status(400).json({ error: 'Please choose your check-out date' });
+    const quote = getQuote(listing, moveInDate, durationCount);
+    if (Number(quotedAmount) !== quote.amount) {
+      return res.status(409).json({ error: 'The price changed. Refresh the quote and review the new total before paying.' });
     }
-    if (checkOut <= moveIn) {
-      return res.status(400).json({ error: 'Check-out date must be after your move-in date' });
-    }
-
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const latest = new Date(today);
-    latest.setUTCFullYear(latest.getUTCFullYear() + 1);
-    if (moveIn < today) {
-      return res.status(400).json({ error: 'Move-in date cannot be in the past' });
-    }
-    if (moveIn > latest) {
-      return res.status(400).json({ error: 'Move-in date must be within the next 12 months' });
-    }
-
-    const stayDays = Math.round((checkOut - moveIn) / (1000 * 60 * 60 * 24));
-    if (stayDays > MAX_STAY_DAYS) {
-      return res.status(400).json({ error: `Stays longer than ${MAX_STAY_DAYS} days are not supported yet.` });
-    }
+    const moveIn = new Date(`${quote.moveInDate}T00:00:00.000Z`);
+    const checkOut = new Date(`${quote.checkOutDate}T00:00:00.000Z`);
 
     // Email comes from the verified token. Phone-login users have none, so accept a valid one they typed.
     const userEmail =
@@ -80,13 +59,7 @@ router.post('/paystack/initialize', writeLimiter, requireVerifiedEmail, async (r
       return res.status(400).json({ error: 'A valid email is required to pay. Please add one to your profile.' });
     }
 
-    // The price always comes from the listing, never from the browser.
-    // Note: this charges the listing's flat price regardless of stay length —
-    // per-night/per-month proration isn't implemented yet.
-    const amount = listing.priceValue;
-    if (!Number.isSafeInteger(amount) || amount <= 0) {
-      return res.status(400).json({ error: 'This listing has an invalid price' });
-    }
+    const amount = quote.amount;
 
     // Resolve payout details before creating the booking. The booking stores
     // the same split configuration that is sent to Paystack below.
@@ -114,6 +87,9 @@ router.post('/paystack/initialize', writeLimiter, requireVerifiedEmail, async (r
       userEmail,
       amount,
       totalAmount: amount,
+      unitRate: quote.unitRate,
+      billingPeriod: quote.billingPeriod,
+      durationCount: quote.durationCount,
       moveInDate: moveIn,
       checkOutDate: checkOut,
       paymentReference: reference,
@@ -159,6 +135,7 @@ router.post('/paystack/initialize', writeLimiter, requireVerifiedEmail, async (r
       reference,
     });
   } catch (err) {
+    if (err instanceof PricingError) return res.status(400).json({ error: err.message });
     console.error('Error initializing payment:', err);
     res.status(500).json({ error: 'Payment initialization failed' });
   }
@@ -246,7 +223,7 @@ router.get('/:paymentId/receipt', async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    if (payment.status !== 'completed') {
+    if (!['completed', 'confirmed'].includes(payment.status)) {
       return res.status(400).json({ error: 'Receipt only available for completed payments' });
     }
 
@@ -303,7 +280,7 @@ router.post('/:paymentId/email-receipt', async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    if (payment.status !== 'completed') {
+    if (!['completed', 'confirmed'].includes(payment.status)) {
       return res.status(400).json({ error: 'Receipt only available for completed payments' });
     }
 
@@ -375,7 +352,7 @@ router.post('/:paymentId/share', async (req, res) => {
     if (payment.userId !== userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
-    if (payment.status !== 'completed') {
+    if (!['completed', 'confirmed'].includes(payment.status)) {
       return res.status(400).json({ error: 'Only completed payments can be shared' });
     }
 

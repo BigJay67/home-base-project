@@ -147,7 +147,7 @@ function Profile({ user, onProfileUpdate }) {
   };
 
   const ProfileHeader = () => (
-    <Card className="border-0 shadow-sm mb-4">
+    <Card className="exp-profile-header border-0 shadow-sm mb-4">
       <Card.Body className="p-4">
         <Row className="align-items-center">
           <Col xs="auto">
@@ -187,10 +187,7 @@ function Profile({ user, onProfileUpdate }) {
                 {phoneNumber}
               </p>
             )}
-            <Badge bg="success" className="mt-1">
-              <Shield size={12} className="me-1" />
-              Verified
-            </Badge>
+            <Badge bg={user.emailVerified || (!user.email && user.phoneNumber) ? 'success' : 'warning'} className="mt-1"><Shield size={12} className="me-1" />{user.emailVerified || (!user.email && user.phoneNumber) ? 'Verified account' : 'Check email verification'}</Badge>
           </Col>
           <Col xs="auto">
             {!editing ? (
@@ -310,7 +307,8 @@ function Profile({ user, onProfileUpdate }) {
   };
 
   return (
-    <Container className="my-4 my-md-5">
+    <Container className="exp-managed exp-profile-page my-4 my-md-5">
+      <div className="exp-page-hero exp-profile-hero"><span className="exp-overline">YOUR HOMEBASE ID</span><h1>Make it<br /><em>yours.</em></h1><p>Keep your profile, stays, spaces, and conversations in sync.</p></div>
       {message && (
         <Alert variant={message.includes('successfully') ? 'success' : 'danger'} className="mb-4">
           {message}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Container, Row, Col, Card, Button, Badge, Modal, Alert, Spinner, Form } from 'react-bootstrap'
 import { api } from '../api/client'
+import { billingLabels, getBillingPeriod } from '../utils/pricing'
 
 function UserListings ({ user }) {
   const [listings, setListings] = useState([])
@@ -58,6 +59,9 @@ function UserListings ({ user }) {
       name: listing.name,
       description: listing.description || '',
       price: listing.priceValue ? String(listing.priceValue) : listing.price,
+      billingPeriod: getBillingPeriod(listing) || '',
+      payment: listing.payment || '',
+      longStayTerms: listing.longStayTerms || '',
       location: listing.location,
       type: listing.type,
       capacity: listing.capacity || 1,
@@ -104,7 +108,11 @@ function UserListings ({ user }) {
     try {
       const priceValue = Number(String(editForm.price).replace(/[^0-9]/g, ''))
       if (!Number.isSafeInteger(priceValue) || priceValue <= 0) {
-        alert('Enter a valid booking amount in naira.')
+        alert('Enter a valid rate in naira.')
+        return
+      }
+      if (!billingLabels[editForm.billingPeriod]) {
+        alert('Choose a daily, weekly, monthly, or yearly rate before saving.')
         return
       }
       await api.put(`/api/listings/${editingListing._id}`, {
@@ -207,7 +215,7 @@ function UserListings ({ user }) {
                   </div>
 
                   <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h6 className="mb-0 text-primary">{listing.priceValue ? `₦${listing.priceValue.toLocaleString('en-NG')}` : listing.price}</h6>
+                    <h6 className="mb-0 text-primary">{listing.priceValue ? `₦${listing.priceValue.toLocaleString('en-NG')}` : listing.price} {getBillingPeriod(listing) ? `/ ${billingLabels[getBillingPeriod(listing)]}` : '· set billing period'}</h6>
                     <span className="text-muted small">
                       {listing.createdAt ? new Date(listing.createdAt).toLocaleDateString() : 'N/A'}
                     </span>
@@ -253,7 +261,7 @@ function UserListings ({ user }) {
             </div>
 
             <div className="mb-3">
-              <label className="form-label">Booking amount (₦)</label>
+              <label className="form-label">Rate per period (₦)</label>
               <input
                 type="text"
                 className="form-control"
@@ -262,6 +270,10 @@ function UserListings ({ user }) {
                 required
               />
             </div>
+
+            <div className="mb-3"><label className="form-label">Billing period</label><select className="form-control" value={editForm.billingPeriod || ''} onChange={e => setEditForm({ ...editForm, billingPeriod: e.target.value })} required><option value="">Choose a period</option><option value="daily">Per day</option><option value="weekly">Per week</option><option value="monthly">Per calendar month</option><option value="yearly">Per calendar year</option></select></div>
+            <div className="mb-3"><label className="form-label">Additional payment notes</label><input className="form-control" value={editForm.payment || ''} onChange={e => setEditForm({ ...editForm, payment: e.target.value })} maxLength={300} /></div>
+            {(editForm.billingPeriod === 'monthly' || editForm.billingPeriod === 'yearly') && <div className="mb-3"><label className="form-label">Long-stay terms</label><textarea className="form-control" rows="3" maxLength={2000} value={editForm.longStayTerms || ''} onChange={e => setEditForm({ ...editForm, longStayTerms: e.target.value })} /></div>}
 
             <div className="mb-3">
               <label className="form-label">Location</label>

@@ -6,11 +6,28 @@ const Review = require('../models/Review');
 const { generateImageVariants } = require('../config/cloudinary');
 const router = express.Router();
 const { getAvailability } = require('../services/bookingService');
+const { PERIODS, PricingError, getQuote } = require('../services/pricingService');
 
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const clampCapacity = (value) => Math.min(500, Math.max(1, parseInt(value, 10) || 1));
 const normalizePriceValue = (value) => Number(String(value).replace(/[,₦\s]/g, ''));
 const displayPrice = (value) => `₦${value.toLocaleString('en-NG')}`;
+
+router.get('/:id/quote', async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ error: 'Invalid listing ID' });
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return res.status(404).json({ error: 'Listing not found' });
+    if (listing.status !== 'active') return res.status(400).json({ error: 'This listing is not accepting bookings' });
+    const quote = getQuote(listing, req.query.moveInDate, req.query.durationCount);
+    const availability = await getAvailability(listing, new Date(`${quote.moveInDate}T00:00:00.000Z`), new Date(`${quote.checkOutDate}T00:00:00.000Z`));
+    res.json({ ...quote, availability });
+  } catch (err) {
+    if (err instanceof PricingError) return res.status(400).json({ error: err.message });
+    console.error('Error quoting listing:', err.message);
+    res.status(500).json({ error: 'Could not calculate this stay' });
+  }
+});
 
 router.get('/:id/availability', async (req, res) => {
   try {
@@ -83,7 +100,7 @@ const { requireVerifiedEmail } = require('../middleware/auth');
 
 router.post('/', requireVerifiedEmail, async (req, res) => {
   try {
-    const { type, name, description, price, priceValue, location, amenities, distance, payment, images, capacity, houseRules, checkInWindow } = req.body;
+    const { type, name, description, price, priceValue, billingPeriod, location, amenities, distance, payment, longStayTerms, images, capacity, houseRules, checkInWindow } = req.body;
     const createdBy = req.userId;
     if (!type || !name || !price || !location || !createdBy) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -92,6 +109,7 @@ router.post('/', requireVerifiedEmail, async (req, res) => {
     if (!Number.isSafeInteger(amount) || amount <= 0) {
       return res.status(400).json({ error: 'Enter a valid booking amount in naira' });
     }
+    if (!PERIODS.includes(billingPeriod)) return res.status(400).json({ error: 'Choose a daily, weekly, monthly, or yearly rate' });
     if (!['hostel', 'apartment'].includes(type.toLowerCase())) {
       console.log('Invalid type:', type);
       return res.status(400).json({ error: 'Invalid type, must be hostel or apartment' });
@@ -127,10 +145,12 @@ router.post('/', requireVerifiedEmail, async (req, res) => {
       description: typeof description === 'string' ? description.trim().slice(0, 3000) : '',
       price: displayPrice(amount),
       priceValue: amount,
+      billingPeriod,
       location,
       amenities: amenities || [],
       distance: distance || '',
       payment: payment || '',
+      longStayTerms: typeof longStayTerms === 'string' ? longStayTerms.trim().slice(0, 2000) : '',
       houseRules: typeof houseRules === 'string' ? houseRules.trim().slice(0, 3000) : '',
       checkInWindow: typeof checkInWindow === 'string' ? checkInWindow.trim().slice(0, 160) : '',
       capacity: clampCapacity(capacity),
@@ -149,7 +169,7 @@ router.post('/', requireVerifiedEmail, async (req, res) => {
 router.put('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { type, name, description, price, priceValue, location, amenities, distance, payment, images, imagesToRemove, capacity, houseRules, checkInWindow } = req.body;
+    const { type, name, description, price, priceValue, billingPeriod, location, amenities, distance, payment, longStayTerms, images, imagesToRemove, capacity, houseRules, checkInWindow } = req.body;
     const userId = req.userId;
 
     const listing = await Listing.findById(id);
@@ -166,6 +186,7 @@ router.put('/:id', verifyToken, async (req, res) => {
     if (!Number.isSafeInteger(amount) || amount <= 0) {
       return res.status(400).json({ error: 'Enter a valid booking amount in naira' });
     }
+    if (billingPeriod !== undefined && !PERIODS.includes(billingPeriod)) return res.status(400).json({ error: 'Choose a valid billing period' });
 
     let imageUrls = listing.images || [];
     // Remove specified images
@@ -201,10 +222,12 @@ router.put('/:id', verifyToken, async (req, res) => {
         description: typeof description === 'string' ? description.trim().slice(0, 3000) : listing.description,
         price: displayPrice(amount),
         priceValue: amount,
+        billingPeriod: billingPeriod === undefined ? listing.billingPeriod : billingPeriod,
         location: location || listing.location,
         amenities: amenities || listing.amenities,
         distance: distance || listing.distance,
         payment: payment || listing.payment,
+        longStayTerms: typeof longStayTerms === 'string' ? longStayTerms.trim().slice(0, 2000) : listing.longStayTerms,
         houseRules: typeof houseRules === 'string' ? houseRules.trim().slice(0, 3000) : listing.houseRules,
         checkInWindow: typeof checkInWindow === 'string' ? checkInWindow.trim().slice(0, 160) : listing.checkInWindow,
         capacity: capacity ? clampCapacity(capacity) : listing.capacity,

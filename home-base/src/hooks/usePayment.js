@@ -2,13 +2,13 @@ import { useCallback } from 'react'
 import { api } from '../api/client'
 
 function usePayment (user, profileEmail, notify) {
-  const handlePayment = useCallback(async (listingId, moveInDate, checkOutDate) => {
+  const handlePayment = useCallback(async (listingId, moveInDate, durationCount, quotedAmount) => {
     if (!user) {
       notify('Please log in to proceed with payment.')
       return
     }
-    if (!moveInDate || !checkOutDate) {
-      notify('Please choose your move-in and check-out dates first.')
+    if (!moveInDate || !durationCount || !quotedAmount) {
+      notify('Choose your start date and stay length, then review the total.')
       return
     }
     const email = user.email || profileEmail
@@ -18,7 +18,7 @@ function usePayment (user, profileEmail, notify) {
     }
     try {
       const data = await api.post('/api/payments/paystack/initialize', {
-        listingId, moveInDate, checkOutDate, userEmail: email
+        listingId, moveInDate, durationCount, quotedAmount, userEmail: email
       }, { timeoutMs: 90000 })
       if (data.authorization_url) {
         window.location.href = data.authorization_url

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Container, Card, Row, Col, Button, Badge, Alert, Spinner, Table, Modal } from 'react-bootstrap'
-import { ArrowLeft, Download, Printer, Share2, Calendar, MapPin, DollarSign, User, FileText, Mail, Shield } from 'react-feather'
+import { ArrowLeft, Download, Printer, Calendar, MapPin, DollarSign, User, FileText, Mail, Shield } from 'react-feather'
 import { api } from '../api/client'
+import { billingLabels } from '../utils/pricing'
 
 function BookingDetail ({ user: currentUser }) {
   const { id } = useParams()
@@ -69,10 +70,12 @@ function BookingDetail ({ user: currentUser }) {
       minute: '2-digit'
     })
   }
+  const stayDate = value => value ? new Date(value).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Not set'
 
   const getStatusBadge = (status) => {
     const variants = {
       completed: 'success',
+      confirmed: 'success',
       pending: 'warning',
       failed: 'danger',
       cancelled: 'secondary'
@@ -208,9 +211,9 @@ function BookingDetail ({ user: currentUser }) {
   const isOwnBooking = booking.userId === currentUser.uid
 
   return (
-    <Container className="my-4 my-md-5">
+    <Container className="exp-managed exp-booking-detail my-4 my-md-5">
 
-      <div className="d-flex align-items-center mb-4">
+      <div className="exp-page-hero exp-booking-hero d-flex align-items-center mb-4">
         <Button
           variant="outline-secondary"
           onClick={() => {
@@ -226,11 +229,12 @@ function BookingDetail ({ user: currentUser }) {
           Back {isAdmin && !isOwnBooking ? 'to Admin' : 'to Bookings'}
         </Button>
         <div className="flex-grow-1">
-          <h1 className="h4 h-md-3 mb-1">Booking Details</h1>
-          <p className="text-muted mb-0">Reference: {booking.paymentReference}</p>
+          <span className="exp-overline">YOUR STAY RECORD</span>
+          <h1 className="mb-1">Everything about<br /><em>this stay.</em></h1>
+          <p className="mb-0">Reference: {booking.paymentReference}</p>
           <HeaderBadges />
         </div>
-        {booking.status === 'completed' && (
+        {['completed', 'confirmed'].includes(booking.status) && (
           <div className="d-flex gap-2">
             <Button variant="outline-primary" onClick={handleDownloadReceipt}>
               <Download size={16} className="me-2" />
@@ -245,6 +249,8 @@ function BookingDetail ({ user: currentUser }) {
       </div>
 
       <AdminActions />
+
+      <div className="exp-booking-breakdown"><div><span>CHECK-IN</span><strong>{stayDate(booking.moveInDate)}</strong></div><div><span>CHECK-OUT</span><strong>{stayDate(booking.checkOutDate)}</strong></div><div><span>STAY LENGTH</span><strong>{booking.durationCount && booking.billingPeriod ? `${booking.durationCount} ${billingLabels[booking.billingPeriod]}${booking.durationCount === 1 ? '' : 's'}` : 'Legacy booking'}</strong></div><div><span>TOTAL</span><strong>{formatCurrency(booking.totalAmount || booking.amount)}</strong>{booking.unitRate && booking.durationCount && booking.billingPeriod && <small>{formatCurrency(booking.unitRate)} × {booking.durationCount}</small>}</div></div>
 
       <Row>
 
@@ -387,7 +393,7 @@ function BookingDetail ({ user: currentUser }) {
             </Card.Header>
             <Card.Body>
               <div className="d-grid gap-2">
-                {booking.status === 'completed' && (
+                {['completed', 'confirmed'].includes(booking.status) && (
                   <>
                     <Button variant="outline-primary" onClick={handleDownloadReceipt}>
                       <Download size={16} className="me-2" />
@@ -406,13 +412,6 @@ function BookingDetail ({ user: currentUser }) {
                     onClick={() => navigate(`/listing/${booking.listingId._id}`)}
                   >
                     View Property
-                  </Button>
-                )}
-
-                {(isAdmin || isOwnBooking) && (
-                  <Button variant="outline-info">
-                    <Share2 size={16} className="me-2" />
-                    Share Booking
                   </Button>
                 )}
 

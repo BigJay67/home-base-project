@@ -4,6 +4,7 @@ import { Modal, Form } from 'react-bootstrap'
 import { ArrowLeft, MapPin } from 'react-feather'
 import MessageButton from './MessageButton'
 import { api } from '../api/client'
+import { billingLabels, billingLimits, getBillingPeriod, naira } from '../utils/pricing'
 import './ListingDetail.css'
 
 const dateInputValue = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -25,8 +26,8 @@ function ListingDetail({ user, handlePayment }) {
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewError, setReviewError] = useState('')
   const [moveInDate, setMoveInDate] = useState('')
-  const [checkOutDate, setCheckOutDate] = useState('')
-  const [availability, setAvailability] = useState(null)
+  const [durationCount, setDurationCount] = useState(1)
+  const [quote, setQuote] = useState(null)
   const [availabilityLoading, setAvailabilityLoading] = useState(false)
   const [availabilityError, setAvailabilityError] = useState('')
   const [availabilityRefresh, setAvailabilityRefresh] = useState(0)
@@ -40,22 +41,22 @@ function ListingDetail({ user, handlePayment }) {
   }, [id])
 
   useEffect(() => {
-    if (!moveInDate || !checkOutDate) {
-      setAvailability(null)
+    if (!moveInDate || !getBillingPeriod(listing)) {
+      setQuote(null)
       setAvailabilityError('')
       setAvailabilityLoading(false)
       return
     }
     let current = true
-    setAvailability(null)
+    setQuote(null)
     setAvailabilityError('')
     setAvailabilityLoading(true)
-    api.get(`/api/listings/${id}/availability?moveInDate=${moveInDate}&checkOutDate=${checkOutDate}`, { auth: false })
-      .then(result => { if (current) setAvailability(result) })
-      .catch(err => { if (current) setAvailabilityError(err.message || 'Could not check these dates') })
+    api.get(`/api/listings/${id}/quote?moveInDate=${moveInDate}&durationCount=${durationCount}`, { auth: false })
+      .then(result => { if (current) setQuote(result) })
+      .catch(err => { if (current) setAvailabilityError(err.message || 'Could not calculate this stay') })
       .finally(() => { if (current) setAvailabilityLoading(false) })
     return () => { current = false }
-  }, [id, moveInDate, checkOutDate, availabilityRefresh])
+  }, [id, listing, moveInDate, durationCount, availabilityRefresh])
 
   const fetchListing = async () => {
     try {
@@ -143,14 +144,11 @@ function ListingDetail({ user, handlePayment }) {
   }
 
   const isOwner = user && user.uid === listing.createdBy
+  const billingPeriod = getBillingPeriod(listing)
   const todayStr = dateInputValue(new Date())
-  // Checkout uses priceValue. Show that same amount before a guest starts payment.
   const checkoutPrice = Number.isFinite(listing.priceValue) && listing.priceValue > 0
     ? `₦${listing.priceValue.toLocaleString('en-NG')}`
     : listing.price
-  const nextDay = moveInDate
-    ? dateInputValue(new Date(Number(moveInDate.slice(0, 4)), Number(moveInDate.slice(5, 7)) - 1, Number(moveInDate.slice(8, 10)) + 1))
-    : todayStr
 
   return (
     <div className="ld-page">
@@ -247,6 +245,7 @@ function ListingDetail({ user, handlePayment }) {
 
           {/* Amenities */}
           {(listing.houseRules || listing.checkInWindow) && <div className="ld-card"><h2 className="ld-card-title">Good to know before booking</h2>{listing.checkInWindow && <div className="ld-prebook-row"><strong>Check-in window</strong><p>{listing.checkInWindow}</p></div>}{listing.houseRules && <div className="ld-prebook-row"><strong>House rules</strong><p>{listing.houseRules}</p></div>}</div>}
+          {billingPeriod && ['monthly', 'yearly'].includes(billingPeriod) && <div className="ld-card ld-long-stay"><h2 className="ld-card-title">A longer stay, clearly planned.</h2><p>Choose whole calendar {billingPeriod === 'monthly' ? 'months' : 'years'}. The full selected term is shown before checkout and paid upfront. Your stay space keeps the agreement, move-in details, and condition reports together.</p>{listing.longStayTerms && <div className="ld-prebook-row"><strong>Host’s long-stay terms</strong><p>{listing.longStayTerms}</p></div>}</div>}
 
           {/* Amenities */}
           {listing.amenities && listing.amenities.length > 0 && (
@@ -329,9 +328,9 @@ function ListingDetail({ user, handlePayment }) {
             {/* Price */}
             <div className="ld-price-block">
               <span className="ld-price">{checkoutPrice}</span>
-              <span className="ld-per">booking amount</span>
+              <span className="ld-per">{billingPeriod ? `per ${billingLabels[billingPeriod]}` : 'rate needs confirmation'}</span>
             </div>
-            <p className="ld-price-note">Amount charged at checkout for your selected dates.</p>
+            <p className="ld-price-note">Choose your start date and length to see the full checkout total.</p>
 
             {/* Action */}
             <div className="ld-sidebar-acts">
@@ -341,12 +340,13 @@ function ListingDetail({ user, handlePayment }) {
                 <>
                   {availabilityLoading && <div className="ld-availability">Checking these dates…</div>}
                   {availabilityError && <div className="ld-availability full" role="alert">{availabilityError}. <button type="button" onClick={() => setAvailabilityRefresh(value => value + 1)}>Retry</button></div>}
+                  {!billingPeriod && <div className="ld-availability full">This host needs to set a billing period before bookings can open.</div>}
                   {listing.status !== 'active' && <div className="ld-availability full">This listing is not accepting bookings.</div>}
-                  {availability && (
-                    <div className={`ld-availability${availability.isFull ? ' full' : ''}`}>
-                      {availability.isFull
+                  {quote?.availability && (
+                    <div className={`ld-availability${quote.availability.isFull ? ' full' : ''}`}>
+                      {quote.availability.isFull
                         ? 'Fully booked right now'
-                        : `${availability.available} of ${availability.capacity} available`}
+                        : `${quote.availability.available} of ${quote.availability.capacity} available`}
                     </div>
                   )}
                   <label className="ld-date-label" htmlFor="move-in-date">Move-in date</label>
@@ -356,27 +356,17 @@ function ListingDetail({ user, handlePayment }) {
                     className="ld-date"
                     min={todayStr}
                     value={moveInDate}
-                    onChange={e => {
-                      setMoveInDate(e.target.value)
-                      if (checkOutDate && e.target.value >= checkOutDate) setCheckOutDate('')
-                    }}
+                    onChange={e => setMoveInDate(e.target.value)}
                   />
-                  <label className="ld-date-label" htmlFor="checkout-date">Check-out date</label>
-                  <input
-                    id="checkout-date"
-                    type="date"
-                    className="ld-date"
-                    min={nextDay}
-                    value={checkOutDate}
-                    disabled={!moveInDate}
-                    onChange={e => setCheckOutDate(e.target.value)}
-                  />
+                  <label className="ld-date-label" htmlFor="duration-count">How many {billingPeriod ? `${billingLabels[billingPeriod]}s` : 'periods'}?</label>
+                  <input id="duration-count" type="number" className="ld-date" min="1" max={billingPeriod ? billingLimits[billingPeriod] : 1} value={durationCount} disabled={!billingPeriod} onChange={e => setDurationCount(e.target.value)} />
+                  {quote && <div className="ld-quote" aria-live="polite"><div><span>Stay length</span><strong>{quote.durationLabel}</strong></div><div><span>Move-out date</span><strong>{new Date(`${quote.checkOutDate}T12:00:00`).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}</strong></div><div><span>{naira(quote.unitRate)} × {quote.durationCount}</span><strong>{naira(quote.amount)}</strong></div><div className="ld-quote-total"><span>Total due now</span><strong>{naira(quote.amount)}</strong></div>{quote.longStay && <p>Full selected term paid upfront. Review the host’s long-stay terms above.</p>}</div>}
                   <button
                     className="ld-book-btn"
-                    disabled={listing.status !== 'active' || !moveInDate || !checkOutDate || !availability || availabilityLoading || availability.isFull || bookingBusy}
+                    disabled={listing.status !== 'active' || !moveInDate || !quote || availabilityLoading || quote.availability.isFull || bookingBusy}
                     onClick={async () => {
                       setBookingBusy(true)
-                      try { await handlePayment(listing._id, moveInDate, checkOutDate) }
+                      try { await handlePayment(listing._id, moveInDate, quote.durationCount, quote.amount) }
                       finally { setBookingBusy(false) }
                     }}
                   >

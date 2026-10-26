@@ -1,0 +1,68 @@
+/* Account workspaces: clear totals, strong hierarchy, and one HomeBase identity. */
+.hb-inner-route .exp-managed { max-width:1320px; font-family:'Space Grotesk',sans-serif; }
+.hb-inner-route .exp-managed .exp-page-hero { position:relative; overflow:hidden; min-height:260px; padding:clamp(2rem,5vw,3.4rem); background:#17241d; color:#f7f7ec; border:2px solid #101b15; border-radius:30px; box-shadow:9px 10px 0 #101b15; isolation:isolate; }
+.hb-inner-route .exp-page-hero::after { content:''; position:absolute; width:390px; height:390px; right:-85px; top:-170px; border:80px solid rgba(213,255,111,.12); border-radius:50%; z-index:-1; }
+.hb-inner-route .exp-page-hero h1 { color:#fffef2 !important; font:700 clamp(2.65rem,5.4vw,5rem)/.94 'Space Grotesk',sans-serif !important; letter-spacing:-.08em; margin:.7rem 0 1rem; }
+.hb-inner-route .exp-page-hero h1 em { color:#d6fa76; font-style:normal; }
+.hb-inner-route .exp-page-hero p { color:#c5d1c4 !important; max-width:500px; margin:0; font-size:.98rem; }
+.hb-inner-route .exp-page-hero .exp-overline { color:#d6fa76; font-size:.7rem; letter-spacing:.19em; font-weight:700; }
+.hb-inner-route .exp-page-hero .btn { border-radius:100px !important; border-color:#d6fa76 !important; color:#d6fa76 !important; background:transparent !important; padding:.75rem 1.1rem; }
+.hb-inner-route .exp-page-hero .btn:hover { background:#d6fa76 !important; color:#17241d !important; }
+.hb-inner-route .exp-payment-hero { background:#1c253d; }
+.hb-inner-route .exp-payment-hero::after { border-color:rgba(194,185,255,.22); }
+.hb-inner-route .exp-payment-hero h1 em,.hb-inner-route .exp-payment-hero .exp-overline { color:#c8bcff; }
+.hb-inner-route .exp-payment-hero .btn { color:#c8bcff !important; border-color:#c8bcff !important; }
+.hb-inner-route .exp-admin-hero { background:#241b30; }
+.hb-inner-route .exp-admin-hero::after { border-color:rgba(255,194,163,.16); }
+.hb-inner-route .exp-admin-hero h1 em,.hb-inner-route .exp-admin-hero .exp-overline { color:#ffb99e; }
+.hb-inner-route .exp-profile-hero { background:#234137; min-height:240px; }
+.hb-inner-route .exp-profile-hero::after { border-color:rgba(206,243,166,.15); }
+.hb-inner-route .exp-booking-hero { flex-wrap:wrap; gap:1.2rem; }
+.hb-inner-route .exp-booking-hero > .btn { flex:0 0 auto; }
+.hb-inner-route .exp-booking-hero > .flex-grow-1 { min-width:250px; }
+.hb-inner-route .exp-booking-hero .badge { background:#d6fa76 !important; color:#17241d !important; }
+.hb-inner-route .exp-managed .card:not(.receipt-card) { background:#fffdf5 !important; border:2px solid #1d2a22 !important; box-shadow:5px 6px 0 #1d2a22 !important; border-radius:22px !important; }
+.hb-inner-route .exp-managed .card:not(.receipt-card):hover { box-shadow:2px 3px 0 #1d2a22 !important; transform:translate(3px,3px); }
+.hb-inner-route .exp-managed .card-header { background:#f0f4e5 !important; border-bottom:1px solid #dbe3d4 !important; padding:1rem 1.35rem !important; }
+.hb-inner-route .exp-managed .card-title,.hb-inner-route .exp-managed .card-header h5,.hb-inner-route .exp-managed .card-header h6 { font-family:'Space Grotesk',sans-serif; font-weight:700; letter-spacing:-.04em; }
+.hb-inner-route .exp-managed .btn { border-radius:100px !important; font-weight:700; letter-spacing:-.01em; }
+.hb-inner-route .exp-managed .btn-primary,.hb-inner-route .exp-managed .btn-success { background:#1d2a22 !important; border-color:#1d2a22 !important; color:#d6fa76 !important; }
+.hb-inner-route .exp-managed .btn-outline-primary { border-color:#1d2a22 !important; color:#1d2a22 !important; }
+.hb-inner-route .exp-managed .btn-outline-primary:hover { color:#d6fa76 !important; background:#1d2a22 !important; }
+.hb-inner-route .exp-managed .form-control,.hb-inner-route .exp-managed .form-select { border:1px solid #bdcbbd !important; border-radius:12px !important; background:#fcfdf8 !important; min-height:43px; }
+.hb-inner-route .exp-managed .form-control:focus,.hb-inner-route .exp-managed .form-select:focus { border-color:#253c2e !important; box-shadow:0 0 0 3px rgba(214,250,118,.55) !important; }
+.hb-inner-route .exp-managed .table-responsive { border:2px solid #1d2a22; border-radius:20px; overflow:auto; background:#fffdf5; box-shadow:5px 6px 0 #1d2a22; }
+.hb-inner-route .exp-managed .table { margin:0; min-width:700px; }
+.hb-inner-route .exp-managed .table thead th,.hb-inner-route .exp-managed .table-light th { background:#e9eddf !important; color:#344638; font-size:.68rem; text-transform:uppercase; letter-spacing:.1em; border:0; padding:1rem .85rem; white-space:nowrap; }
+.hb-inner-route .exp-managed .table tbody td { border-color:#e8ece1; padding:.95rem .85rem; vertical-align:middle; font-size:.82rem; }
+.hb-inner-route .exp-managed .table tbody tr:hover td { background:#f2f6e9 !important; }
+.hb-inner-route .exp-managed .table code { color:#405142; font-size:.7rem; }
+.hb-inner-route .exp-managed .badge { border-radius:100px; }
+.hb-inner-route .exp-payment-page > .card:first-of-type { background:#f1ecff !important; }
+.exp-payment-term { color:#6b776e; font-size:.71rem; margin-top:.24rem; }
+.hb-inner-route .exp-admin-stats .card { min-height:115px; }
+.hb-inner-route .exp-admin-stats .card-body { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; padding:1.1rem 1.25rem !important; }
+.hb-inner-route .exp-admin-stats .card-title { font-size:clamp(2rem,3vw,3.1rem) !important; line-height:1; color:#213a2b !important; }
+.hb-inner-route .exp-admin-stats .card-text { color:#6b786a; font-weight:600; }
+.hb-inner-route .exp-admin-stats > div:nth-child(2) .card { background:#d7f6b1 !important; }
+.hb-inner-route .exp-admin-stats > div:nth-child(4) .card { background:#ede4ff !important; }
+.hb-inner-route .exp-admin-panel > .card-header { background:#fffdf5 !important; padding:1.2rem !important; }
+.hb-inner-route .exp-admin-panel > .card-header .btn-primary { background:#d6fa76 !important; color:#1d2a22 !important; }
+.hb-inner-route .exp-profile-header { margin-top:-3.2rem; position:relative; z-index:2; }
+.hb-inner-route .exp-profile-header .card-body { padding:2rem !important; }
+.hb-inner-route .exp-profile-header h2 { font:700 clamp(1.8rem,3vw,2.8rem)/1 'Space Grotesk',sans-serif; letter-spacing:-.065em; }
+.hb-inner-route .exp-profile-page .progress-bar { background:#202d23 !important; }
+.hb-inner-route .exp-profile-page .nav-tabs { border:0; gap:.35rem; }
+.hb-inner-route .exp-profile-page .nav-tabs .nav-link { border:0; border-radius:100px; color:#385344; padding:.65rem 1rem; font-weight:700; }
+.hb-inner-route .exp-profile-page .nav-tabs .nav-link.active { background:#d6fa76; color:#17241d; }
+.exp-booking-breakdown { display:grid; grid-template-columns:repeat(4,1fr); gap:.75rem; margin:1.2rem 0 2rem; }
+.exp-booking-breakdown > div { background:#d9eab8; border:2px solid #1d2a22; border-radius:18px; box-shadow:4px 5px 0 #1d2a22; padding:1.1rem; display:flex; flex-direction:column; gap:.45rem; }
+.exp-booking-breakdown > div:nth-child(2) { background:#e9e2ff; }
+.exp-booking-breakdown > div:nth-child(3) { background:#ffe2d2; }
+.exp-booking-breakdown > div:nth-child(4) { background:#d6fa76; }
+.exp-booking-breakdown span { font-size:.65rem; font-weight:700; letter-spacing:.14em; }
+.exp-booking-breakdown strong { font:700 clamp(1.08rem,1.8vw,1.5rem)/1.1 'Space Grotesk',sans-serif; letter-spacing:-.05em; }
+.exp-booking-breakdown small { font-size:.68rem; }
+@media(max-width:900px) { .exp-booking-breakdown { grid-template-columns:repeat(2,1fr); } .hb-inner-route .exp-page-hero { min-height:auto; } }
+@media(max-width:600px) { .exp-booking-breakdown { grid-template-columns:1fr 1fr; gap:.6rem; } .exp-booking-breakdown > div { padding:.85rem; } .hb-inner-route .exp-managed .exp-page-hero { padding:1.8rem; border-radius:22px; box-shadow:5px 6px 0 #101b15; } .hb-inner-route .exp-profile-header { margin-top:-1rem; } .hb-inner-route .exp-booking-hero > .btn { order:3; } }
+@media(prefers-reduced-motion:reduce) { .hb-inner-route .exp-managed .card { animation:none !important; transition:none !important; } }

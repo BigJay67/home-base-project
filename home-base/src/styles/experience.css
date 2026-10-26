@@ -241,6 +241,14 @@ body { background:var(--exp-cream) !important; color:var(--exp-ink) !important; 
 .hb-inner-route .lp-side-bg { background:linear-gradient(0deg,rgba(14,29,18,.9),rgba(14,29,18,.1)),url('/homebase-hero.jpg') center/cover !important; }
 .hb-inner-route .ld-card,.hb-inner-route .ld-sidebar-inner { border-radius:20px !important; }
 .hb-inner-route .ld-book-btn { background:var(--exp-ink) !important; color:var(--exp-lime) !important; border-radius:100px !important; }
+.ld-quote { background:#eff1e8; border:1px solid #d7decd; border-radius:18px; padding:1rem 1.15rem; display:grid; gap:.65rem; margin:.8rem 0 1rem; color:#1b251c; font-family:'Space Grotesk',sans-serif; }
+.ld-quote>div { display:flex; justify-content:space-between; gap:1rem; align-items:baseline; font-size:.84rem; }
+.ld-quote>div span { color:#526052; }
+.ld-quote>div strong { text-align:right; }
+.ld-quote .ld-quote-total { border-top:1px dashed #aebba8; padding-top:.85rem; margin-top:.2rem; font-size:1rem; }
+.ld-quote-total strong { font-size:1.35rem; letter-spacing:-.04em; }
+.ld-quote p { font-size:.76rem; line-height:1.45; margin:0; color:#526052; }
+.ld-long-stay { background:#ebe8ff !important; }
 
 @media (max-width:1050px) { .home-lifecycle { grid-template-columns:1fr; margin-left:5%; margin-right:5%; } }
 @media (max-width:850px) { .exp-booking-grid,.exp-stay-overview { grid-template-columns:1fr; } .exp-stay-overview { gap:1.5rem; } }

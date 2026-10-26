@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { ArrowUpRight, Heart, MapPin } from 'react-feather'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
+import { billingLabels, getBillingPeriod } from '../utils/pricing'
 
 const imageUrl = image => typeof image === 'string' ? image : image?.medium || image?.large || image?.original || image?.thumbnail
 
@@ -23,6 +24,7 @@ function ListingCard({ listing, user, handleEdit, handleDelete, index = 0, isSav
     ? `₦${listing.priceValue.toLocaleString('en-NG')}`
     : listing.price || 'Price on request'
   const currentImage = images[Math.min(imageIndex, images.length - 1)]
+  const billingPeriod = getBillingPeriod(listing)
 
   return <article className="stay-card" style={{ animationDelay: `${Math.min(index, 5) * 60}ms` }}>
     <div className="stay-card-media">
@@ -37,7 +39,7 @@ function ListingCard({ listing, user, handleEdit, handleDelete, index = 0, isSav
       <div className="stay-card-meta"><span><MapPin size={14} />{listing.location}</span>{rating && <span className="stay-card-rating">★ {rating.average.toFixed(1)} <small>({rating.count})</small></span>}</div>
       <h3><Link to={detailUrl}>{listing.name}</Link></h3>
       {listing.amenities?.length > 0 && <div className="stay-card-amenities">{listing.amenities.slice(0, 2).map((amenity, i) => <span key={`${amenity}-${i}`}>{amenity}</span>)}{listing.amenities.length > 2 && <span>+{listing.amenities.length - 2} more</span>}</div>}
-      <div className="stay-card-bottom"><div><span>Booking amount</span><strong>{price}</strong></div><Link to={detailUrl} aria-label={`View details for ${listing.name}`}><ArrowUpRight size={20} /></Link></div>
+      <div className="stay-card-bottom"><div><span>{billingPeriod ? `From · per ${billingLabels[billingPeriod]}` : 'Rate pending confirmation'}</span><strong>{price}</strong></div><Link to={detailUrl} aria-label={`View details for ${listing.name}`}><ArrowUpRight size={20} /></Link></div>
       {isOwner && <div className="stay-card-owner"><button onClick={() => handleEdit(listing)}>Edit listing</button><button onClick={() => handleDelete(listing._id)}>Delete</button></div>}
     </div>
   </article>

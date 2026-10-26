@@ -9,7 +9,7 @@ let payoutCode = null;
 let createdBooking;
 let paystackPayload;
 
-const listing = { _id: listingId, name: 'Test stay', status: 'active', createdBy: 'host-1', priceValue: 1500000, capacity: 1 };
+const listing = { _id: listingId, name: 'Test stay', status: 'active', createdBy: 'host-1', priceValue: 1500000, billingPeriod: 'daily', capacity: 1 };
 const mocks = {
   '../models/Booking': {
     updateMany: async () => {},
@@ -46,7 +46,6 @@ const initialize = router.stack.find(layer => layer.route?.path === '/paystack/i
 
 test('booking initialization creates a checkout with the resolved host payout', async () => {
   const moveInDate = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
-  const checkOutDate = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10);
   for (const code of [null, 'ACCT_test_host']) {
     payoutCode = code;
     createdBooking = undefined;
@@ -54,13 +53,16 @@ test('booking initialization creates a checkout with the resolved host payout', 
     let status = 200;
     let payload;
     const response = { status(value) { status = value; return this; }, json(value) { payload = value; return this; } };
-    await initialize({ body: { listingId, moveInDate, checkOutDate }, userId: 'guest-1', userEmail: 'guest@example.com' }, response);
+    await initialize({ body: { listingId, moveInDate, durationCount: 2, quotedAmount: 3000000 }, userId: 'guest-1', userEmail: 'guest@example.com' }, response);
     assert.equal(status, 200);
     assert.equal(payload.authorization_url, 'https://checkout.paystack.test/booking');
-    assert.equal(createdBooking.amount, 1500000);
+    assert.equal(createdBooking.amount, 3000000);
+    assert.equal(createdBooking.unitRate, 1500000);
+    assert.equal(createdBooking.billingPeriod, 'daily');
+    assert.equal(createdBooking.durationCount, 2);
     assert.equal(createdBooking.hostSubaccountCode, code);
     assert.equal(createdBooking.platformFeePercent, code ? 10 : null);
-    assert.equal(paystackPayload.amount, 150000000);
+    assert.equal(paystackPayload.amount, 300000000);
     assert.equal(paystackPayload.subaccount, code || undefined);
   }
 });
