@@ -34,7 +34,7 @@ function Receipt ({ payment, onDownload, onPrint, onShare }) {
                         </div>
                         <Badge bg="success" className="fs-6">PAID</Badge>
                     </div>
-                    <h4 className="text-primary">OFFICIAL RECEIPT</h4>
+                    <h4 className="text-primary">PAYMENT RECEIPT</h4>
                     <small className="text-muted">Transaction #{payment.paymentReference}</small>
                 </div>
 
@@ -49,6 +49,13 @@ function Receipt ({ payment, onDownload, onPrint, onShare }) {
                         <div>{formatDate(payment.paidAt || payment.createdAt)}</div>
                     </Col>
                 </Row>
+
+                {payment.durationCount && payment.billingPeriod && (
+                    <p className="small text-muted mb-3">
+                        {payment.durationCount} {payment.billingPeriod === 'daily' ? 'day' : payment.billingPeriod === 'weekly' ? 'week' : payment.billingPeriod === 'monthly' ? 'month' : 'year'}{payment.durationCount === 1 ? '' : 's'}
+                        {payment.moveInDate && payment.checkOutDate && ` · ${new Date(payment.moveInDate).toLocaleDateString('en-NG')} to ${new Date(payment.checkOutDate).toLocaleDateString('en-NG')}`}
+                    </p>
+                )}
 
                 <hr />
 
@@ -91,11 +98,11 @@ function Receipt ({ payment, onDownload, onPrint, onShare }) {
                             <Col sm={6}>
                                 <div className="mb-2">
                                     <strong>Payment Method:</strong>
-                                    <div className="text-muted">{payment.paymentMethod || 'Card'}</div>
+                                    <div className="text-muted">{payment.paymentMethod || 'Not recorded'}</div>
                                 </div>
                                 <div className="mb-2">
                                     <strong>Channel:</strong>
-                                    <div className="text-muted">{payment.receiptData?.channel || 'Online'}</div>
+                                    <div className="text-muted">{payment.receiptData?.channel || 'Not recorded'}</div>
                                 </div>
                             </Col>
                         </Row>
@@ -115,9 +122,7 @@ function Receipt ({ payment, onDownload, onPrint, onShare }) {
 
                 <div className="text-center mt-4 pt-3 border-top">
                     <small className="text-muted">
-                        Thank you for your business!<br />
-                        This is an official receipt for your records.<br />
-                        For inquiries, contact support@homebase.com
+                        Thank you for choosing HomeBase. Keep this receipt with your booking details.
                     </small>
                 </div>
             </Card.Body>

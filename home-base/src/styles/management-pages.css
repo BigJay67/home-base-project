@@ -1,5 +1,8 @@
 /* Account workspaces: clear totals, strong hierarchy, and one HomeBase identity. */
 .hb-inner-route .exp-managed { max-width:1320px; font-family:'Space Grotesk',sans-serif; }
+.hb-inner-route .ld-hero:has(.ld-hero-empty) { background:radial-gradient(circle at 80% 20%,#526e54,transparent 38%),linear-gradient(135deg,#142720,#324b3b) !important; }
+.hb-inner-route .ld-hero-empty { color:#c8dec7; background:transparent; }
+.hb-inner-route .ld-hero:has(.ld-hero-empty) .ld-hero-info { color:#fffdf5; }
 .hb-inner-route .exp-managed .exp-page-hero { position:relative; overflow:hidden; min-height:260px; padding:clamp(2rem,5vw,3.4rem); background:#17241d; color:#f7f7ec; border:2px solid #101b15; border-radius:30px; box-shadow:9px 10px 0 #101b15; isolation:isolate; }
 .hb-inner-route .exp-page-hero::after { content:''; position:absolute; width:390px; height:390px; right:-85px; top:-170px; border:80px solid rgba(213,255,111,.12); border-radius:50%; z-index:-1; }
 .hb-inner-route .exp-page-hero h1 { color:#fffef2 !important; font:700 clamp(2.65rem,5.4vw,5rem)/.94 'Space Grotesk',sans-serif !important; letter-spacing:-.08em; margin:.7rem 0 1rem; }

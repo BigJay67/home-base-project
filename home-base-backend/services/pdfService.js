@@ -59,7 +59,7 @@ class PDFService {
         
         doc.fontSize(18).font('Helvetica-Bold')
            .fillColor('#000')
-           .text('OFFICIAL RECEIPT', 50, 130, { align: 'center' });
+           .text('PAYMENT RECEIPT', 50, 130, { align: 'center' });
         
         doc.fontSize(10).font('Helvetica')
            .fillColor('#666')
@@ -116,6 +116,7 @@ class PDFService {
             doc.fontSize(8).fillColor('#666')
                .text(`Type: ${payment.listingId.type}`, 50, itemTop + 30);
         }
+
         
         const totalTop = itemTop + 60;
         doc.moveTo(50, totalTop)
@@ -134,12 +135,14 @@ class PDFService {
         doc.fontSize(10).font('Helvetica')
            .fillColor('#000')
            .text('Payment Method:', 50, totalTop + 45)
-           .text(payment.paymentMethod?.toUpperCase() || 'CARD', 150, totalTop + 45);
+           .text(payment.paymentMethod?.toUpperCase() || 'Not recorded', 150, totalTop + 45);
         
         if (payment.receiptData?.channel) {
             doc.text('Channel:', 50, totalTop + 60)
                .text(payment.receiptData.channel.toUpperCase(), 150, totalTop + 60);
         }
+
+        this.addStaySummary(doc, payment, 50, totalTop + 85);
         
         const footerTop = 700;
         doc.rect(0, footerTop, doc.page.width, doc.page.height - footerTop)
@@ -147,19 +150,16 @@ class PDFService {
         
         doc.fontSize(9).font('Helvetica')
            .fillColor('#666')
-           .text('Thank you for choosing Home Base!', 50, footerTop + 20, { align: 'center' })
-           .text('This is an official receipt for your records.', 50, footerTop + 35, { align: 'center' })
-           .text('Please keep this receipt for your accounting purposes.', 50, footerTop + 50, { align: 'center' });
-        
-        doc.fontSize(8)
-           .text(`For inquiries: ${company.email} | ${company.phone}`, 50, footerTop + 70, { align: 'center' })
-           .text(company.address, 50, footerTop + 82, { align: 'center' });
+           .text('Thank you for choosing HomeBase.', 50, footerTop + 20, { align: 'center' })
+           .text('Keep this receipt with your booking details.', 50, footerTop + 35, { align: 'center' });
+
+        this.addCompanyContact(doc, company, footerTop + 55);
         
         doc.text(`Page 1 of 1`, 50, footerTop + 100, { align: 'center' });
     }
 
     static addMinimalReceiptContent(doc, data) {
-        const { payment, company } = data;
+        const { payment } = data;
         const paidDate = new Date(payment.paidAt || payment.createdAt);
 
         doc.fontSize(16).font('Helvetica-Bold')
@@ -191,6 +191,7 @@ class PDFService {
 
         doc.fontSize(8)
            .text('Thank you for your business!', 50, 280, { align: 'center' });
+        this.addStaySummary(doc, payment, 50, 300);
     }
 
     static addCorporateReceiptContent(doc, data) {
@@ -204,12 +205,10 @@ class PDFService {
            .fillColor('white')
            .text('HOME BASE', 50, 50, { align: 'center' })
            .fontSize(12)
-           .text('CORPORATE RECEIPT', 50, 85, { align: 'center' });
+           .text('PAYMENT RECEIPT', 50, 85, { align: 'center' });
 
-        doc.fillColor('black')
-           .fontSize(8)
-           .text(company.address, 50, 140, { align: 'center' })
-           .text(`${company.phone} | ${company.email}`, 50, 152, { align: 'center' });
+        doc.fillColor('black');
+        this.addCompanyContact(doc, company, 140);
 
         const infoTop = 180;
         doc.fontSize(9)
@@ -224,28 +223,18 @@ class PDFService {
 
         const tableTop = 250;
         this.addCorporateTable(doc, payment, tableTop);
-
-        doc.fontSize(7)
-           .text('TERMS & CONDITIONS: Payment is due upon receipt. Late payments may be subject to fees.', 50, 500, { align: 'center' })
-           .text('This is an official tax invoice.', 50, 510, { align: 'center' });
-
-        doc.moveTo(400, 550).lineTo(550, 550).stroke();
-        doc.text('Authorized Signature', 400, 555, { align: 'center' });
+        this.addStaySummary(doc, payment, 50, 375);
     }
 
     static addCorporateTable(doc, payment, startY) {
         doc.rect(50, startY, 500, 20).fill('#e5e7eb');
         doc.fontSize(9).font('Helvetica-Bold').fillColor('black')
            .text('Description', 60, startY + 7)
-           .text('Quantity', 350, startY + 7)
-           .text('Unit Price', 420, startY + 7)
            .text('Amount', 490, startY + 7, { align: 'right' });
 
         doc.rect(50, startY + 20, 500, 25).fill('#f8f9fa');
         doc.fontSize(9).font('Helvetica')
            .text(payment.listingId?.name || 'Accommodation Booking', 60, startY + 28, { width: 250 })
-           .text('1', 350, startY + 28)
-           .text(this.formatCurrency(payment.amount, payment.currency), 420, startY + 28)
            .text(this.formatCurrency(payment.amount, payment.currency), 490, startY + 28, { align: 'right' });
 
         if (payment.listingId?.location) {
@@ -256,7 +245,7 @@ class PDFService {
         const totalY = startY + 60;
         doc.rect(50, totalY, 500, 25).fill('#1e3a8a');
         doc.fontSize(11).font('Helvetica-Bold').fillColor('white')
-           .text('TOTAL DUE', 60, totalY + 8)
+           .text('TOTAL PAID', 60, totalY + 8)
            .text(this.formatCurrency(payment.amount, payment.currency), 490, totalY + 8, { align: 'right' });
     }
 
@@ -270,7 +259,7 @@ class PDFService {
         this.addCustomerSection(doc, payment, 90);
         this.addPaymentDetailsSection(doc, payment, data.receiptId, paidDate, 160);
         this.addServiceBreakdownSection(doc, payment, 240);
-        this.addTaxSection(doc, payment, 350);
+        this.addStaySummary(doc, payment, 50, 350);
         this.addFooterSection(doc, company, 450);
     }
 
@@ -280,7 +269,7 @@ class PDFService {
            .font('Helvetica')
            .text(`Email: ${payment.userEmail}`, 50, startY + 15)
            .text(`Customer ID: ${payment.userId}`, 50, startY + 30)
-           .text(`Payment Method: ${payment.paymentMethod || 'Card'}`, 50, startY + 45);
+           .text(`Payment Method: ${payment.paymentMethod || 'Not recorded'}`, 50, startY + 45);
     }
 
     static addPaymentDetailsSection(doc, payment, receiptId, paidDate, startY) {
@@ -304,9 +293,7 @@ class PDFService {
            .text('SERVICE BREAKDOWN', 50, startY);
 
         const breakdown = [
-            { description: 'Accommodation Booking', amount: payment.amount * 0.8 },
-            { description: 'Service Fee', amount: payment.amount * 0.15 },
-            { description: 'Platform Fee', amount: payment.amount * 0.05 }
+            { description: payment.listingId?.name || 'Accommodation Booking', amount: payment.amount }
         ];
 
         let currentY = startY + 20;
@@ -321,30 +308,40 @@ class PDFService {
         currentY += 10;
 
         doc.font('Helvetica-Bold')
-           .text('SUBTOTAL', 50, currentY)
+           .text('TOTAL PAID', 50, currentY)
            .text(this.formatCurrency(payment.amount, payment.currency), 450, currentY, { align: 'right' });
-    }
-
-    static addTaxSection(doc, payment, startY) {
-        doc.fontSize(10).font('Helvetica-Bold')
-           .text('TAX INFORMATION', 50, startY)
-           .font('Helvetica')
-           .text('VAT: Included in total amount', 50, startY + 15)
-           .text('Tax Identification: N/A', 50, startY + 30);
     }
 
     static addFooterSection(doc, company, startY) {
         doc.fontSize(8)
-           .text('Thank you for your business!', 50, startY, { align: 'center' })
-           .text(`For inquiries: ${company.email} | ${company.phone}`, 50, startY + 12, { align: 'center' })
-           .text(company.address, 50, startY + 24, { align: 'center' })
-           .text('This receipt is computer generated and does not require a physical signature.', 50, startY + 40, { align: 'center' });
+           .text('Thank you for choosing HomeBase.', 50, startY, { align: 'center' });
+        this.addCompanyContact(doc, company, startY + 16);
     }
 
     static getTemplateForPayment(payment) {
-        if (payment.amount > 100000) return 'corporate';
-        if (payment.amount < 10000) return 'minimal';
         return 'standard';
+    }
+
+    static addCompanyContact(doc, company, startY) {
+        const contact = [company?.email, company?.phone].filter(Boolean).join(' | ');
+        if (contact) doc.fontSize(8).fillColor('#666').text(`For inquiries: ${contact}`, 50, startY, { align: 'center' });
+        if (company?.address) doc.fontSize(8).fillColor('#666').text(company.address, 50, startY + 12, { align: 'center' });
+    }
+
+    static addStaySummary(doc, payment, x, y) {
+        const date = value => value ? new Date(value).toLocaleDateString('en-NG', { timeZone: 'UTC' }) : null;
+        const period = payment.billingPeriod;
+        const count = payment.durationCount;
+        const dates = [date(payment.moveInDate), date(payment.checkOutDate)].filter(Boolean);
+        const lines = [];
+        if (count && period) {
+            lines.push(`Stay: ${count} ${period === 'daily' ? 'day' : period === 'weekly' ? 'week' : period === 'monthly' ? 'month' : 'year'}${count === 1 ? '' : 's'}`);
+        }
+        if (dates.length === 2) lines.push(`Check-in: ${dates[0]}  |  Check-out: ${dates[1]}`);
+        const rateUnit = { daily: 'day', weekly: 'week', monthly: 'month', yearly: 'year' }[period];
+        if (payment.unitRate && count && rateUnit) lines.push(`Rate: ${this.formatCurrency(payment.unitRate, payment.currency)} per ${rateUnit}`);
+        doc.fontSize(8).font('Helvetica').fillColor('#555');
+        lines.forEach((line, index) => doc.text(line, x, y + index * 13));
     }
 
     static formatCurrency(amount, currency = 'NGN') {
@@ -398,6 +395,8 @@ class PDFService {
         if (payment.listingId?.location) {
             doc.text(`Location: ${payment.listingId.location}`, 50, 185);
         }
+
+        this.addStaySummary(doc, payment, 50, 205);
         
         doc.text('Thank you for your business!', 50, 220, { align: 'center' });
     }

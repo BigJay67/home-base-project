@@ -232,10 +232,10 @@ router.get('/:paymentId/receipt', async (req, res) => {
       issueDate: new Date().toISOString(),
       payment: payment.toObject(),
       company: {
-        name: 'Home Base',
-        address: '123 Accommodation Street, Lagos, Nigeria',
-        phone: '+234 800 000 0000',
-        email: 'support@homebase.com',
+        name: 'HomeBase',
+        address: process.env.BUSINESS_ADDRESS || null,
+        phone: process.env.SUPPORT_PHONE || null,
+        email: process.env.SUPPORT_EMAIL || null,
       },
     };
 
@@ -293,10 +293,10 @@ router.post('/:paymentId/email-receipt', async (req, res) => {
       issueDate: new Date().toISOString(),
       payment: payment.toObject(),
       company: {
-        name: 'Home Base',
-        address: '123 Accommodation Street, Lagos, Nigeria',
-        phone: '+234 800 000 0000',
-        email: 'support@homebase.com',
+        name: 'HomeBase',
+        address: process.env.BUSINESS_ADDRESS || null,
+        phone: process.env.SUPPORT_PHONE || null,
+        email: process.env.SUPPORT_EMAIL || null,
       },
     };
 

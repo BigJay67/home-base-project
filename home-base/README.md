@@ -43,9 +43,11 @@ The Vite project is configured for port 3000. For a production frontend build, r
 
 ## Pricing model
 
-`priceValue` is the amount charged by the payment API for a booking. The interface shows this amount in cards and on the property page. Newly created and edited listings now derive the display price from the same value to avoid a mismatch between the listing and checkout. Payment terms are shown separately in the property details.
+`priceValue` is the rate for one `billingPeriod`: day, week, month, or year. A guest selects a move-in date and number of periods. The API calculates the full amount (`priceValue × durationCount`) before checkout and calculates check-out from the chosen term. Daily and weekly stays use 1-day and 7-day units; monthly and yearly stays use calendar months and years. The full selected term is charged upfront. The booking saves the rate, period, count, dates, and total as a payment snapshot.
 
-Review legacy listing data before presenting or accepting payments. An existing record can still contain an old text price that differs from its numeric checkout amount; the redesigned interface displays the checkout amount.
+New and edited listings need an explicit billing period. Existing listings with clear period wording are mapped automatically. Ambiguous wording such as “per session” needs the host to edit the listing before checkout. Review legacy listing data before presenting or accepting payments: an existing record can still contain an old text price that differs from its numeric checkout amount. The interface displays the numeric rate used by checkout.
+
+Receipts show the amount actually charged and the saved stay terms when available. Business contact details appear only if `SUPPORT_EMAIL`, `SUPPORT_PHONE`, or `BUSINESS_ADDRESS` are configured on the API.
 
 ## Presentation checklist
 
