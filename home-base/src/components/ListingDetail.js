@@ -6,6 +6,8 @@ import MessageButton from './MessageButton'
 import { api } from '../api/client'
 import './ListingDetail.css'
 
+const dateInputValue = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+
 function ListingDetail({ user, handlePayment }) {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -25,18 +27,35 @@ function ListingDetail({ user, handlePayment }) {
   const [moveInDate, setMoveInDate] = useState('')
   const [checkOutDate, setCheckOutDate] = useState('')
   const [availability, setAvailability] = useState(null)
+  const [availabilityLoading, setAvailabilityLoading] = useState(false)
+  const [availabilityError, setAvailabilityError] = useState('')
+  const [availabilityRefresh, setAvailabilityRefresh] = useState(0)
+  const [bookingBusy, setBookingBusy] = useState(false)
 
   useEffect(() => {
     if (!id || id === ':id') { setError('Invalid listing ID'); setLoading(false); return }
     fetchListing()
     fetchReviews()
-    fetchAvailability()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   useEffect(() => {
-    if (moveInDate && checkOutDate) fetchAvailability(moveInDate, checkOutDate)
-  }, [moveInDate, checkOutDate])
+    if (!moveInDate || !checkOutDate) {
+      setAvailability(null)
+      setAvailabilityError('')
+      setAvailabilityLoading(false)
+      return
+    }
+    let current = true
+    setAvailability(null)
+    setAvailabilityError('')
+    setAvailabilityLoading(true)
+    api.get(`/api/listings/${id}/availability?moveInDate=${moveInDate}&checkOutDate=${checkOutDate}`, { auth: false })
+      .then(result => { if (current) setAvailability(result) })
+      .catch(err => { if (current) setAvailabilityError(err.message || 'Could not check these dates') })
+      .finally(() => { if (current) setAvailabilityLoading(false) })
+    return () => { current = false }
+  }, [id, moveInDate, checkOutDate, availabilityRefresh])
 
   const fetchListing = async () => {
     try {
@@ -55,13 +74,6 @@ function ListingDetail({ user, handlePayment }) {
       setReviews(data.reviews || [])
       setAverageRating(data.averageRating || 0)
       setTotalReviews(data.totalReviews || 0)
-    } catch (_) {}
-  }
-
-  const fetchAvailability = async (moveIn, checkOut) => {
-    try {
-      const query = moveIn && checkOut ? `?moveInDate=${moveIn}&checkOutDate=${checkOut}` : ''
-      setAvailability(await api.get(`/api/listings/${id}/availability${query}`, { auth: false }))
     } catch (_) {}
   }
 
@@ -131,13 +143,13 @@ function ListingDetail({ user, handlePayment }) {
   }
 
   const isOwner = user && user.uid === listing.createdBy
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = dateInputValue(new Date())
   // Checkout uses priceValue. Show that same amount before a guest starts payment.
   const checkoutPrice = Number.isFinite(listing.priceValue) && listing.priceValue > 0
     ? `₦${listing.priceValue.toLocaleString('en-NG')}`
     : listing.price
   const nextDay = moveInDate
-    ? new Date(new Date(`${moveInDate}T12:00:00`).getTime() + 86400000).toISOString().split('T')[0]
+    ? dateInputValue(new Date(Number(moveInDate.slice(0, 4)), Number(moveInDate.slice(5, 7)) - 1, Number(moveInDate.slice(8, 10)) + 1))
     : todayStr
 
   return (
@@ -327,6 +339,9 @@ function ListingDetail({ user, handlePayment }) {
                 <div className="ld-owner-note">This is your listing</div>
               ) : user ? (
                 <>
+                  {availabilityLoading && <div className="ld-availability">Checking these dates…</div>}
+                  {availabilityError && <div className="ld-availability full" role="alert">{availabilityError}. <button type="button" onClick={() => setAvailabilityRefresh(value => value + 1)}>Retry</button></div>}
+                  {listing.status !== 'active' && <div className="ld-availability full">This listing is not accepting bookings.</div>}
                   {availability && (
                     <div className={`ld-availability${availability.isFull ? ' full' : ''}`}>
                       {availability.isFull
@@ -358,10 +373,14 @@ function ListingDetail({ user, handlePayment }) {
                   />
                   <button
                     className="ld-book-btn"
-                    disabled={!moveInDate || !checkOutDate || Boolean(availability && availability.isFull)}
-                    onClick={() => handlePayment(listing._id, moveInDate, checkOutDate)}
+                    disabled={listing.status !== 'active' || !moveInDate || !checkOutDate || !availability || availabilityLoading || availability.isFull || bookingBusy}
+                    onClick={async () => {
+                      setBookingBusy(true)
+                      try { await handlePayment(listing._id, moveInDate, checkOutDate) }
+                      finally { setBookingBusy(false) }
+                    }}
                   >
-                    Book Now
+                    {bookingBusy ? 'Opening secure checkout…' : 'Book Now'}
                   </button>
                   <MessageButton listing={listing} user={user} className="ld-msg-btn" />
                 </>

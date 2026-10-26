@@ -82,7 +82,7 @@ function AppShell() {
   }, [toast]);
 
   const { user, userProfile, authLoading, refreshUserProfile, handleSignOut } = useAuth(setPaymentMessage);
-  const { handlePayment } = usePayment(user, setPaymentMessage);
+  const { handlePayment } = usePayment(user, userProfile?.email, setPaymentMessage);
 
   const guard = (element) => (
     <RequireAuth user={user} authLoading={authLoading}>{element}</RequireAuth>

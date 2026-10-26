@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { api } from '../api/client'
 
-function usePayment (user, notify) {
+function usePayment (user, profileEmail, notify) {
   const handlePayment = useCallback(async (listingId, moveInDate, checkOutDate) => {
     if (!user) {
       notify('Please log in to proceed with payment.')
@@ -11,9 +11,14 @@ function usePayment (user, notify) {
       notify('Please choose your move-in and check-out dates first.')
       return
     }
+    const email = user.email || profileEmail
+    if (!email) {
+      notify('Add an email to your profile before booking so we can send your receipt.')
+      return
+    }
     try {
       const data = await api.post('/api/payments/paystack/initialize', {
-        listingId, moveInDate, checkOutDate, userEmail: user.email || undefined
+        listingId, moveInDate, checkOutDate, userEmail: email
       })
       if (data.authorization_url) {
         window.location.href = data.authorization_url
@@ -24,7 +29,7 @@ function usePayment (user, notify) {
       console.error('Error initializing payment:', err)
       notify(`Could not start payment. ${err.message}`)
     }
-  }, [user, notify])
+  }, [user, profileEmail, notify])
 
   // Kept for any remaining callers
   const parsePrice = useCallback((price) => {

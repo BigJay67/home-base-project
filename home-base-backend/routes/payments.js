@@ -84,9 +84,15 @@ router.post('/paystack/initialize', writeLimiter, requireVerifiedEmail, async (r
     // Note: this charges the listing's flat price regardless of stay length —
     // per-night/per-month proration isn't implemented yet.
     const amount = listing.priceValue;
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
       return res.status(400).json({ error: 'This listing has an invalid price' });
     }
+
+    // Resolve payout details before creating the booking. The booking stores
+    // the same split configuration that is sent to Paystack below.
+    const hostUser = await User.findOne({ userId: listing.createdBy }).select('payout');
+    const hostSubaccountCode = hostUser?.payout?.subaccountCode || null;
+    const platformFeePercent = Number(process.env.PLATFORM_FEE_PERCENT) || 10;
 
     // Release this user's own earlier unpaid attempts so they do not block themselves
     await Booking.updateMany(
@@ -129,10 +135,6 @@ router.post('/paystack/initialize', writeLimiter, requireVerifiedEmail, async (r
     // side: their subaccount's own percentage_charge decides the platform's cut.
     // If not set up yet, the full amount goes to the platform account, same as before —
     // nothing here blocks a booking just because the host hasn't configured payouts.
-    const hostUser = await User.findOne({ userId: listing.createdBy }).select('payout');
-    const hostSubaccountCode = hostUser && hostUser.payout ? hostUser.payout.subaccountCode : null;
-    const platformFeePercent = Number(process.env.PLATFORM_FEE_PERCENT) || 10;
-
     let payment;
     try {
       payment = await paystack.transaction.initialize({
@@ -143,7 +145,7 @@ router.post('/paystack/initialize', writeLimiter, requireVerifiedEmail, async (r
         metadata: { listingId, userId },
         ...(hostSubaccountCode ? { subaccount: hostSubaccountCode } : {}),
       });
-      if (!payment.status) {
+      if (!payment.status || !payment.data?.authorization_url) {
         throw new Error('Paystack initialization failed');
       }
     } catch (payErr) {

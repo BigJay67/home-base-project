@@ -39,16 +39,20 @@ const getAvailability = async (listing, moveIn, checkOut) => {
   };
 };
 
-// Holds that overlap this booking's own date range, created before (or at the
-// same moment as) it. Used to settle races: for a given overlapping window,
-// the earliest holds win.
+// Holds that overlap this booking's own date range and were created first.
+// The ID breaks ties when two requests land in the same millisecond.
 const countHoldsAhead = (booking) =>
   Booking.countDocuments({
     ...activeHoldFilter(booking.listingId),
     _id: { $ne: booking._id },
     moveInDate: { $lt: booking.checkOutDate },
     checkOutDate: { $gt: booking.moveInDate },
-    createdAt: { $lte: booking.createdAt },
+    $and: [
+      { $or: [
+        { createdAt: { $lt: booking.createdAt } },
+        { createdAt: booking.createdAt, _id: { $lt: booking._id } },
+      ] },
+    ],
   });
 
 module.exports = { PENDING_HOLD_MINUTES, getAvailability, countHoldsAhead };
