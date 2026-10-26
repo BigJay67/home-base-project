@@ -19,7 +19,7 @@ function usePayment (user, profileEmail, notify) {
     try {
       const data = await api.post('/api/payments/paystack/initialize', {
         listingId, moveInDate, checkOutDate, userEmail: email
-      })
+      }, { timeoutMs: 90000 })
       if (data.authorization_url) {
         window.location.href = data.authorization_url
       } else {

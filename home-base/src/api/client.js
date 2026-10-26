@@ -10,7 +10,8 @@ class ApiError extends Error {
   }
 }
 
-async function request (path, { method = 'GET', body, auth = true, timeoutMs = 20000, headers = {} } = {}) {
+// Render's free API instance can take over 50 seconds to wake after inactivity.
+async function request (path, { method = 'GET', body, auth = true, timeoutMs = 75000, headers = {} } = {}) {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
@@ -58,7 +59,7 @@ export const api = {
   getBlob
 }
 
-async function getBlob (path, { timeoutMs = 20000 } = {}) {
+async function getBlob (path, { timeoutMs = 75000 } = {}) {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
   try {
